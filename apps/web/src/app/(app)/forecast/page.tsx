@@ -64,8 +64,8 @@ export default function ForecastPage() {
 
   return (
     <div className="mx-auto max-w-4xl">
-      <h1 className="text-2xl font-bold text-surface-900 mb-2">Forecast</h1>
-      <p className="text-surface-300 mb-8">Your personalized multi-year forecast based on numerology cycles and astrological patterns.</p>
+      <h1 className="text-2xl font-bold text-white/90 mb-2">Forecast</h1>
+      <p className="text-white/30 mb-8">Your personalized multi-year forecast based on numerology cycles and astrological patterns.</p>
 
       <div className="flex gap-2 mb-6">
         {([2026, 2027, 2028] as ForecastYear[]).map((y) => (
@@ -74,8 +74,8 @@ export default function ForecastPage() {
             onClick={() => setYear(y)}
             className={`rounded-full px-5 py-2 text-sm font-medium transition-colors ${
               year === y
-                ? "bg-brand-600 text-white"
-                : "bg-surface-100 text-surface-700 hover:bg-surface-200"
+                ? "bg-indigo-600 text-white"
+                : "bg-white/[0.06] text-white/50 hover:bg-white/[0.08]"
             }`}
           >
             {y}
@@ -83,27 +83,27 @@ export default function ForecastPage() {
         ))}
       </div>
 
-      <div className="rounded-xl bg-gradient-to-r from-brand-600 to-cosmic-600 p-6 text-white mb-8">
+      <div className="rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 p-6 text-white mb-8">
         <div className="text-sm font-medium opacity-80 mb-1">Year Theme</div>
         <p className="text-lg font-semibold">{data.theme}</p>
       </div>
 
       <div className="space-y-3">
         {data.months.map((month) => (
-          <div key={month.month} className="rounded-xl bg-white p-5 shadow-sm hover:shadow-md transition-shadow">
-            <div className="font-semibold text-surface-900 mb-2">{month.month}</div>
+          <div key={month.month} className="rounded-xl border border-white/[0.06] bg-white/[0.04] p-5 transition-all hover:bg-white/[0.06]">
+            <div className="font-semibold text-white/90 mb-2">{month.month}</div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
               <div>
-                <div className="text-xs font-medium text-brand-600 mb-1">Focus</div>
-                <p className="text-sm text-surface-700">{month.focus}</p>
+                <div className="text-xs font-medium text-indigo-400 mb-1">Focus</div>
+                <p className="text-sm text-white/50">{month.focus}</p>
               </div>
               <div>
-                <div className="text-xs font-medium text-pink-600 mb-1">Love</div>
-                <p className="text-sm text-surface-700">{month.love}</p>
+                <div className="text-xs font-medium text-pink-400 mb-1">Love</div>
+                <p className="text-sm text-white/50">{month.love}</p>
               </div>
               <div>
-                <div className="text-xs font-medium text-emerald-600 mb-1">Career</div>
-                <p className="text-sm text-surface-700">{month.career}</p>
+                <div className="text-xs font-medium text-emerald-400 mb-1">Career</div>
+                <p className="text-sm text-white/50">{month.career}</p>
               </div>
             </div>
           </div>

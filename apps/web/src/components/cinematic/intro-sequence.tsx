@@ -1,40 +1,65 @@
 "use client";
 
-import { useState, useCallback, useEffect, useRef } from "react";
+import { useState, useCallback, useEffect, useRef, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import dynamic from "next/dynamic";
 import WhiteWash from "./white-wash";
 import TitleReveal from "./title-reveal";
 
-// Dynamic import globe to avoid SSR issues with Three.js / WebGL
+// ---------------------------------------------------------------------------
+// Dynamic import — SSR-safe Three.js loading
+// ---------------------------------------------------------------------------
+
 const GlobeScene = dynamic(() => import("./globe-scene"), {
   ssr: false,
   loading: () => (
     <div
       className="fixed inset-0 flex items-center justify-center"
-      style={{ background: "#0a0e27" }}
+      style={{ background: "#050810" }}
     >
       <motion.div
-        className="flex flex-col items-center gap-4"
+        className="flex flex-col items-center gap-6"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        transition={{ duration: 0.5 }}
+        transition={{ duration: 0.8, ease: "easeOut" }}
       >
-        <div className="relative h-12 w-12">
+        {/* Orbital spinner */}
+        <div className="relative h-16 w-16">
           <motion.div
-            className="absolute inset-0 rounded-full border-2 border-indigo-500/30"
+            className="absolute inset-0 rounded-full border border-indigo-500/20"
             animate={{ rotate: 360 }}
+            transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
+          />
+          <motion.div
+            className="absolute inset-1.5 rounded-full border border-violet-400/30"
+            animate={{ rotate: -360 }}
             transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
           />
           <motion.div
-            className="absolute inset-1 rounded-full border-2 border-t-transparent border-indigo-400"
-            animate={{ rotate: -360 }}
-            transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
+            className="absolute inset-3 rounded-full border border-t-transparent border-indigo-400/60"
+            animate={{ rotate: 360 }}
+            transition={{ duration: 1.2, repeat: Infinity, ease: "linear" }}
+          />
+          {/* Center dot */}
+          <motion.div
+            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-1.5 w-1.5 rounded-full bg-indigo-400/80"
+            animate={{ opacity: [0.4, 1, 0.4] }}
+            transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
           />
         </div>
-        <p className="text-xs tracking-[0.3em] uppercase text-slate-400">
-          Loading experience
-        </p>
+        {/* Loading text */}
+        <div className="flex items-center gap-1.5">
+          <p className="text-[10px] tracking-[0.35em] uppercase text-slate-500 font-light">
+            Loading experience
+          </p>
+          <motion.span
+            className="text-slate-500"
+            animate={{ opacity: [0, 1, 0] }}
+            transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
+          >
+            ...
+          </motion.span>
+        </div>
       </motion.div>
     </div>
   ),
@@ -45,7 +70,9 @@ const GlobeScene = dynamic(() => import("./globe-scene"), {
 // ---------------------------------------------------------------------------
 
 type IntroPhase =
-  | "globe-spinning"
+  | "prelude"
+  | "globe-reveal"
+  | "awaiting-touch"
   | "globe-slowing"
   | "globe-stopped"
   | "globe-zooming"
@@ -58,12 +85,13 @@ interface IntroSequenceProps {
   onComplete: () => void;
 }
 
-// Map our IntroPhase to GlobeScene phase
+// Map IntroPhase to GlobeScene phase
 function toGlobePhase(
   phase: IntroPhase
 ): "spinning" | "slowing" | "stopped" | "zooming" | "done" {
   switch (phase) {
-    case "globe-spinning":
+    case "globe-reveal":
+    case "awaiting-touch":
       return "spinning";
     case "globe-slowing":
       return "slowing";
@@ -79,38 +107,135 @@ function toGlobePhase(
 }
 
 // ---------------------------------------------------------------------------
-// "Tap to begin" prompt
+// Prelude — deep space atmospheric anticipation
 // ---------------------------------------------------------------------------
 
-function TapPrompt({ visible }: { visible: boolean }) {
+function Prelude({ active }: { active: boolean }) {
+  return (
+    <AnimatePresence>
+      {active && (
+        <motion.div
+          className="fixed inset-0 z-20"
+          style={{ background: "#050810" }}
+          initial={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 1.5, ease: "easeInOut" }}
+        >
+          {/* Subtle nebula haze */}
+          <motion.div
+            className="absolute inset-0"
+            style={{
+              background:
+                "radial-gradient(ellipse 60% 50% at 30% 40%, rgba(79,70,229,0.06) 0%, transparent 70%), " +
+                "radial-gradient(ellipse 50% 60% at 70% 60%, rgba(124,58,237,0.04) 0%, transparent 70%)",
+            }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 2, ease: "easeOut" }}
+          />
+
+          {/* Faint star-like particles */}
+          <div className="absolute inset-0 overflow-hidden">
+            {Array.from({ length: 60 }).map((_, i) => (
+              <motion.div
+                key={i}
+                className="absolute rounded-full bg-white"
+                style={{
+                  width: Math.random() * 2 + 0.5,
+                  height: Math.random() * 2 + 0.5,
+                  left: `${Math.random() * 100}%`,
+                  top: `${Math.random() * 100}%`,
+                }}
+                initial={{ opacity: 0 }}
+                animate={{
+                  opacity: [0, Math.random() * 0.4 + 0.1, 0],
+                }}
+                transition={{
+                  duration: 2 + Math.random() * 2,
+                  repeat: Infinity,
+                  delay: Math.random() * 1.5,
+                  ease: "easeInOut",
+                }}
+              />
+            ))}
+          </div>
+
+          {/* Atmospheric breathing glow at center */}
+          <motion.div
+            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full"
+            style={{
+              width: "40vmin",
+              height: "40vmin",
+              background:
+                "radial-gradient(circle, rgba(79,70,229,0.08) 0%, transparent 60%)",
+              filter: "blur(40px)",
+            }}
+            animate={{
+              scale: [1, 1.15, 1],
+              opacity: [0.5, 0.8, 0.5],
+            }}
+            transition={{
+              duration: 3,
+              repeat: Infinity,
+              ease: "easeInOut",
+            }}
+          />
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// "Touch the globe" prompt
+// ---------------------------------------------------------------------------
+
+function TouchPrompt({
+  visible,
+  onAutoAdvance,
+}: {
+  visible: boolean;
+  onAutoAdvance: () => void;
+}) {
+  const autoRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    if (visible) {
+      autoRef.current = setTimeout(onAutoAdvance, 5000);
+      return () => {
+        if (autoRef.current) clearTimeout(autoRef.current);
+      };
+    }
+  }, [visible, onAutoAdvance]);
+
   return (
     <AnimatePresence>
       {visible && (
         <motion.div
-          className="fixed bottom-12 left-0 right-0 z-30 flex flex-col items-center gap-3 pointer-events-none"
-          initial={{ opacity: 0, y: 20 }}
+          className="fixed bottom-14 left-0 right-0 z-30 flex flex-col items-center gap-4 pointer-events-none"
+          initial={{ opacity: 0, y: 24 }}
           animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -10 }}
-          transition={{ duration: 0.6, delay: 1 }}
+          exit={{ opacity: 0, y: -12 }}
+          transition={{ duration: 0.7, delay: 0.5, ease: "easeOut" }}
         >
-          {/* Pulsing ring */}
+          {/* Pulsing ring with cursor icon */}
           <motion.div
             className="relative flex items-center justify-center"
-            animate={{ scale: [1, 1.1, 1] }}
-            transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+            animate={{ scale: [1, 1.08, 1] }}
+            transition={{ duration: 2.2, repeat: Infinity, ease: "easeInOut" }}
           >
-            <div className="h-14 w-14 rounded-full border border-white/20 flex items-center justify-center backdrop-blur-sm bg-white/5">
+            <div className="h-16 w-16 rounded-full border border-white/15 flex items-center justify-center backdrop-blur-sm bg-white/[0.03]">
               <motion.svg
-                width="20"
-                height="20"
+                width="22"
+                height="22"
                 viewBox="0 0 24 24"
                 fill="none"
                 stroke="currentColor"
                 strokeWidth="1.5"
-                className="text-white/70"
-                animate={{ y: [0, -2, 0] }}
+                className="text-white/60"
+                animate={{ y: [0, -3, 0] }}
                 transition={{
-                  duration: 1.5,
+                  duration: 1.8,
                   repeat: Infinity,
                   ease: "easeInOut",
                 }}
@@ -123,24 +248,42 @@ function TapPrompt({ visible }: { visible: boolean }) {
               </motion.svg>
             </div>
 
-            {/* Expanding ring animation */}
+            {/* Expanding ring 1 */}
             <motion.div
               className="absolute inset-0 rounded-full border border-white/10"
               animate={{
-                scale: [1, 2],
-                opacity: [0.3, 0],
+                scale: [1, 2.2],
+                opacity: [0.25, 0],
               }}
               transition={{
-                duration: 2,
+                duration: 2.5,
+                repeat: Infinity,
+                ease: "easeOut",
+              }}
+            />
+            {/* Expanding ring 2 (offset) */}
+            <motion.div
+              className="absolute inset-0 rounded-full border border-white/8"
+              animate={{
+                scale: [1, 2.5],
+                opacity: [0.15, 0],
+              }}
+              transition={{
+                duration: 2.5,
+                delay: 0.8,
                 repeat: Infinity,
                 ease: "easeOut",
               }}
             />
           </motion.div>
 
-          <p className="text-xs tracking-[0.25em] uppercase text-white/50 font-light">
-            Click the globe to begin
-          </p>
+          <motion.p
+            className="text-[11px] tracking-[0.3em] uppercase text-white/40 font-light"
+            animate={{ opacity: [0.3, 0.6, 0.3] }}
+            transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+          >
+            Touch the globe
+          </motion.p>
         </motion.div>
       )}
     </AnimatePresence>
@@ -164,16 +307,16 @@ function SkipButton({
         <motion.button
           type="button"
           onClick={onSkip}
-          className="fixed top-6 right-6 z-50 flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-medium tracking-wider uppercase text-white/50 backdrop-blur-md transition-colors hover:bg-white/10 hover:text-white/80"
+          className="fixed top-6 right-6 z-50 flex items-center gap-2 rounded-full border border-white/8 bg-white/[0.03] px-4 py-2 text-[10px] font-medium tracking-[0.2em] uppercase text-white/40 backdrop-blur-md transition-all duration-300 hover:bg-white/[0.08] hover:text-white/80 hover:border-white/15"
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
           exit={{ opacity: 0, x: 20 }}
-          transition={{ duration: 0.4, delay: 2 }}
+          transition={{ duration: 0.5, delay: 2.5 }}
         >
-          Skip Intro
+          Skip
           <svg
-            width="14"
-            height="14"
+            width="12"
+            height="12"
             viewBox="0 0 24 24"
             fill="none"
             stroke="currentColor"
@@ -192,17 +335,20 @@ function SkipButton({
 }
 
 // ---------------------------------------------------------------------------
-// Phase indicator dots (subtle, bottom left)
+// Phase indicator dots
 // ---------------------------------------------------------------------------
 
 function PhaseIndicator({ phase }: { phase: IntroPhase }) {
   const phases: IntroPhase[] = [
-    "globe-spinning",
+    "prelude",
+    "globe-reveal",
+    "awaiting-touch",
     "globe-slowing",
     "globe-stopped",
     "globe-zooming",
     "white-wash",
     "title-reveal",
+    "transition-out",
   ];
   const currentIndex = phases.indexOf(phase);
 
@@ -210,23 +356,85 @@ function PhaseIndicator({ phase }: { phase: IntroPhase }) {
     <motion.div
       className="fixed bottom-6 left-6 z-30 flex items-center gap-1.5"
       initial={{ opacity: 0 }}
-      animate={{ opacity: 0.4 }}
-      transition={{ delay: 2 }}
+      animate={{ opacity: 0.35 }}
+      transition={{ delay: 3, duration: 1 }}
     >
       {phases.map((_, i) => (
-        <div
+        <motion.div
           key={i}
-          className="h-1 rounded-full transition-all duration-500"
+          className="rounded-full transition-all duration-700"
           style={{
-            width: i <= currentIndex ? 12 : 6,
+            height: 3,
+            width: i <= currentIndex ? 14 : 5,
             backgroundColor:
               i <= currentIndex
-                ? "rgba(255,255,255,0.6)"
-                : "rgba(255,255,255,0.15)",
+                ? "rgba(255,255,255,0.5)"
+                : "rgba(255,255,255,0.1)",
           }}
+          layout
         />
       ))}
     </motion.div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Watermark during prelude
+// ---------------------------------------------------------------------------
+
+function PreludeWatermark({ visible }: { visible: boolean }) {
+  return (
+    <AnimatePresence>
+      {visible && (
+        <motion.div
+          className="fixed bottom-8 left-0 right-0 z-20 flex justify-center pointer-events-none"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 0.08 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 1.5 }}
+        >
+          <p className="text-[10px] tracking-[0.5em] uppercase text-white font-light">
+            Destination Future
+          </p>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Deep space background with nebula hazes
+// ---------------------------------------------------------------------------
+
+function SpaceBackground({ visible }: { visible: boolean }) {
+  return (
+    <AnimatePresence>
+      {visible && (
+        <motion.div
+          className="fixed inset-0 z-0"
+          style={{
+            background: `
+              #050810
+            `,
+          }}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 1 }}
+        >
+          {/* Nebula haze layers */}
+          <div
+            className="absolute inset-0"
+            style={{
+              background:
+                "radial-gradient(ellipse 70% 50% at 25% 35%, rgba(79,70,229,0.05) 0%, transparent 60%), " +
+                "radial-gradient(ellipse 50% 70% at 75% 65%, rgba(124,58,237,0.04) 0%, transparent 60%), " +
+                "radial-gradient(ellipse 80% 40% at 50% 80%, rgba(30,27,75,0.08) 0%, transparent 50%)",
+            }}
+          />
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 }
 
@@ -235,27 +443,44 @@ function PhaseIndicator({ phase }: { phase: IntroPhase }) {
 // ---------------------------------------------------------------------------
 
 export default function IntroSequence({ onComplete }: IntroSequenceProps) {
-  const [phase, setPhase] = useState<IntroPhase>("globe-spinning");
+  const [phase, setPhase] = useState<IntroPhase>("prelude");
   const autoAdvanceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const completeCalled = useRef(false);
 
-  // Auto-advance from spinning to slowing after 4 seconds
-  useEffect(() => {
-    if (phase === "globe-spinning") {
-      autoAdvanceRef.current = setTimeout(() => {
-        setPhase("globe-slowing");
-      }, 4000);
+  // --- Phase timing ---
 
+  // Prelude -> globe-reveal after 2s
+  useEffect(() => {
+    if (phase === "prelude") {
+      autoAdvanceRef.current = setTimeout(() => {
+        setPhase("globe-reveal");
+      }, 2000);
       return () => {
         if (autoAdvanceRef.current) clearTimeout(autoAdvanceRef.current);
       };
     }
   }, [phase]);
 
-  // Handle user click/tap to trigger slowing early
+  // Globe-reveal -> awaiting-touch after 3s
+  useEffect(() => {
+    if (phase === "globe-reveal") {
+      const timer = setTimeout(() => {
+        setPhase("awaiting-touch");
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [phase]);
+
+  // Handle user click/tap on globe to trigger slowing
   const handleGlobeClick = useCallback(() => {
-    if (phase === "globe-spinning") {
-      if (autoAdvanceRef.current) clearTimeout(autoAdvanceRef.current);
+    if (phase === "awaiting-touch" || phase === "globe-reveal") {
+      setPhase("globe-slowing");
+    }
+  }, [phase]);
+
+  // Auto-advance from awaiting-touch (called by TouchPrompt after 5s)
+  const handleAutoAdvance = useCallback(() => {
+    if (phase === "awaiting-touch") {
       setPhase("globe-slowing");
     }
   }, [phase]);
@@ -272,7 +497,6 @@ export default function IntroSequence({ onComplete }: IntroSequenceProps) {
         setPhase("white-wash");
         break;
       case "done":
-        // Globe fade done (not used as primary driver)
         break;
     }
   }, []);
@@ -285,14 +509,13 @@ export default function IntroSequence({ onComplete }: IntroSequenceProps) {
   // Handle title reveal completion
   const handleTitleComplete = useCallback(() => {
     setPhase("transition-out");
-    // Fade out everything, then complete
     setTimeout(() => {
       setPhase("complete");
       if (!completeCalled.current) {
         completeCalled.current = true;
         onComplete();
       }
-    }, 1200);
+    }, 1500);
   }, [onComplete]);
 
   // Skip handler
@@ -305,9 +528,10 @@ export default function IntroSequence({ onComplete }: IntroSequenceProps) {
     }
   }, [onComplete]);
 
-  // Determine what to show
+  // Determine visibility
   const showGlobe =
-    phase === "globe-spinning" ||
+    phase === "globe-reveal" ||
+    phase === "awaiting-touch" ||
     phase === "globe-slowing" ||
     phase === "globe-stopped" ||
     phase === "globe-zooming" ||
@@ -316,7 +540,13 @@ export default function IntroSequence({ onComplete }: IntroSequenceProps) {
   const showWhiteWash = phase === "white-wash";
   const showTitle = phase === "title-reveal" || phase === "transition-out";
   const showSkip = phase !== "complete" && phase !== "transition-out";
-  const showTapPrompt = phase === "globe-spinning";
+  const showTouchPrompt = phase === "awaiting-touch";
+  const showPrelude = phase === "prelude";
+  const showSpaceBg =
+    phase !== "complete" &&
+    phase !== "white-wash" &&
+    phase !== "title-reveal" &&
+    phase !== "transition-out";
 
   if (phase === "complete") return null;
 
@@ -325,16 +555,33 @@ export default function IntroSequence({ onComplete }: IntroSequenceProps) {
       className="fixed inset-0 z-40"
       initial={{ opacity: 1 }}
       animate={{ opacity: phase === "transition-out" ? 0 : 1 }}
-      transition={{ duration: 1.2, ease: "easeInOut" }}
+      transition={{ duration: 1.5, ease: "easeInOut" }}
     >
+      {/* Deep space background */}
+      <SpaceBackground visible={showSpaceBg} />
+
+      {/* Prelude — atmospheric anticipation */}
+      <Prelude active={showPrelude} />
+
+      {/* Prelude watermark */}
+      <PreludeWatermark visible={showPrelude} />
+
       {/* Globe scene */}
       <AnimatePresence>
         {showGlobe && (
           <motion.div
-            className="absolute inset-0"
-            exit={{ opacity: 0, transition: { duration: 0.5 } }}
+            className="absolute inset-0 z-10"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0, transition: { duration: 0.6 } }}
+            transition={{ duration: 2, ease: "easeOut" }}
             onClick={handleGlobeClick}
-            style={{ cursor: phase === "globe-spinning" ? "pointer" : "default" }}
+            style={{
+              cursor:
+                phase === "awaiting-touch" || phase === "globe-reveal"
+                  ? "pointer"
+                  : "default",
+            }}
           >
             <GlobeScene
               phase={toGlobePhase(phase)}
@@ -350,8 +597,11 @@ export default function IntroSequence({ onComplete }: IntroSequenceProps) {
       {/* Title reveal */}
       <TitleReveal show={showTitle} onComplete={handleTitleComplete} />
 
-      {/* Tap to begin prompt */}
-      <TapPrompt visible={showTapPrompt} />
+      {/* Touch prompt */}
+      <TouchPrompt
+        visible={showTouchPrompt}
+        onAutoAdvance={handleAutoAdvance}
+      />
 
       {/* Phase indicator */}
       <PhaseIndicator phase={phase} />

@@ -142,21 +142,21 @@ export default function OnboardingPage() {
   };
 
   return (
-    <div className="flex min-h-screen flex-col bg-surface-50">
+    <div className="flex min-h-screen flex-col bg-[#0a0e27]">
       {/* Header */}
-      <header className="border-b border-surface-200 bg-white px-4 py-4">
+      <header className="border-b border-white/[0.06] bg-[#0a0e27]/80 backdrop-blur-xl px-4 py-4">
         <div className="mx-auto flex max-w-2xl items-center justify-between">
-          <h1 className="text-xl font-bold text-gradient">Destination Future</h1>
-          <span className="text-sm text-surface-700">
+          <h1 className="text-xl font-bold bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent">Destination Future</h1>
+          <span className="text-sm text-white/50">
             Step {step + 1} of {totalSteps}
           </span>
         </div>
       </header>
 
       {/* Progress Bar */}
-      <div className="w-full bg-surface-200">
+      <div className="w-full bg-white/[0.08]">
         <div
-          className="h-1 bg-gradient-to-r from-brand-500 to-cosmic-500 transition-all duration-500 ease-out"
+          className="h-1 bg-gradient-to-r from-indigo-500 to-purple-500 transition-all duration-500 ease-out"
           style={{ width: `${progressPercent}%` }}
         />
       </div>
@@ -169,8 +169,8 @@ export default function OnboardingPage() {
               <div
                 className={`flex h-8 w-8 items-center justify-center rounded-full text-sm font-semibold transition-colors ${
                   i <= step
-                    ? "bg-gradient-to-br from-brand-500 to-cosmic-500 text-white"
-                    : "bg-surface-200 text-surface-700"
+                    ? "bg-gradient-to-br from-indigo-500 to-purple-500 text-white"
+                    : "bg-white/[0.08] text-white/50"
                 }`}
               >
                 {i < step ? (
@@ -181,7 +181,7 @@ export default function OnboardingPage() {
                   i + 1
                 )}
               </div>
-              <span className={`text-xs ${i <= step ? "font-medium text-brand-600" : "text-surface-700"}`}>
+              <span className={`text-xs ${i <= step ? "font-medium text-indigo-400" : "text-white/50"}`}>
                 {label}
               </span>
             </div>
@@ -191,18 +191,18 @@ export default function OnboardingPage() {
 
       {/* Form Content */}
       <div className="mx-auto w-full max-w-2xl flex-1 px-4 py-8">
-        <div className="rounded-2xl border border-surface-200 bg-white p-6 shadow-sm sm:p-8">
+        <div className="rounded-2xl border border-white/[0.06] bg-white/[0.04] p-6 shadow-lg shadow-black/20 sm:p-8">
           {/* Step 0: Name */}
           {step === 0 && (
             <div className="animate-fade-in space-y-6">
               <div>
-                <h2 className="text-2xl font-bold text-surface-900">What&apos;s your name?</h2>
-                <p className="mt-1 text-surface-700">Your name is used for numerological calculations and personalization.</p>
+                <h2 className="text-2xl font-bold text-white/90">What&apos;s your name?</h2>
+                <p className="mt-1 text-white/50">Your name is used for numerological calculations and personalization.</p>
               </div>
 
               <div className="space-y-4">
                 <div>
-                  <label htmlFor="firstName" className="mb-1.5 block text-sm font-medium text-surface-900">
+                  <label htmlFor="firstName" className="mb-1.5 block text-sm font-medium text-white/90">
                     First Name <span className="text-red-500">*</span>
                   </label>
                   <input
@@ -211,14 +211,14 @@ export default function OnboardingPage() {
                     value={form.firstName}
                     onChange={(e) => updateField("firstName", e.target.value)}
                     placeholder="Your first name"
-                    className="w-full rounded-xl border border-surface-300 bg-surface-50 px-4 py-3 text-surface-900 placeholder:text-surface-300 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20 transition-colors"
+                    className="w-full rounded-xl border border-white/[0.08] bg-white/[0.06] px-4 py-3 text-white placeholder:text-white/20 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-colors"
                     autoFocus
                   />
                 </div>
 
                 <div>
-                  <label htmlFor="middleName" className="mb-1.5 block text-sm font-medium text-surface-900">
-                    Middle Name <span className="text-surface-300 text-xs font-normal">(optional)</span>
+                  <label htmlFor="middleName" className="mb-1.5 block text-sm font-medium text-white/90">
+                    Middle Name <span className="text-white/30 text-xs font-normal">(optional)</span>
                   </label>
                   <input
                     id="middleName"
@@ -226,13 +226,13 @@ export default function OnboardingPage() {
                     value={form.middleName}
                     onChange={(e) => updateField("middleName", e.target.value)}
                     placeholder="Your middle name"
-                    className="w-full rounded-xl border border-surface-300 bg-surface-50 px-4 py-3 text-surface-900 placeholder:text-surface-300 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20 transition-colors"
+                    className="w-full rounded-xl border border-white/[0.08] bg-white/[0.06] px-4 py-3 text-white placeholder:text-white/20 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-colors"
                   />
                 </div>
 
                 <div>
-                  <label htmlFor="lastName" className="mb-1.5 block text-sm font-medium text-surface-900">
-                    Last Name <span className="text-surface-300 text-xs font-normal">(optional)</span>
+                  <label htmlFor="lastName" className="mb-1.5 block text-sm font-medium text-white/90">
+                    Last Name <span className="text-white/30 text-xs font-normal">(optional)</span>
                   </label>
                   <input
                     id="lastName"
@@ -240,7 +240,7 @@ export default function OnboardingPage() {
                     value={form.lastName}
                     onChange={(e) => updateField("lastName", e.target.value)}
                     placeholder="Your last name"
-                    className="w-full rounded-xl border border-surface-300 bg-surface-50 px-4 py-3 text-surface-900 placeholder:text-surface-300 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20 transition-colors"
+                    className="w-full rounded-xl border border-white/[0.08] bg-white/[0.06] px-4 py-3 text-white placeholder:text-white/20 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-colors"
                   />
                 </div>
               </div>
@@ -251,13 +251,13 @@ export default function OnboardingPage() {
           {step === 1 && (
             <div className="animate-fade-in space-y-6">
               <div>
-                <h2 className="text-2xl font-bold text-surface-900">When and where were you born?</h2>
-                <p className="mt-1 text-surface-700">This powers your numerology, astrology, and cosmic profile.</p>
+                <h2 className="text-2xl font-bold text-white/90">When and where were you born?</h2>
+                <p className="mt-1 text-white/50">This powers your numerology, astrology, and cosmic profile.</p>
               </div>
 
               <div className="space-y-4">
                 <div>
-                  <label htmlFor="dateOfBirth" className="mb-1.5 block text-sm font-medium text-surface-900">
+                  <label htmlFor="dateOfBirth" className="mb-1.5 block text-sm font-medium text-white/90">
                     Date of Birth <span className="text-red-500">*</span>
                   </label>
                   <input
@@ -265,29 +265,29 @@ export default function OnboardingPage() {
                     type="date"
                     value={form.dateOfBirth}
                     onChange={(e) => updateField("dateOfBirth", e.target.value)}
-                    className="w-full rounded-xl border border-surface-300 bg-surface-50 px-4 py-3 text-surface-900 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20 transition-colors"
+                    className="w-full rounded-xl border border-white/[0.08] bg-white/[0.06] px-4 py-3 text-white focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-colors"
                   />
                 </div>
 
                 <div>
-                  <label htmlFor="birthTime" className="mb-1.5 block text-sm font-medium text-surface-900">
-                    Exact Birth Time <span className="text-surface-300 text-xs font-normal">(optional)</span>
+                  <label htmlFor="birthTime" className="mb-1.5 block text-sm font-medium text-white/90">
+                    Exact Birth Time <span className="text-white/30 text-xs font-normal">(optional)</span>
                   </label>
                   <input
                     id="birthTime"
                     type="time"
                     value={form.birthTime}
                     onChange={(e) => updateField("birthTime", e.target.value)}
-                    className="w-full rounded-xl border border-surface-300 bg-surface-50 px-4 py-3 text-surface-900 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20 transition-colors"
+                    className="w-full rounded-xl border border-white/[0.08] bg-white/[0.06] px-4 py-3 text-white focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-colors"
                   />
-                  <p className="mt-2 rounded-lg bg-brand-50 px-3 py-2 text-sm text-brand-700">
+                  <p className="mt-2 rounded-lg bg-indigo-500/10 px-3 py-2 text-sm text-indigo-300">
                     <strong>Without exact birth time:</strong> We can still generate your numerology, life path, and most insights. Rising sign, house placements, and astrocartography accuracy will be limited. You can always add it later.
                   </p>
                 </div>
 
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
                   <div>
-                    <label htmlFor="birthCity" className="mb-1.5 block text-sm font-medium text-surface-900">
+                    <label htmlFor="birthCity" className="mb-1.5 block text-sm font-medium text-white/90">
                       Birth City
                     </label>
                     <input
@@ -296,11 +296,11 @@ export default function OnboardingPage() {
                       value={form.birthCity}
                       onChange={(e) => updateField("birthCity", e.target.value)}
                       placeholder="City"
-                      className="w-full rounded-xl border border-surface-300 bg-surface-50 px-4 py-3 text-surface-900 placeholder:text-surface-300 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20 transition-colors"
+                      className="w-full rounded-xl border border-white/[0.08] bg-white/[0.06] px-4 py-3 text-white placeholder:text-white/20 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-colors"
                     />
                   </div>
                   <div>
-                    <label htmlFor="birthState" className="mb-1.5 block text-sm font-medium text-surface-900">
+                    <label htmlFor="birthState" className="mb-1.5 block text-sm font-medium text-white/90">
                       State / Province
                     </label>
                     <input
@@ -309,11 +309,11 @@ export default function OnboardingPage() {
                       value={form.birthState}
                       onChange={(e) => updateField("birthState", e.target.value)}
                       placeholder="State"
-                      className="w-full rounded-xl border border-surface-300 bg-surface-50 px-4 py-3 text-surface-900 placeholder:text-surface-300 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20 transition-colors"
+                      className="w-full rounded-xl border border-white/[0.08] bg-white/[0.06] px-4 py-3 text-white placeholder:text-white/20 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-colors"
                     />
                   </div>
                   <div>
-                    <label htmlFor="birthCountry" className="mb-1.5 block text-sm font-medium text-surface-900">
+                    <label htmlFor="birthCountry" className="mb-1.5 block text-sm font-medium text-white/90">
                       Country
                     </label>
                     <input
@@ -322,7 +322,7 @@ export default function OnboardingPage() {
                       value={form.birthCountry}
                       onChange={(e) => updateField("birthCountry", e.target.value)}
                       placeholder="Country"
-                      className="w-full rounded-xl border border-surface-300 bg-surface-50 px-4 py-3 text-surface-900 placeholder:text-surface-300 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20 transition-colors"
+                      className="w-full rounded-xl border border-white/[0.08] bg-white/[0.06] px-4 py-3 text-white placeholder:text-white/20 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-colors"
                     />
                   </div>
                 </div>
@@ -334,13 +334,13 @@ export default function OnboardingPage() {
           {step === 2 && (
             <div className="animate-fade-in space-y-6">
               <div>
-                <h2 className="text-2xl font-bold text-surface-900">Where do you live now?</h2>
-                <p className="mt-1 text-surface-700">This helps us analyze your current city and suggest ideal locations. All fields are optional.</p>
+                <h2 className="text-2xl font-bold text-white/90">Where do you live now?</h2>
+                <p className="mt-1 text-white/50">This helps us analyze your current city and suggest ideal locations. All fields are optional.</p>
               </div>
 
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
                 <div>
-                  <label htmlFor="currentCity" className="mb-1.5 block text-sm font-medium text-surface-900">
+                  <label htmlFor="currentCity" className="mb-1.5 block text-sm font-medium text-white/90">
                     City
                   </label>
                   <input
@@ -349,11 +349,11 @@ export default function OnboardingPage() {
                     value={form.currentCity}
                     onChange={(e) => updateField("currentCity", e.target.value)}
                     placeholder="City"
-                    className="w-full rounded-xl border border-surface-300 bg-surface-50 px-4 py-3 text-surface-900 placeholder:text-surface-300 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20 transition-colors"
+                    className="w-full rounded-xl border border-white/[0.08] bg-white/[0.06] px-4 py-3 text-white placeholder:text-white/20 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-colors"
                   />
                 </div>
                 <div>
-                  <label htmlFor="currentState" className="mb-1.5 block text-sm font-medium text-surface-900">
+                  <label htmlFor="currentState" className="mb-1.5 block text-sm font-medium text-white/90">
                     State / Province
                   </label>
                   <input
@@ -362,11 +362,11 @@ export default function OnboardingPage() {
                     value={form.currentState}
                     onChange={(e) => updateField("currentState", e.target.value)}
                     placeholder="State"
-                    className="w-full rounded-xl border border-surface-300 bg-surface-50 px-4 py-3 text-surface-900 placeholder:text-surface-300 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20 transition-colors"
+                    className="w-full rounded-xl border border-white/[0.08] bg-white/[0.06] px-4 py-3 text-white placeholder:text-white/20 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-colors"
                   />
                 </div>
                 <div>
-                  <label htmlFor="currentCountry" className="mb-1.5 block text-sm font-medium text-surface-900">
+                  <label htmlFor="currentCountry" className="mb-1.5 block text-sm font-medium text-white/90">
                     Country
                   </label>
                   <input
@@ -375,7 +375,7 @@ export default function OnboardingPage() {
                     value={form.currentCountry}
                     onChange={(e) => updateField("currentCountry", e.target.value)}
                     placeholder="Country"
-                    className="w-full rounded-xl border border-surface-300 bg-surface-50 px-4 py-3 text-surface-900 placeholder:text-surface-300 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20 transition-colors"
+                    className="w-full rounded-xl border border-white/[0.08] bg-white/[0.06] px-4 py-3 text-white placeholder:text-white/20 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-colors"
                   />
                 </div>
               </div>
@@ -386,20 +386,20 @@ export default function OnboardingPage() {
           {step === 3 && (
             <div className="animate-fade-in space-y-6">
               <div>
-                <h2 className="text-2xl font-bold text-surface-900">Tell us about yourself</h2>
-                <p className="mt-1 text-surface-700">These help personalize your recommendations. All fields are optional.</p>
+                <h2 className="text-2xl font-bold text-white/90">Tell us about yourself</h2>
+                <p className="mt-1 text-white/50">These help personalize your recommendations. All fields are optional.</p>
               </div>
 
               <div className="space-y-4">
                 <div>
-                  <label htmlFor="relationshipStatus" className="mb-1.5 block text-sm font-medium text-surface-900">
+                  <label htmlFor="relationshipStatus" className="mb-1.5 block text-sm font-medium text-white/90">
                     Relationship Status
                   </label>
                   <select
                     id="relationshipStatus"
                     value={form.relationshipStatus}
                     onChange={(e) => updateField("relationshipStatus", e.target.value)}
-                    className="w-full rounded-xl border border-surface-300 bg-surface-50 px-4 py-3 text-surface-900 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20 transition-colors"
+                    className="w-full rounded-xl border border-white/[0.08] bg-white/[0.06] px-4 py-3 text-white focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-colors"
                   >
                     <option value="">Select...</option>
                     {RELATIONSHIP_STATUSES.map((s) => (
@@ -409,7 +409,7 @@ export default function OnboardingPage() {
                 </div>
 
                 <div>
-                  <label htmlFor="careerField" className="mb-1.5 block text-sm font-medium text-surface-900">
+                  <label htmlFor="careerField" className="mb-1.5 block text-sm font-medium text-white/90">
                     Career Field
                   </label>
                   <input
@@ -418,19 +418,19 @@ export default function OnboardingPage() {
                     value={form.careerField}
                     onChange={(e) => updateField("careerField", e.target.value)}
                     placeholder="e.g. Technology, Healthcare, Creative Arts"
-                    className="w-full rounded-xl border border-surface-300 bg-surface-50 px-4 py-3 text-surface-900 placeholder:text-surface-300 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20 transition-colors"
+                    className="w-full rounded-xl border border-white/[0.08] bg-white/[0.06] px-4 py-3 text-white placeholder:text-white/20 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-colors"
                   />
                 </div>
 
                 <div>
-                  <label htmlFor="budgetRange" className="mb-1.5 block text-sm font-medium text-surface-900">
+                  <label htmlFor="budgetRange" className="mb-1.5 block text-sm font-medium text-white/90">
                     Budget Range
                   </label>
                   <select
                     id="budgetRange"
                     value={form.budgetRange}
                     onChange={(e) => updateField("budgetRange", e.target.value)}
-                    className="w-full rounded-xl border border-surface-300 bg-surface-50 px-4 py-3 text-surface-900 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20 transition-colors"
+                    className="w-full rounded-xl border border-white/[0.08] bg-white/[0.06] px-4 py-3 text-white focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-colors"
                   >
                     <option value="">Select...</option>
                     {BUDGET_RANGES.map((b) => (
@@ -440,8 +440,8 @@ export default function OnboardingPage() {
                 </div>
 
                 <div>
-                  <label className="mb-1.5 block text-sm font-medium text-surface-900">
-                    Style Preferences <span className="text-surface-300 text-xs font-normal">(select all that fit)</span>
+                  <label className="mb-1.5 block text-sm font-medium text-white/90">
+                    Style Preferences <span className="text-white/30 text-xs font-normal">(select all that fit)</span>
                   </label>
                   <div className="flex flex-wrap gap-2">
                     {STYLE_PREFERENCES.map((s) => {
@@ -453,8 +453,8 @@ export default function OnboardingPage() {
                           onClick={() => toggleArrayField("stylePreferences", s.key)}
                           className={`rounded-full px-4 py-2 text-sm font-medium transition-all ${
                             selected
-                              ? "bg-brand-600 text-white shadow-sm"
-                              : "bg-surface-100 text-surface-700 hover:bg-surface-200"
+                              ? "bg-indigo-600 text-white shadow-lg shadow-indigo-500/20"
+                              : "bg-white/[0.06] text-white/50 hover:bg-white/[0.08]"
                           }`}
                         >
                           {s.label}
@@ -465,8 +465,8 @@ export default function OnboardingPage() {
                 </div>
 
                 <div>
-                  <label className="mb-1.5 block text-sm font-medium text-surface-900">
-                    Music Preferences <span className="text-surface-300 text-xs font-normal">(select all that fit)</span>
+                  <label className="mb-1.5 block text-sm font-medium text-white/90">
+                    Music Preferences <span className="text-white/30 text-xs font-normal">(select all that fit)</span>
                   </label>
                   <div className="flex flex-wrap gap-2">
                     {MUSIC_PREFERENCES.map((m) => {
@@ -478,8 +478,8 @@ export default function OnboardingPage() {
                           onClick={() => toggleArrayField("musicPreferences", m.key)}
                           className={`rounded-full px-4 py-2 text-sm font-medium transition-all ${
                             selected
-                              ? "bg-cosmic-600 text-white shadow-sm"
-                              : "bg-surface-100 text-surface-700 hover:bg-surface-200"
+                              ? "bg-purple-600 text-white shadow-lg shadow-purple-500/20"
+                              : "bg-white/[0.06] text-white/50 hover:bg-white/[0.08]"
                           }`}
                         >
                           {m.label}
@@ -496,8 +496,8 @@ export default function OnboardingPage() {
           {step === 4 && (
             <div className="animate-fade-in space-y-6">
               <div>
-                <h2 className="text-2xl font-bold text-surface-900">What are you focused on?</h2>
-                <p className="mt-1 text-surface-700">Select all that apply. This helps us prioritize your report sections.</p>
+                <h2 className="text-2xl font-bold text-white/90">What are you focused on?</h2>
+                <p className="mt-1 text-white/50">Select all that apply. This helps us prioritize your report sections.</p>
               </div>
 
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -510,16 +510,16 @@ export default function OnboardingPage() {
                       onClick={() => toggleArrayField("selectedGoals", goal.key)}
                       className={`flex items-center gap-3 rounded-xl border-2 px-4 py-3 text-left transition-all duration-200 ${
                         isSelected
-                          ? "border-brand-500 bg-brand-50 shadow-sm"
-                          : "border-surface-200 bg-white hover:border-surface-300 hover:bg-surface-50"
+                          ? "border-indigo-500 bg-indigo-500/10 shadow-lg shadow-indigo-500/10"
+                          : "border-white/[0.06] bg-white/[0.04] hover:border-white/[0.08] hover:bg-white/[0.06]"
                       }`}
                     >
                       <span className="text-2xl">{goal.icon}</span>
-                      <span className={`font-medium ${isSelected ? "text-brand-700" : "text-surface-900"}`}>
+                      <span className={`font-medium ${isSelected ? "text-indigo-300" : "text-white/90"}`}>
                         {goal.label}
                       </span>
                       {isSelected && (
-                        <svg className="ml-auto h-5 w-5 text-brand-500" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor">
+                        <svg className="ml-auto h-5 w-5 text-indigo-400" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" d="m4.5 12.75 6 6 9-13.5" />
                         </svg>
                       )}
@@ -534,8 +534,8 @@ export default function OnboardingPage() {
           {step === 5 && (
             <div className="animate-fade-in space-y-6">
               <div>
-                <h2 className="text-2xl font-bold text-surface-900">Review your info</h2>
-                <p className="mt-1 text-surface-700">Make sure everything looks good before we build your profile.</p>
+                <h2 className="text-2xl font-bold text-white/90">Review your info</h2>
+                <p className="mt-1 text-white/50">Make sure everything looks good before we build your profile.</p>
               </div>
 
               <div className="space-y-4">
@@ -613,13 +613,13 @@ export default function OnboardingPage() {
       </div>
 
       {/* Navigation Buttons */}
-      <div className="border-t border-surface-200 bg-white px-4 py-4">
+      <div className="border-t border-white/[0.06] bg-[#0a0e27]/80 backdrop-blur-xl px-4 py-4">
         <div className="mx-auto flex max-w-2xl items-center justify-between">
           <button
             type="button"
             onClick={() => setStep((s) => s - 1)}
             disabled={step === 0}
-            className="inline-flex items-center gap-2 rounded-xl border border-surface-300 px-6 py-3 text-sm font-medium text-surface-700 transition-colors hover:bg-surface-50 disabled:opacity-40 disabled:cursor-not-allowed"
+            className="inline-flex items-center gap-2 rounded-xl border border-white/[0.08] px-6 py-3 text-sm font-medium text-white/50 transition-colors hover:bg-white/[0.04] disabled:opacity-40 disabled:cursor-not-allowed"
           >
             <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" />
@@ -632,7 +632,7 @@ export default function OnboardingPage() {
               type="button"
               onClick={() => setStep((s) => s + 1)}
               disabled={!canProceed()}
-              className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-brand-600 to-cosmic-600 px-6 py-3 text-sm font-semibold text-white shadow-md transition-all hover:shadow-lg hover:-translate-y-0.5 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:hover:shadow-md"
+              className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-indigo-500/20 transition-all hover:shadow-xl hover:-translate-y-0.5 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:hover:shadow-lg"
             >
               Next
               <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
@@ -644,7 +644,7 @@ export default function OnboardingPage() {
               type="button"
               onClick={handleSubmit}
               disabled={submitting}
-              className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-brand-600 to-cosmic-600 px-8 py-3 text-sm font-semibold text-white shadow-md transition-all hover:shadow-lg hover:-translate-y-0.5 disabled:opacity-60"
+              className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 px-8 py-3 text-sm font-semibold text-white shadow-lg shadow-indigo-500/20 transition-all hover:shadow-xl hover:-translate-y-0.5 disabled:opacity-60"
             >
               {submitting ? (
                 <>
@@ -672,15 +672,15 @@ export default function OnboardingPage() {
 
 function ReviewBlock({ label, value, onEdit }: { label: string; value: string; onEdit: () => void }) {
   return (
-    <div className="flex items-start justify-between rounded-xl border border-surface-200 bg-surface-50 px-4 py-3">
+    <div className="flex items-start justify-between rounded-xl border border-white/[0.06] bg-white/[0.06] px-4 py-3">
       <div>
-        <p className="text-xs font-medium uppercase tracking-wider text-surface-700">{label}</p>
-        <p className="mt-0.5 text-sm text-surface-900">{value}</p>
+        <p className="text-xs font-medium uppercase tracking-wider text-white/50">{label}</p>
+        <p className="mt-0.5 text-sm text-white/90">{value}</p>
       </div>
       <button
         type="button"
         onClick={onEdit}
-        className="shrink-0 text-sm font-medium text-brand-600 hover:text-brand-700 transition-colors"
+        className="shrink-0 text-sm font-medium text-indigo-400 hover:text-indigo-300 transition-colors"
       >
         Edit
       </button>

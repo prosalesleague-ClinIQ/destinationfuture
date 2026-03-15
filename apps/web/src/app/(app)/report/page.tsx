@@ -305,13 +305,13 @@ export default function ReportBuilderPage() {
     <div className="mx-auto max-w-5xl">
       {/* Page Header */}
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-surface-900">Build Your Report</h1>
-        <p className="mt-2 text-surface-700">Choose a preset or customize individual sections for your personalized insight report.</p>
+        <h1 className="text-3xl font-bold text-white/90">Build Your Report</h1>
+        <p className="mt-2 text-white/50">Choose a preset or customize individual sections for your personalized insight report.</p>
       </div>
 
       {/* Presets */}
       <section className="mb-10">
-        <h2 className="mb-4 text-lg font-semibold text-surface-900">Report Presets</h2>
+        <h2 className="mb-4 text-lg font-semibold text-white/90">Report Presets</h2>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {PRESETS.map((preset) => (
             <PresetCard
@@ -330,9 +330,9 @@ export default function ReportBuilderPage() {
 
       {/* Section Toggles */}
       <section className="mb-10">
-        <h2 className="mb-4 text-lg font-semibold text-surface-900">
+        <h2 className="mb-4 text-lg font-semibold text-white/90">
           Individual Sections
-          <span className="ml-2 text-sm font-normal text-surface-700">
+          <span className="ml-2 text-sm font-normal text-white/50">
             ({enabledSections.size} selected)
           </span>
         </h2>
@@ -343,10 +343,10 @@ export default function ReportBuilderPage() {
             return (
               <div key={category}>
                 <div className="mb-3 flex items-center gap-2">
-                  <span className="text-surface-700">
+                  <span className="text-white/50">
                     <SectionIcon category={category} />
                   </span>
-                  <h3 className="text-sm font-semibold uppercase tracking-wider text-surface-700">{category}</h3>
+                  <h3 className="text-sm font-semibold uppercase tracking-wider text-white/50">{category}</h3>
                 </div>
                 <div className="grid gap-3 sm:grid-cols-2">
                   {categorySections.map((section) => (
@@ -371,7 +371,7 @@ export default function ReportBuilderPage() {
 
       {/* Output Depth */}
       <section className="mb-10">
-        <h2 className="mb-4 text-lg font-semibold text-surface-900">Output Depth</h2>
+        <h2 className="mb-4 text-lg font-semibold text-white/90">Output Depth</h2>
         <div className="grid gap-3 sm:grid-cols-3">
           {OUTPUT_DEPTHS.map((depth) => (
             <button
@@ -380,14 +380,14 @@ export default function ReportBuilderPage() {
               onClick={() => setOutputDepth(depth.key)}
               className={`rounded-xl border-2 px-5 py-4 text-left transition-all duration-200 ${
                 outputDepth === depth.key
-                  ? "border-brand-500 bg-brand-50 shadow-sm"
-                  : "border-surface-200 bg-white hover:border-surface-300"
+                  ? "border-indigo-500 bg-indigo-500/10 shadow-lg shadow-indigo-500/10"
+                  : "border-white/[0.06] bg-white/[0.04] hover:border-white/[0.08]"
               }`}
             >
-              <p className={`font-semibold ${outputDepth === depth.key ? "text-brand-700" : "text-surface-900"}`}>
+              <p className={`font-semibold ${outputDepth === depth.key ? "text-indigo-300" : "text-white/90"}`}>
                 {depth.label}
               </p>
-              <p className="mt-0.5 text-sm text-surface-700">{depth.description}</p>
+              <p className="mt-0.5 text-sm text-white/50">{depth.description}</p>
             </button>
           ))}
         </div>
@@ -395,12 +395,12 @@ export default function ReportBuilderPage() {
 
       {/* Generate Button */}
       {!generatedSections && (
-        <div className="sticky bottom-0 -mx-4 border-t border-surface-200 bg-white/90 px-4 py-4 backdrop-blur-lg sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
+        <div className="sticky bottom-0 -mx-4 border-t border-white/[0.06] bg-[#0a0e27]/90 px-4 py-4 backdrop-blur-lg sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
           <div className="flex items-center justify-between">
-            <p className="text-sm text-surface-700">
-              <span className="font-semibold text-surface-900">{enabledSections.size}</span> sections selected
+            <p className="text-sm text-white/50">
+              <span className="font-semibold text-white/90">{enabledSections.size}</span> sections selected
               {selectedPreset && (
-                <span className="ml-2 rounded-full bg-brand-100 px-2 py-0.5 text-xs font-medium text-brand-700">
+                <span className="ml-2 rounded-full bg-indigo-500/15 px-2 py-0.5 text-xs font-medium text-indigo-300">
                   {PRESETS.find((p) => p.key === selectedPreset)?.title}
                 </span>
               )}
@@ -409,7 +409,7 @@ export default function ReportBuilderPage() {
               type="button"
               onClick={handleGenerate}
               disabled={enabledSections.size === 0 || generating}
-              className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-brand-600 to-cosmic-600 px-8 py-3 text-sm font-semibold text-white shadow-lg shadow-brand-500/20 transition-all hover:shadow-xl hover:-translate-y-0.5 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:hover:shadow-lg"
+              className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 px-8 py-3 text-sm font-semibold text-white shadow-lg shadow-indigo-500/20 transition-all hover:shadow-xl hover:-translate-y-0.5 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:hover:shadow-lg"
             >
               {generating ? (
                 <>
@@ -437,14 +437,14 @@ export default function ReportBuilderPage() {
         <div ref={resultsRef} className="mt-8 scroll-mt-8">
           <div className="mb-6 flex items-center justify-between">
             <div>
-              <h2 className="text-2xl font-bold text-surface-900">Your Report</h2>
-              <p className="text-sm text-surface-700">{generatedSections.length} sections generated</p>
+              <h2 className="text-2xl font-bold text-white/90">Your Report</h2>
+              <p className="text-sm text-white/50">{generatedSections.length} sections generated</p>
             </div>
             <div className="flex gap-3">
               <button
                 type="button"
                 onClick={handleBackToBuilder}
-                className="rounded-xl border border-surface-300 px-4 py-2 text-sm font-medium text-surface-700 hover:bg-surface-50 transition-colors"
+                className="rounded-xl border border-white/[0.08] px-4 py-2 text-sm font-medium text-white/50 hover:bg-white/[0.04] transition-colors"
               >
                 Back to Builder
               </button>
@@ -459,7 +459,7 @@ export default function ReportBuilderPage() {
                   a.click();
                   URL.revokeObjectURL(url);
                 }}
-                className="rounded-xl bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700 transition-colors"
+                className="rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 px-4 py-2 text-sm font-medium text-white hover:from-indigo-500 hover:to-purple-500 transition-colors"
               >
                 Export JSON
               </button>
@@ -470,7 +470,7 @@ export default function ReportBuilderPage() {
       )}
 
       {genError && (
-        <div className="mt-4 rounded-xl bg-red-50 border border-red-200 p-4 text-sm text-red-700">
+        <div className="mt-4 rounded-xl bg-red-500/10 border border-red-500/20 p-4 text-sm text-red-400">
           {genError}
         </div>
       )}

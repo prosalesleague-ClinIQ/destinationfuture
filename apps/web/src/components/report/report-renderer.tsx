@@ -51,18 +51,18 @@ interface ReportRendererProps {
 function renderBlock(block: UiBlock, index: number) {
   switch (block.type) {
     case "heading":
-      if (block.level === 1) return <h2 key={index} className="mb-3 mt-6 text-2xl font-bold text-surface-900 first:mt-0">{block.content}</h2>;
-      if (block.level === 2) return <h3 key={index} className="mb-2 mt-5 text-xl font-semibold text-surface-900">{block.content}</h3>;
-      return <h4 key={index} className="mb-2 mt-4 text-lg font-semibold text-surface-800">{block.content}</h4>;
+      if (block.level === 1) return <h2 key={index} className="mb-3 mt-6 text-2xl font-bold text-white/90 first:mt-0">{block.content}</h2>;
+      if (block.level === 2) return <h3 key={index} className="mb-2 mt-5 text-xl font-semibold text-white/90">{block.content}</h3>;
+      return <h4 key={index} className="mb-2 mt-4 text-lg font-semibold text-white/80">{block.content}</h4>;
 
     case "paragraph":
-      return <p key={index} className="mb-3 leading-relaxed text-surface-700">{block.content}</p>;
+      return <p key={index} className="mb-3 leading-relaxed text-white/50">{block.content}</p>;
 
     case "list":
       return (
         <ul key={index} className="mb-4 space-y-1.5 pl-5">
           {block.items?.map((item, i) => (
-            <li key={i} className="list-disc text-surface-700 leading-relaxed marker:text-brand-400">{item}</li>
+            <li key={i} className="list-disc text-white/50 leading-relaxed marker:text-indigo-400">{item}</li>
           ))}
         </ul>
       );
@@ -71,29 +71,29 @@ function renderBlock(block: UiBlock, index: number) {
       return (
         <ol key={index} className="mb-4 space-y-1.5 pl-5">
           {block.items?.map((item, i) => (
-            <li key={i} className="list-decimal text-surface-700 leading-relaxed marker:text-brand-500 marker:font-semibold">{item}</li>
+            <li key={i} className="list-decimal text-white/50 leading-relaxed marker:text-indigo-400 marker:font-semibold">{item}</li>
           ))}
         </ol>
       );
 
     case "table":
       return (
-        <div key={index} className="mb-4 overflow-x-auto rounded-xl border border-surface-200">
+        <div key={index} className="mb-4 overflow-x-auto rounded-xl border border-white/[0.06]">
           <table className="w-full text-sm">
             {block.headers && (
-              <thead className="bg-surface-50">
+              <thead className="bg-white/[0.06]">
                 <tr>
                   {block.headers.map((h, i) => (
-                    <th key={i} className="px-4 py-3 text-left font-semibold text-surface-900">{h}</th>
+                    <th key={i} className="px-4 py-3 text-left font-semibold text-white/90">{h}</th>
                   ))}
                 </tr>
               </thead>
             )}
-            <tbody className="divide-y divide-surface-200">
+            <tbody className="divide-y divide-white/[0.06]">
               {block.rows?.map((row, i) => (
-                <tr key={i} className="hover:bg-surface-50 transition-colors">
+                <tr key={i} className="hover:bg-white/[0.04] transition-colors">
                   {row.map((cell, j) => (
-                    <td key={j} className="px-4 py-3 text-surface-700">{cell}</td>
+                    <td key={j} className="px-4 py-3 text-white/50">{cell}</td>
                   ))}
                 </tr>
               ))}
@@ -107,12 +107,12 @@ function renderBlock(block: UiBlock, index: number) {
       return (
         <div key={index} className="mb-4">
           <div className="mb-1 flex items-center justify-between">
-            <span className="text-sm font-medium text-surface-900">{block.label}</span>
-            <span className="text-sm font-semibold text-brand-600">{block.value}/{block.max || 100}</span>
+            <span className="text-sm font-medium text-white/90">{block.label}</span>
+            <span className="text-sm font-semibold text-indigo-400">{block.value}/{block.max || 100}</span>
           </div>
-          <div className="h-2.5 w-full overflow-hidden rounded-full bg-surface-200">
+          <div className="h-2.5 w-full overflow-hidden rounded-full bg-white/[0.06]">
             <div
-              className="h-full rounded-full bg-gradient-to-r from-brand-500 to-cosmic-500 transition-all duration-700"
+              className="h-full rounded-full bg-gradient-to-r from-indigo-500 to-purple-500 transition-all duration-700"
               style={{ width: `${pct}%` }}
             />
           </div>
@@ -122,14 +122,14 @@ function renderBlock(block: UiBlock, index: number) {
 
     case "color_swatch":
       return (
-        <div key={index} className="mb-4 inline-flex items-center gap-3 rounded-xl border border-surface-200 px-4 py-3">
+        <div key={index} className="mb-4 inline-flex items-center gap-3 rounded-xl border border-white/[0.06] px-4 py-3">
           <div
             className="h-10 w-10 rounded-lg shadow-inner"
             style={{ backgroundColor: block.color }}
           />
           <div>
-            <p className="text-sm font-semibold text-surface-900">{block.colorName}</p>
-            <p className="text-xs text-surface-700 font-mono">{block.color}</p>
+            <p className="text-sm font-semibold text-white/90">{block.colorName}</p>
+            <p className="text-xs text-white/50 font-mono">{block.color}</p>
           </div>
         </div>
       );
@@ -143,8 +143,8 @@ function renderBlock(block: UiBlock, index: number) {
               <div key={i} className="flex items-center gap-3">
                 <div className={`flex h-5 w-5 shrink-0 items-center justify-center rounded border ${
                   isChecked
-                    ? "border-brand-500 bg-brand-500"
-                    : "border-surface-300 bg-white"
+                    ? "border-indigo-500 bg-indigo-500"
+                    : "border-white/[0.08] bg-white/[0.04]"
                 }`}>
                   {isChecked && (
                     <svg className="h-3 w-3 text-white" fill="none" viewBox="0 0 24 24" strokeWidth={3} stroke="currentColor">
@@ -152,7 +152,7 @@ function renderBlock(block: UiBlock, index: number) {
                     </svg>
                   )}
                 </div>
-                <span className={`text-sm ${isChecked ? "text-surface-700 line-through" : "text-surface-900"}`}>
+                <span className={`text-sm ${isChecked ? "text-white/50 line-through" : "text-white/90"}`}>
                   {item}
                 </span>
               </div>
@@ -163,41 +163,41 @@ function renderBlock(block: UiBlock, index: number) {
 
     case "math":
       return (
-        <div key={index} className="mb-4 rounded-xl bg-surface-50 px-5 py-3 font-mono text-sm text-surface-800">
+        <div key={index} className="mb-4 rounded-xl bg-white/[0.06] px-5 py-3 font-mono text-sm text-white/80">
           {block.expression}
         </div>
       );
 
     case "quote":
       return (
-        <blockquote key={index} className="mb-4 border-l-4 border-brand-400 bg-brand-50/50 px-5 py-4 rounded-r-xl">
-          <p className="text-surface-800 italic leading-relaxed">&ldquo;{block.content}&rdquo;</p>
+        <blockquote key={index} className="mb-4 border-l-4 border-indigo-400 bg-indigo-500/10 px-5 py-4 rounded-r-xl">
+          <p className="text-white/80 italic leading-relaxed">&ldquo;{block.content}&rdquo;</p>
           {block.author && (
-            <p className="mt-2 text-sm font-medium text-brand-600">-- {block.author}</p>
+            <p className="mt-2 text-sm font-medium text-indigo-400">-- {block.author}</p>
           )}
         </blockquote>
       );
 
     case "card":
       return (
-        <div key={index} className="mb-4 rounded-xl border border-surface-200 bg-gradient-to-br from-white to-surface-50 p-5 shadow-sm">
-          {block.title && <h4 className="mb-2 text-base font-semibold text-surface-900">{block.title}</h4>}
-          {block.body && <p className="text-sm text-surface-700 leading-relaxed">{block.body}</p>}
+        <div key={index} className="mb-4 rounded-xl border border-white/[0.06] bg-gradient-to-br from-white/[0.04] to-white/[0.02] p-5 shadow-lg shadow-black/20">
+          {block.title && <h4 className="mb-2 text-base font-semibold text-white/90">{block.title}</h4>}
+          {block.body && <p className="text-sm text-white/50 leading-relaxed">{block.body}</p>}
         </div>
       );
 
     case "divider":
-      return <hr key={index} className="my-6 border-surface-200" />;
+      return <hr key={index} className="my-6 border-white/[0.06]" />;
 
     case "chart":
       return (
-        <div key={index} className="mb-4 flex h-48 items-center justify-center rounded-xl border border-dashed border-surface-300 bg-surface-50">
+        <div key={index} className="mb-4 flex h-48 items-center justify-center rounded-xl border border-dashed border-white/[0.08] bg-white/[0.04]">
           <div className="text-center">
-            <svg className="mx-auto mb-2 h-8 w-8 text-surface-300" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+            <svg className="mx-auto mb-2 h-8 w-8 text-white/30" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 0 1 3 19.875v-6.75ZM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V8.625ZM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V4.125Z" />
             </svg>
-            <p className="text-sm text-surface-700">Chart: {block.chartType || "bar"}</p>
-            <p className="text-xs text-surface-300">Visualization will render with chart library</p>
+            <p className="text-sm text-white/50">Chart: {block.chartType || "bar"}</p>
+            <p className="text-xs text-white/30">Visualization will render with chart library</p>
           </div>
         </div>
       );
@@ -237,16 +237,16 @@ function SectionCard({ section }: { section: SectionOutput }) {
   };
 
   return (
-    <div className="rounded-2xl border border-surface-200 bg-white shadow-sm overflow-hidden">
+    <div className="rounded-2xl border border-white/[0.06] bg-white/[0.04] shadow-lg shadow-black/20 overflow-hidden">
       {/* Header */}
-      <div className="flex items-center justify-between border-b border-surface-200 px-6 py-4">
+      <div className="flex items-center justify-between border-b border-white/[0.06] px-6 py-4">
         <button
           type="button"
           onClick={() => setCollapsed(!collapsed)}
           className="flex flex-1 items-center gap-3 text-left"
         >
           <svg
-            className={`h-5 w-5 text-surface-700 transition-transform duration-200 ${collapsed ? "" : "rotate-90"}`}
+            className={`h-5 w-5 text-white/50 transition-transform duration-200 ${collapsed ? "" : "rotate-90"}`}
             fill="none"
             viewBox="0 0 24 24"
             strokeWidth={2}
@@ -254,12 +254,12 @@ function SectionCard({ section }: { section: SectionOutput }) {
           >
             <path strokeLinecap="round" strokeLinejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
           </svg>
-          <h2 className="text-lg font-semibold text-surface-900">{section.title}</h2>
+          <h2 className="text-lg font-semibold text-white/90">{section.title}</h2>
         </button>
         <button
           type="button"
           onClick={handleExport}
-          className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium text-surface-700 transition-colors hover:bg-surface-50"
+          className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium text-white/50 transition-colors hover:bg-white/[0.06]"
           title="Export section"
         >
           <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
@@ -283,12 +283,12 @@ function SectionCard({ section }: { section: SectionOutput }) {
 export default function ReportRenderer({ sections }: ReportRendererProps) {
   if (sections.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-surface-200 py-20">
-        <svg className="mb-4 h-12 w-12 text-surface-300" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+      <div className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-white/[0.06] py-20">
+        <svg className="mb-4 h-12 w-12 text-white/30" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
         </svg>
-        <p className="text-lg font-medium text-surface-700">No report sections to display</p>
-        <p className="mt-1 text-sm text-surface-300">Generate a report to see your insights here.</p>
+        <p className="text-lg font-medium text-white/50">No report sections to display</p>
+        <p className="mt-1 text-sm text-white/30">Generate a report to see your insights here.</p>
       </div>
     );
   }
