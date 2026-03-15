@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 
 type MusicTab = "frequencies" | "playlist" | "expansion" | "recommendations";
 
@@ -25,12 +25,232 @@ const ALL_GENRES = [
   { name: "Blues", color: "from-blue-600 to-blue-800" },
 ];
 
+const GENRE_ARTISTS: Record<string, { name: string; description: string; vibe: string; topTrack: string }[]> = {
+  "Hip-Hop": [
+    { name: "Kendrick Lamar", description: "Conscious lyricism with deep storytelling", vibe: "Introspective", topTrack: "HUMBLE." },
+    { name: "J. Cole", description: "Raw honesty and relatable narratives", vibe: "Thoughtful", topTrack: "No Role Modelz" },
+    { name: "Tyler, the Creator", description: "Genre-bending creative vision", vibe: "Experimental", topTrack: "See You Again" },
+    { name: "JID", description: "Technical rap with emotional depth", vibe: "Dynamic", topTrack: "Surround Sound" },
+    { name: "Smino", description: "Melodic flow with jazz influences", vibe: "Smooth", topTrack: "Noir" },
+  ],
+  "R&B": [
+    { name: "SZA", description: "Vulnerable storytelling with ethereal vocals", vibe: "Emotional", topTrack: "Kill Bill" },
+    { name: "Daniel Caesar", description: "Soulful R&B with gospel undertones", vibe: "Warm", topTrack: "Best Part" },
+    { name: "Summer Walker", description: "Raw emotional vulnerability", vibe: "Intimate", topTrack: "Playing Games" },
+    { name: "Steve Lacy", description: "Indie-R&B with playful production", vibe: "Eclectic", topTrack: "Bad Habit" },
+    { name: "Jorja Smith", description: "UK soul with poetic depth", vibe: "Graceful", topTrack: "Blue Lights" },
+  ],
+  "Pop": [
+    { name: "Billie Eilish", description: "Dark pop with intimate production", vibe: "Atmospheric", topTrack: "everything i wanted" },
+    { name: "Lorde", description: "Introspective pop with vivid imagery", vibe: "Cinematic", topTrack: "Green Light" },
+    { name: "Tame Impala", description: "Psychedelic pop with lush production", vibe: "Dreamy", topTrack: "The Less I Know the Better" },
+    { name: "Maggie Rogers", description: "Nature-inspired indie pop", vibe: "Organic", topTrack: "Light On" },
+    { name: "Hozier", description: "Soulful folk-pop with literary lyrics", vibe: "Poetic", topTrack: "Take Me to Church" },
+  ],
+  "Rock": [
+    { name: "Radiohead", description: "Experimental rock pushing boundaries", vibe: "Cerebral", topTrack: "Karma Police" },
+    { name: "Arctic Monkeys", description: "Sharp wit with evolving sound", vibe: "Cool", topTrack: "Do I Wanna Know?" },
+    { name: "Khruangbin", description: "Global psych-rock with groove", vibe: "Hypnotic", topTrack: "Maria Tambi\u00E9n" },
+    { name: "The War on Drugs", description: "Expansive heartland rock", vibe: "Anthemic", topTrack: "Red Eyes" },
+    { name: "King Gizzard", description: "Prolific genre-fluid rock", vibe: "Wild", topTrack: "Rattlesnake" },
+  ],
+  "Alternative": [
+    { name: "Bon Iver", description: "Ethereal indie folk evolution", vibe: "Transcendent", topTrack: "Skinny Love" },
+    { name: "Phoebe Bridgers", description: "Devastating indie rock balladry", vibe: "Melancholic", topTrack: "Motion Sickness" },
+    { name: "Big Thief", description: "Raw Americana with poetic beauty", vibe: "Intimate", topTrack: "Not" },
+    { name: "Japanese Breakfast", description: "Joyful indie with emotional depth", vibe: "Hopeful", topTrack: "Be Sweet" },
+    { name: "Mitski", description: "Visceral emotional indie rock", vibe: "Intense", topTrack: "Your Best American Girl" },
+  ],
+  "Electronic": [
+    { name: "Bonobo", description: "Organic electronic with world influences", vibe: "Lush", topTrack: "Kerala" },
+    { name: "Tycho", description: "Ambient electronic with visual warmth", vibe: "Serene", topTrack: "Awake" },
+    { name: "ODESZA", description: "Cinematic electronic anthems", vibe: "Euphoric", topTrack: "A Moment Apart" },
+    { name: "Four Tet", description: "Textured minimalist electronic", vibe: "Meditative", topTrack: "Parallel Jalebi" },
+    { name: "Jamie xx", description: "UK electronic with emotional weight", vibe: "Atmospheric", topTrack: "Gosh" },
+  ],
+  "Jazz": [
+    { name: "Kamasi Washington", description: "Modern jazz with epic scope", vibe: "Majestic", topTrack: "Fists of Fury" },
+    { name: "Robert Glasper", description: "Jazz-hip-hop fusion innovator", vibe: "Smooth", topTrack: "Afro Blue" },
+    { name: "Nubya Garcia", description: "UK jazz with Caribbean energy", vibe: "Vibrant", topTrack: "Source" },
+    { name: "GoGo Penguin", description: "Cinematic acoustic-electronic jazz", vibe: "Dynamic", topTrack: "Raven" },
+    { name: "Shabaka", description: "Spiritual jazz with African roots", vibe: "Transcendent", topTrack: "Black Meditation" },
+  ],
+  "Soul": [
+    { name: "Leon Bridges", description: "Modern vintage soul", vibe: "Warm", topTrack: "Coming Home" },
+    { name: "Snoh Aalegra", description: "Swedish-Iranian R&B soul", vibe: "Elegant", topTrack: "I Want You Around" },
+    { name: "Sampha", description: "Electronic soul with raw emotion", vibe: "Tender", topTrack: "Blood on Me" },
+    { name: "H.E.R.", description: "Multi-instrument R&B talent", vibe: "Versatile", topTrack: "Best Part" },
+    { name: "Erykah Badu", description: "Neo-soul queen with cosmic vision", vibe: "Mystical", topTrack: "Tyrone" },
+  ],
+  "Classical": [
+    { name: "Max Richter", description: "Contemporary classical for modern minds", vibe: "Profound", topTrack: "On the Nature of Daylight" },
+    { name: "\u00D3lafur Arnalds", description: "Ambient neo-classical from Iceland", vibe: "Ethereal", topTrack: "Near Light" },
+    { name: "Ludovico Einaudi", description: "Accessible emotional piano works", vibe: "Moving", topTrack: "Experience" },
+    { name: "Nils Frahm", description: "Experimental piano and electronics", vibe: "Intimate", topTrack: "Says" },
+    { name: "Joep Beving", description: "Minimalist piano for reflection", vibe: "Peaceful", topTrack: "Prehension" },
+  ],
+  "Indie": [
+    { name: "Alvvays", description: "Dream pop perfection", vibe: "Shimmering", topTrack: "In Undertow" },
+    { name: "Beach House", description: "Ethereal dream pop atmosphere", vibe: "Hypnotic", topTrack: "Space Song" },
+    { name: "Mac DeMarco", description: "Laid-back jangly indie", vibe: "Chill", topTrack: "Chamber of Reflection" },
+    { name: "Clairo", description: "Bedroom pop with breezy charm", vibe: "Gentle", topTrack: "Sofia" },
+    { name: "Men I Trust", description: "Dreamy Montreal indie", vibe: "Smooth", topTrack: "Tailwhip" },
+  ],
+  "Ambient": [
+    { name: "Brian Eno", description: "Pioneer of ambient music", vibe: "Meditative", topTrack: "Music for Airports 1/1" },
+    { name: "Boards of Canada", description: "Nostalgic electronic soundscapes", vibe: "Wistful", topTrack: "Dayvan Cowboy" },
+    { name: "Stars of the Lid", description: "Glacial ambient drone beauty", vibe: "Vast", topTrack: "Requiem for Dying Mothers" },
+    { name: "Grouper", description: "Haunting ambient folk", vibe: "Spectral", topTrack: "Clearing" },
+    { name: "Helios", description: "Warm ambient textures", vibe: "Gentle", topTrack: "Halving the Compass" },
+  ],
+  "Folk": [
+    { name: "Fleet Foxes", description: "Harmonic baroque folk", vibe: "Majestic", topTrack: "White Winter Hymnal" },
+    { name: "Iron & Wine", description: "Intimate whispered folk", vibe: "Tender", topTrack: "Flightless Bird" },
+    { name: "Adrianne Lenker", description: "Raw poetic folk beauty", vibe: "Vulnerable", topTrack: "anything" },
+    { name: "Vashti Bunyan", description: "Ethereal English folk", vibe: "Dreamy", topTrack: "Diamond Day" },
+    { name: "Nick Drake", description: "Timeless melancholic folk", vibe: "Haunting", topTrack: "Pink Moon" },
+  ],
+  "Country": [
+    { name: "Chris Stapleton", description: "Powerhouse country soul", vibe: "Raw", topTrack: "Tennessee Whiskey" },
+    { name: "Kacey Musgraves", description: "Progressive country pop", vibe: "Warm", topTrack: "Slow Burn" },
+    { name: "Tyler Childers", description: "Appalachian country storytelling", vibe: "Authentic", topTrack: "Feathered Indians" },
+    { name: "Orville Peck", description: "Queer country with cinematic flair", vibe: "Dramatic", topTrack: "Dead of Night" },
+    { name: "Sturgill Simpson", description: "Outlaw country evolution", vibe: "Bold", topTrack: "Turtles All the Way Down" },
+  ],
+  "Latin": [
+    { name: "Bad Bunny", description: "Genre-defying Latin trap/reggaeton", vibe: "Energetic", topTrack: "Dakiti" },
+    { name: "Rosal\u00EDa", description: "Flamenco meets electronic pop", vibe: "Fierce", topTrack: "MALAMENTE" },
+    { name: "Natalia Lafourcade", description: "Mexican folk-pop artistry", vibe: "Beautiful", topTrack: "Hasta la Ra\u00EDz" },
+    { name: "Jorge Drexler", description: "Uruguayan singer-songwriter", vibe: "Poetic", topTrack: "Telefon\u00EDa" },
+    { name: "Mon Laferte", description: "Chilean rock-pop powerhouse", vibe: "Passionate", topTrack: "Tu Falta de Querer" },
+  ],
+  "Metal": [
+    { name: "Gojira", description: "Progressive eco-metal from France", vibe: "Powerful", topTrack: "Silvera" },
+    { name: "Deafheaven", description: "Blackgaze beauty meets aggression", vibe: "Transcendent", topTrack: "Dream House" },
+    { name: "Mastodon", description: "Progressive sludge metal storytelling", vibe: "Epic", topTrack: "Blood and Thunder" },
+    { name: "Leprous", description: "Norwegian progressive metal art", vibe: "Complex", topTrack: "The Price" },
+    { name: "Sleep Token", description: "Mysterious genre-fluid metal worship", vibe: "Hypnotic", topTrack: "The Summoning" },
+  ],
+  "Funk": [
+    { name: "Vulfpeck", description: "Minimalist funk with maximum groove", vibe: "Joyful", topTrack: "Dean Town" },
+    { name: "Thundercat", description: "Bass-heavy cosmic funk", vibe: "Trippy", topTrack: "Them Changes" },
+    { name: "Anderson .Paak", description: "Funk-soul-hip-hop fusion", vibe: "Groovy", topTrack: "Come Down" },
+    { name: "Cory Wong", description: "Rhythm guitar funk precision", vibe: "Tight", topTrack: "Golden" },
+    { name: "Parcels", description: "Australian disco-funk elegance", vibe: "Smooth", topTrack: "Lightenup" },
+  ],
+  "Reggae": [
+    { name: "Chronixx", description: "Modern roots reggae revival", vibe: "Uplifting", topTrack: "Here Comes Trouble" },
+    { name: "Protoje", description: "Progressive Jamaican reggae", vibe: "Conscious", topTrack: "Who Knows" },
+    { name: "Stick Figure", description: "California reggae-dub fusion", vibe: "Chill", topTrack: "Weight of Sound" },
+    { name: "Koffee", description: "Young Jamaican reggae energy", vibe: "Fresh", topTrack: "Toast" },
+    { name: "Rebelution", description: "Positive California reggae rock", vibe: "Sunny", topTrack: "Safe and Sound" },
+  ],
+  "Blues": [
+    { name: "Gary Clark Jr.", description: "Modern blues-rock virtuoso", vibe: "Electric", topTrack: "Bright Lights" },
+    { name: "Fantastic Negrito", description: "Black roots music reimagined", vibe: "Raw", topTrack: "An Honest Man" },
+    { name: "Joe Bonamassa", description: "Blues guitar mastery", vibe: "Powerful", topTrack: "Mountain Time" },
+    { name: "Christone Kingfish Ingram", description: "Young blues prodigy", vibe: "Soulful", topTrack: "Outside of This Town" },
+    { name: "Beth Hart", description: "Blues-rock emotional powerhouse", vibe: "Intense", topTrack: "Tell Her You Belong to Me" },
+  ],
+};
+
+const VIBE_COLORS: Record<string, string> = {
+  Introspective: "bg-indigo-500/20 text-indigo-300 border-indigo-500/30",
+  Thoughtful: "bg-blue-500/20 text-blue-300 border-blue-500/30",
+  Experimental: "bg-purple-500/20 text-purple-300 border-purple-500/30",
+  Dynamic: "bg-orange-500/20 text-orange-300 border-orange-500/30",
+  Smooth: "bg-emerald-500/20 text-emerald-300 border-emerald-500/30",
+  Emotional: "bg-rose-500/20 text-rose-300 border-rose-500/30",
+  Warm: "bg-amber-500/20 text-amber-300 border-amber-500/30",
+  Intimate: "bg-pink-500/20 text-pink-300 border-pink-500/30",
+  Eclectic: "bg-teal-500/20 text-teal-300 border-teal-500/30",
+  Graceful: "bg-violet-500/20 text-violet-300 border-violet-500/30",
+  Atmospheric: "bg-slate-500/20 text-slate-300 border-slate-500/30",
+  Cinematic: "bg-sky-500/20 text-sky-300 border-sky-500/30",
+  Dreamy: "bg-indigo-400/20 text-indigo-300 border-indigo-400/30",
+  Organic: "bg-green-500/20 text-green-300 border-green-500/30",
+  Poetic: "bg-fuchsia-500/20 text-fuchsia-300 border-fuchsia-500/30",
+  Cerebral: "bg-cyan-500/20 text-cyan-300 border-cyan-500/30",
+  Cool: "bg-blue-400/20 text-blue-300 border-blue-400/30",
+  Hypnotic: "bg-violet-400/20 text-violet-300 border-violet-400/30",
+  Anthemic: "bg-red-500/20 text-red-300 border-red-500/30",
+  Wild: "bg-lime-500/20 text-lime-300 border-lime-500/30",
+  Transcendent: "bg-purple-400/20 text-purple-300 border-purple-400/30",
+  Melancholic: "bg-gray-500/20 text-gray-300 border-gray-500/30",
+  Hopeful: "bg-yellow-500/20 text-yellow-300 border-yellow-500/30",
+  Intense: "bg-red-400/20 text-red-300 border-red-400/30",
+  Lush: "bg-emerald-400/20 text-emerald-300 border-emerald-400/30",
+  Serene: "bg-sky-400/20 text-sky-300 border-sky-400/30",
+  Euphoric: "bg-pink-400/20 text-pink-300 border-pink-400/30",
+  Meditative: "bg-indigo-500/20 text-indigo-300 border-indigo-500/30",
+  Majestic: "bg-amber-400/20 text-amber-300 border-amber-400/30",
+  Vibrant: "bg-orange-400/20 text-orange-300 border-orange-400/30",
+  Tender: "bg-rose-400/20 text-rose-300 border-rose-400/30",
+  Elegant: "bg-fuchsia-400/20 text-fuchsia-300 border-fuchsia-400/30",
+  Versatile: "bg-teal-400/20 text-teal-300 border-teal-400/30",
+  Mystical: "bg-violet-500/20 text-violet-300 border-violet-500/30",
+  Profound: "bg-indigo-600/20 text-indigo-300 border-indigo-600/30",
+  Ethereal: "bg-cyan-400/20 text-cyan-300 border-cyan-400/30",
+  Moving: "bg-amber-500/20 text-amber-300 border-amber-500/30",
+  Peaceful: "bg-green-400/20 text-green-300 border-green-400/30",
+  Shimmering: "bg-sky-500/20 text-sky-300 border-sky-500/30",
+  Chill: "bg-teal-500/20 text-teal-300 border-teal-500/30",
+  Gentle: "bg-green-300/20 text-green-300 border-green-300/30",
+  Wistful: "bg-purple-300/20 text-purple-300 border-purple-300/30",
+  Vast: "bg-blue-600/20 text-blue-300 border-blue-600/30",
+  Spectral: "bg-gray-400/20 text-gray-300 border-gray-400/30",
+  Vulnerable: "bg-rose-500/20 text-rose-300 border-rose-500/30",
+  Haunting: "bg-slate-400/20 text-slate-300 border-slate-400/30",
+  Raw: "bg-red-600/20 text-red-300 border-red-600/30",
+  Authentic: "bg-amber-600/20 text-amber-300 border-amber-600/30",
+  Dramatic: "bg-purple-600/20 text-purple-300 border-purple-600/30",
+  Bold: "bg-orange-600/20 text-orange-300 border-orange-600/30",
+  Energetic: "bg-red-500/20 text-red-300 border-red-500/30",
+  Fierce: "bg-rose-600/20 text-rose-300 border-rose-600/30",
+  Beautiful: "bg-pink-300/20 text-pink-300 border-pink-300/30",
+  Passionate: "bg-red-400/20 text-red-300 border-red-400/30",
+  Powerful: "bg-orange-500/20 text-orange-300 border-orange-500/30",
+  Epic: "bg-amber-500/20 text-amber-300 border-amber-500/30",
+  Complex: "bg-cyan-600/20 text-cyan-300 border-cyan-600/30",
+  Joyful: "bg-yellow-400/20 text-yellow-300 border-yellow-400/30",
+  Trippy: "bg-fuchsia-500/20 text-fuchsia-300 border-fuchsia-500/30",
+  Groovy: "bg-orange-400/20 text-orange-300 border-orange-400/30",
+  Tight: "bg-blue-500/20 text-blue-300 border-blue-500/30",
+  Uplifting: "bg-green-500/20 text-green-300 border-green-500/30",
+  Conscious: "bg-emerald-500/20 text-emerald-300 border-emerald-500/30",
+  Fresh: "bg-lime-400/20 text-lime-300 border-lime-400/30",
+  Sunny: "bg-yellow-500/20 text-yellow-300 border-yellow-500/30",
+  Electric: "bg-cyan-500/20 text-cyan-300 border-cyan-500/30",
+  Soulful: "bg-amber-400/20 text-amber-300 border-amber-400/30",
+};
+
+const GENRE_CIRCLE_COLORS: Record<string, string> = {
+  "Hip-Hop": "from-red-500 to-orange-500",
+  "R&B": "from-purple-500 to-pink-500",
+  "Pop": "from-pink-400 to-rose-500",
+  "Rock": "from-gray-500 to-gray-700",
+  "Alternative": "from-teal-500 to-cyan-500",
+  "Electronic": "from-blue-500 to-indigo-600",
+  "Jazz": "from-amber-500 to-yellow-600",
+  "Soul": "from-orange-400 to-red-500",
+  "Classical": "from-slate-400 to-slate-600",
+  "Country": "from-yellow-500 to-amber-600",
+  "Latin": "from-rose-500 to-red-600",
+  "Ambient": "from-indigo-400 to-purple-500",
+  "Indie": "from-emerald-400 to-teal-500",
+  "Metal": "from-zinc-500 to-zinc-800",
+  "Folk": "from-green-500 to-emerald-600",
+  "Reggae": "from-green-400 to-yellow-500",
+  "Funk": "from-fuchsia-500 to-purple-600",
+  "Blues": "from-blue-600 to-blue-800",
+};
+
 const FREQUENCY_DATA = [
-  { wave: "Delta", range: "0.5 – 4 Hz", state: "Deep sleep, healing, regeneration", use: "Sleep, physical recovery", color: "#6366f1", gradient: "from-indigo-600 to-violet-700", emoji: "🌊", barWidth: 20 },
-  { wave: "Theta", range: "4 – 8 Hz", state: "Meditation, creativity, dream state", use: "Meditation, creative flow, light sleep", color: "#8b5cf6", gradient: "from-violet-500 to-purple-600", emoji: "🧘", barWidth: 35 },
-  { wave: "Alpha", range: "8 – 13 Hz", state: "Relaxed awareness, calm focus", use: "Calm, stress reduction, learning", color: "#06b6d4", gradient: "from-cyan-400 to-teal-500", emoji: "😌", barWidth: 55 },
-  { wave: "Beta", range: "13 – 30 Hz", state: "Active thinking, problem-solving", use: "Focus, productivity, mental tasks", color: "#22c55e", gradient: "from-green-400 to-emerald-500", emoji: "🧠", barWidth: 75 },
-  { wave: "Gamma", range: "30 – 100 Hz", state: "Peak awareness, insight, flow", use: "Peak performance, insight, happiness", color: "#f59e0b", gradient: "from-amber-400 to-yellow-500", emoji: "⚡", barWidth: 95 },
+  { wave: "Delta", range: "0.5 \u2013 4 Hz", state: "Deep sleep, healing, regeneration", use: "Sleep, physical recovery", color: "#6366f1", gradient: "from-indigo-600 to-violet-700", emoji: "\u{1F30A}", barWidth: 20 },
+  { wave: "Theta", range: "4 \u2013 8 Hz", state: "Meditation, creativity, dream state", use: "Meditation, creative flow, light sleep", color: "#8b5cf6", gradient: "from-violet-500 to-purple-600", emoji: "\u{1F9D8}", barWidth: 35 },
+  { wave: "Alpha", range: "8 \u2013 13 Hz", state: "Relaxed awareness, calm focus", use: "Calm, stress reduction, learning", color: "#06b6d4", gradient: "from-cyan-400 to-teal-500", emoji: "\u{1F60C}", barWidth: 55 },
+  { wave: "Beta", range: "13 \u2013 30 Hz", state: "Active thinking, problem-solving", use: "Focus, productivity, mental tasks", color: "#22c55e", gradient: "from-green-400 to-emerald-500", emoji: "\u{1F9E0}", barWidth: 75 },
+  { wave: "Gamma", range: "30 \u2013 100 Hz", state: "Peak awareness, insight, flow", use: "Peak performance, insight, happiness", color: "#f59e0b", gradient: "from-amber-400 to-yellow-500", emoji: "\u26A1", barWidth: 95 },
 ];
 
 const PLAYLIST_DATA = [
@@ -43,48 +263,48 @@ const PLAYLIST_DATA = [
   { title: "Here Comes the Sun", artist: "The Beatles", purpose: "Mood lift", type: "mood_lift", search: "Beatles Here Comes the Sun" },
   { title: "Good Days", artist: "SZA", purpose: "Optimistic energy", type: "mood_lift", search: "SZA Good Days" },
   { title: "Saturn", artist: "Sleeping at Last", purpose: "Gentle sleep", type: "sleep", search: "Sleeping at Last Saturn" },
-  { title: "Gymnopédie No.1", artist: "Erik Satie", purpose: "Deep sleep", type: "sleep", search: "Erik Satie Gymnopedie" },
+  { title: "Gymnop\u00E9die No.1", artist: "Erik Satie", purpose: "Deep sleep", type: "sleep", search: "Erik Satie Gymnopedie" },
 ];
 
 const TYPE_CONFIG: Record<string, { label: string; gradient: string; icon: string; bg: string }> = {
-  focus: { label: "Focus", gradient: "from-blue-500 to-cyan-500", icon: "🎯", bg: "bg-blue-500/10" },
-  calm: { label: "Calm", gradient: "from-emerald-400 to-green-500", icon: "🍃", bg: "bg-emerald-500/10" },
-  mood_lift: { label: "Mood Lift", gradient: "from-orange-400 to-amber-500", icon: "🌅", bg: "bg-orange-500/10" },
-  sleep: { label: "Sleep", gradient: "from-indigo-500 to-violet-600", icon: "🌙", bg: "bg-indigo-500/10" },
+  focus: { label: "Focus", gradient: "from-blue-500 to-cyan-500", icon: "\u{1F3AF}", bg: "bg-blue-500/10" },
+  calm: { label: "Calm", gradient: "from-emerald-400 to-green-500", icon: "\u{1F343}", bg: "bg-emerald-500/10" },
+  mood_lift: { label: "Mood Lift", gradient: "from-orange-400 to-amber-500", icon: "\u{1F305}", bg: "bg-orange-500/10" },
+  sleep: { label: "Sleep", gradient: "from-indigo-500 to-violet-600", icon: "\u{1F319}", bg: "bg-indigo-500/10" },
 };
 
 const USE_CASE_PAIRINGS = [
-  { label: "Peace", emoji: "☮️", wave: "Alpha + Theta", tempo: "60-80 BPM", gradient: "from-teal-400 to-cyan-500" },
-  { label: "Calm", emoji: "🧊", wave: "Alpha", tempo: "60-90 BPM", gradient: "from-sky-400 to-blue-500" },
-  { label: "Focus", emoji: "🔬", wave: "Beta + Low Gamma", tempo: "100-120 BPM", gradient: "from-emerald-400 to-green-500" },
-  { label: "Love", emoji: "💗", wave: "Theta + Alpha", tempo: "70-100 BPM", gradient: "from-rose-400 to-pink-500" },
-  { label: "Happiness", emoji: "🌞", wave: "Gamma + Beta", tempo: "110-130 BPM", gradient: "from-amber-400 to-yellow-500" },
-  { label: "Sleep", emoji: "💤", wave: "Delta + Theta", tempo: "40-60 BPM", gradient: "from-indigo-500 to-purple-600" },
+  { label: "Peace", emoji: "\u262E\uFE0F", wave: "Alpha + Theta", tempo: "60-80 BPM", gradient: "from-teal-400 to-cyan-500" },
+  { label: "Calm", emoji: "\u{1F9CA}", wave: "Alpha", tempo: "60-90 BPM", gradient: "from-sky-400 to-blue-500" },
+  { label: "Focus", emoji: "\u{1F52C}", wave: "Beta + Low Gamma", tempo: "100-120 BPM", gradient: "from-emerald-400 to-green-500" },
+  { label: "Love", emoji: "\u{1F497}", wave: "Theta + Alpha", tempo: "70-100 BPM", gradient: "from-rose-400 to-pink-500" },
+  { label: "Happiness", emoji: "\u{1F31E}", wave: "Gamma + Beta", tempo: "110-130 BPM", gradient: "from-amber-400 to-yellow-500" },
+  { label: "Sleep", emoji: "\u{1F4A4}", wave: "Delta + Theta", tempo: "40-60 BPM", gradient: "from-indigo-500 to-purple-600" },
 ];
 
 const GENRE_EXPANSION = [
-  { genre: "Dream Pop", artists: ["Beach House", "Cocteau Twins", "Alvvays"], reason: "Ethereal textures that complement your introspective nature", gradient: "from-pink-400 via-purple-400 to-indigo-500", emoji: "💭" },
-  { genre: "Neo-Soul", artists: ["Erykah Badu", "D'Angelo", "Anderson .Paak"], reason: "Emotional depth with groove — connects head and heart", gradient: "from-amber-500 via-orange-400 to-rose-500", emoji: "🎷" },
-  { genre: "Ambient Electronic", artists: ["Tycho", "Bonobo", "Boards of Canada"], reason: "Focus-friendly atmospheres for creative work", gradient: "from-cyan-400 via-teal-400 to-emerald-500", emoji: "🔮" },
-  { genre: "Jazz Fusion", artists: ["Kamasi Washington", "Snarky Puppy", "Robert Glasper"], reason: "Complex arrangements that engage your analytical mind", gradient: "from-violet-500 via-purple-500 to-fuchsia-500", emoji: "🎺" },
+  { genre: "Dream Pop", artists: ["Beach House", "Cocteau Twins", "Alvvays"], reason: "Ethereal textures that complement your introspective nature", gradient: "from-pink-400 via-purple-400 to-indigo-500", emoji: "\u{1F4AD}" },
+  { genre: "Neo-Soul", artists: ["Erykah Badu", "D'Angelo", "Anderson .Paak"], reason: "Emotional depth with groove \u2014 connects head and heart", gradient: "from-amber-500 via-orange-400 to-rose-500", emoji: "\u{1F3B7}" },
+  { genre: "Ambient Electronic", artists: ["Tycho", "Bonobo", "Boards of Canada"], reason: "Focus-friendly atmospheres for creative work", gradient: "from-cyan-400 via-teal-400 to-emerald-500", emoji: "\u{1F52E}" },
+  { genre: "Jazz Fusion", artists: ["Kamasi Washington", "Snarky Puppy", "Robert Glasper"], reason: "Complex arrangements that engage your analytical mind", gradient: "from-violet-500 via-purple-500 to-fuchsia-500", emoji: "\u{1F3BA}" },
 ];
 
 const RECOMMENDATION_CATEGORIES = [
   {
     id: "deep-focus",
     title: "Deep Focus",
-    emoji: "🎯",
+    emoji: "\u{1F3AF}",
     gradient: "from-blue-600 to-cyan-500",
     tracks: [
       { title: "Strobe", artist: "Deadmau5", bpm: "128", detail: "Progressive build keeps your brain locked in without jarring shifts" },
       { title: "Resonance", artist: "HOME", bpm: "100", detail: "Retro synths create a steady mental current for deep work" },
-      { title: "Dissolve", artist: "Absofacto", bpm: "95", detail: "Dreamy yet rhythmic — prevents mind-wandering while staying calm" },
+      { title: "Dissolve", artist: "Absofacto", bpm: "95", detail: "Dreamy yet rhythmic \u2014 prevents mind-wandering while staying calm" },
     ],
   },
   {
     id: "calm-restore",
     title: "Calm & Restore",
-    emoji: "🧘",
+    emoji: "\u{1F9D8}",
     gradient: "from-emerald-500 to-teal-400",
     tracks: [
       { title: "Weightless", artist: "Marconi Union", bpm: "Alpha/Theta", detail: "Scientifically shown to reduce anxiety by up to 65%" },
@@ -95,7 +315,7 @@ const RECOMMENDATION_CATEGORIES = [
   {
     id: "energy-boost",
     title: "Energy Boost",
-    emoji: "⚡",
+    emoji: "\u26A1",
     gradient: "from-orange-500 to-red-500",
     tracks: [
       { title: "Lose Yourself to Dance", artist: "Daft Punk ft. Pharrell", bpm: "100", detail: "High energy" },
@@ -106,32 +326,32 @@ const RECOMMENDATION_CATEGORIES = [
   {
     id: "emotional-depth",
     title: "Emotional Depth",
-    emoji: "💜",
+    emoji: "\u{1F49C}",
     gradient: "from-purple-600 to-pink-500",
     tracks: [
       { title: "Motion Picture Soundtrack", artist: "Radiohead", bpm: "Melancholy beauty", detail: "Haunting harmonies that feel like staring at a sunset alone" },
       { title: "re: Stacks", artist: "Bon Iver", bpm: "Quiet ache", detail: "Raw, hushed vocals that mirror your inner contemplative voice" },
-      { title: "Street Lights", artist: "Kanye West", bpm: "Introspective longing", detail: "Auto-tuned vulnerability over ambient beats — emotionally disarming" },
+      { title: "Street Lights", artist: "Kanye West", bpm: "Introspective longing", detail: "Auto-tuned vulnerability over ambient beats \u2014 emotionally disarming" },
     ],
   },
   {
     id: "sleep-recovery",
     title: "Sleep & Recovery",
-    emoji: "🌙",
+    emoji: "\u{1F319}",
     gradient: "from-indigo-600 to-violet-700",
     tracks: [
       { title: "Ambient 1: Music for Airports 1/1", artist: "Brian Eno", bpm: "Delta range", detail: "Play on a 45-minute timer for full sleep-cycle entry" },
-      { title: "Sleeping Beauty", artist: "Marconi Union", bpm: "Theta range", detail: "60-minute loop designed for sleep onset — use with blackout curtain" },
-      { title: "Comptine d'un autre été", artist: "Yann Tiersen", bpm: "Low Alpha", detail: "Gentle piano that lowers heart rate in 10 minutes — 20 min play" },
+      { title: "Sleeping Beauty", artist: "Marconi Union", bpm: "Theta range", detail: "60-minute loop designed for sleep onset \u2014 use with blackout curtain" },
+      { title: "Comptine d'un autre \u00E9t\u00E9", artist: "Yann Tiersen", bpm: "Low Alpha", detail: "Gentle piano that lowers heart rate in 10 minutes \u2014 20 min play" },
     ],
   },
   {
     id: "mood-lift",
     title: "Mood Lift",
-    emoji: "🎭",
+    emoji: "\u{1F3AD}",
     gradient: "from-amber-500 to-yellow-400",
     tracks: [
-      { title: "September", artist: "Earth, Wind & Fire", bpm: "126", detail: "Pure serotonin — impossible not to move" },
+      { title: "September", artist: "Earth, Wind & Fire", bpm: "126", detail: "Pure serotonin \u2014 impossible not to move" },
       { title: "Lovely Day", artist: "Bill Withers", bpm: "98", detail: "Warm, sun-soaked optimism" },
       { title: "Golden Hour", artist: "JVKE", bpm: "106", detail: "Euphoric modern pop built for smiling" },
     ],
@@ -143,48 +363,48 @@ const SPOTIFY_PLAYLISTS = [
     name: "Focus Flow",
     gradient: "from-green-500 to-emerald-600",
     tracks: [
-      "Deadmau5 — Strobe",
-      "HOME — Resonance",
-      "Tycho — Awake",
-      "Bonobo — Kerala",
-      "M83 — Midnight City",
-      "Tame Impala — Let It Happen",
-      "Four Tet — Lush",
-      "Boards of Canada — Dayvan Cowboy",
-      "Jon Hopkins — Open Eye Signal",
-      "Kiasmos — Blurred",
+      "Deadmau5 \u2014 Strobe",
+      "HOME \u2014 Resonance",
+      "Tycho \u2014 Awake",
+      "Bonobo \u2014 Kerala",
+      "M83 \u2014 Midnight City",
+      "Tame Impala \u2014 Let It Happen",
+      "Four Tet \u2014 Lush",
+      "Boards of Canada \u2014 Dayvan Cowboy",
+      "Jon Hopkins \u2014 Open Eye Signal",
+      "Kiasmos \u2014 Blurred",
     ],
   },
   {
     name: "Night Wind Down",
     gradient: "from-green-500 to-teal-600",
     tracks: [
-      "Brian Eno — An Ending (Ascent)",
-      "Marconi Union — Weightless",
-      "Ludovico Einaudi — Nuvole Bianche",
-      "Yann Tiersen — Comptine d'un autre été",
-      "Sigur Rós — Hoppípolla",
-      "Sleeping at Last — Saturn",
-      "Erik Satie — Gymnopédie No. 1",
-      "Max Richter — On the Nature of Daylight",
-      "Ólafur Arnalds — Near Light",
-      "Nils Frahm — Says",
+      "Brian Eno \u2014 An Ending (Ascent)",
+      "Marconi Union \u2014 Weightless",
+      "Ludovico Einaudi \u2014 Nuvole Bianche",
+      "Yann Tiersen \u2014 Comptine d'un autre \u00E9t\u00E9",
+      "Sigur R\u00F3s \u2014 Hopp\u00EDpolla",
+      "Sleeping at Last \u2014 Saturn",
+      "Erik Satie \u2014 Gymnop\u00E9die No. 1",
+      "Max Richter \u2014 On the Nature of Daylight",
+      "\u00D3lafur Arnalds \u2014 Near Light",
+      "Nils Frahm \u2014 Says",
     ],
   },
   {
     name: "Weekend Energy",
     gradient: "from-green-400 to-lime-500",
     tracks: [
-      "Daft Punk — One More Time",
-      "Earth, Wind & Fire — September",
-      "MGMT — Electric Feel",
-      "Doja Cat — Say So",
-      "The Weeknd — Blinding Lights",
-      "Dua Lipa — Levitating",
-      "Pharrell Williams — Happy",
-      "Lizzo — Juice",
-      "Bruno Mars — 24K Magic",
-      "Outkast — Hey Ya!",
+      "Daft Punk \u2014 One More Time",
+      "Earth, Wind & Fire \u2014 September",
+      "MGMT \u2014 Electric Feel",
+      "Doja Cat \u2014 Say So",
+      "The Weeknd \u2014 Blinding Lights",
+      "Dua Lipa \u2014 Levitating",
+      "Pharrell Williams \u2014 Happy",
+      "Lizzo \u2014 Juice",
+      "Bruno Mars \u2014 24K Magic",
+      "Outkast \u2014 Hey Ya!",
     ],
   },
 ];
@@ -225,12 +445,25 @@ export default function MusicPage() {
 
   const hasInput = artist1.trim() || artist2.trim() || artist3.trim() || selectedGenres.length > 0;
 
+  const recommendedArtists = useMemo(() => {
+    return selectedGenres
+      .filter((g) => GENRE_ARTISTS[g])
+      .map((genre) => ({
+        genre,
+        artists: GENRE_ARTISTS[genre],
+      }));
+  }, [selectedGenres]);
+
+  const totalArtistCount = useMemo(() => {
+    return recommendedArtists.reduce((sum, g) => sum + g.artists.length, 0);
+  }, [recommendedArtists]);
+
   const tabs: { key: MusicTab; label: string; emoji: string }[] = [
-    { key: "frequencies", label: "Frequencies", emoji: "📡" },
-    { key: "playlist", label: "Spotify Pack", emoji: "🎵" },
-    { key: "expansion", label: "Music Expansion", emoji: "🌍" },
+    { key: "frequencies", label: "Frequencies", emoji: "\u{1F4E1}" },
+    { key: "playlist", label: "Spotify Pack", emoji: "\u{1F3B5}" },
+    { key: "expansion", label: "Music Expansion", emoji: "\u{1F30D}" },
     ...(showRecommendations
-      ? [{ key: "recommendations" as MusicTab, label: "For You", emoji: "✨" }]
+      ? [{ key: "recommendations" as MusicTab, label: "For You", emoji: "\u2728" }]
       : []),
   ];
 
@@ -254,7 +487,7 @@ export default function MusicPage() {
           ))}
         </div>
         <div className="relative z-10">
-          <p className="text-sm font-medium uppercase tracking-widest text-cyan-400 mb-2">🎧 Tuned to You</p>
+          <p className="text-sm font-medium uppercase tracking-widest text-cyan-400 mb-2">{"\u{1F3A7}"} Tuned to You</p>
           <h1 className="text-3xl md:text-5xl font-extrabold text-white mb-3">Music & Frequency Guide</h1>
           <p className="text-lg text-white/60 max-w-xl">
             Educational guide to brainwave states and your personalized music recommendations.
@@ -270,7 +503,7 @@ export default function MusicPage() {
 
         <div className="relative z-10 p-8 md:p-10">
           <div className="flex items-center gap-3 mb-1">
-            <span className="text-3xl">🎤</span>
+            <span className="text-3xl">{"\u{1F3A4}"}</span>
             <h2 className="text-2xl md:text-3xl font-extrabold text-white">Tell us your taste</h2>
           </div>
           <p className="text-white/50 text-sm mb-8 ml-12">
@@ -303,7 +536,7 @@ export default function MusicPage() {
           </div>
 
           {/* Genre Pills */}
-          <div className="mb-8">
+          <div className="mb-4">
             <p className="text-xs font-semibold uppercase tracking-widest text-white/40 mb-4">Select your genres</p>
             <div className="flex flex-wrap gap-2">
               {ALL_GENRES.map((genre) => {
@@ -326,6 +559,72 @@ export default function MusicPage() {
                 );
               })}
             </div>
+          </div>
+
+          {/* Instant Artist Recommendations */}
+          <div className="mb-8">
+            {selectedGenres.length === 0 ? (
+              <div className="rounded-2xl bg-white/5 border border-white/5 p-6 text-center">
+                <p className="text-sm text-white/30">Select genres above to see artist recommendations</p>
+              </div>
+            ) : (
+              <div
+                className="rounded-2xl bg-white/5 border border-white/10 overflow-hidden"
+                style={{ animation: "fadeIn 0.3s ease-in-out" }}
+              >
+                {/* Header */}
+                <div className="px-6 py-4 border-b border-white/5 flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <span className="text-xl">{"\u{1F3B6}"}</span>
+                    <h3 className="text-lg font-bold text-white">Recommended Artists</h3>
+                  </div>
+                  <span className="text-xs font-medium text-white/40 rounded-full bg-white/5 px-3 py-1 border border-white/10">
+                    {selectedGenres.length} genre{selectedGenres.length > 1 ? "s" : ""} &middot; {totalArtistCount} artists
+                  </span>
+                </div>
+
+                {/* Artist Grid by Genre */}
+                <div className="max-h-[420px] overflow-y-auto">
+                  {recommendedArtists.map(({ genre, artists }) => {
+                    const genreColor = GENRE_CIRCLE_COLORS[genre] || "from-gray-500 to-gray-700";
+                    return (
+                      <div key={genre} className="border-b border-white/5 last:border-b-0">
+                        {/* Genre Header */}
+                        <div className="px-6 py-3 bg-white/[0.02]">
+                          <span className="text-xs font-bold uppercase tracking-widest text-white/30">{genre}</span>
+                        </div>
+                        {/* Artist Cards Grid */}
+                        <div className="px-4 py-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                          {artists.map((artist) => {
+                            const vibeColor = VIBE_COLORS[artist.vibe] || "bg-gray-500/20 text-gray-300 border-gray-500/30";
+                            return (
+                              <div
+                                key={artist.name}
+                                className="flex items-start gap-3 rounded-xl bg-white/[0.03] border border-white/5 p-3 hover:bg-white/[0.06] transition-colors duration-200"
+                              >
+                                {/* Gradient Circle */}
+                                <div className={`flex-shrink-0 h-10 w-10 rounded-full bg-gradient-to-br ${genreColor} opacity-80`} />
+                                {/* Info */}
+                                <div className="min-w-0 flex-1">
+                                  <p className="text-sm font-bold text-white truncate">{artist.name}</p>
+                                  <p className="text-xs text-white/40 leading-snug line-clamp-1">{artist.description}</p>
+                                  <div className="flex items-center gap-2 mt-1.5">
+                                    <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold ${vibeColor}`}>
+                                      {artist.vibe}
+                                    </span>
+                                  </div>
+                                  <p className="text-[10px] text-white/25 mt-1">Top Track: {artist.topTrack}</p>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Curate Button */}
@@ -354,7 +653,7 @@ export default function MusicPage() {
             {hasInput && !isAnalyzing && (
               <p className="text-xs text-white/30">
                 {selectedGenres.length > 0 && `${selectedGenres.length} genre${selectedGenres.length > 1 ? "s" : ""} selected`}
-                {selectedGenres.length > 0 && (artist1 || artist2 || artist3) && " · "}
+                {selectedGenres.length > 0 && (artist1 || artist2 || artist3) && " \u00B7 "}
                 {[artist1, artist2, artist3].filter(Boolean).length > 0 &&
                   `${[artist1, artist2, artist3].filter(Boolean).length} artist${[artist1, artist2, artist3].filter(Boolean).length > 1 ? "s" : ""} added`}
               </p>
@@ -363,9 +662,12 @@ export default function MusicPage() {
         </div>
       </div>
 
+      {/* Fade-in keyframe (injected inline) */}
+      <style>{`@keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }`}</style>
+
       {/* Disclaimer */}
       <div className="rounded-2xl bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 p-4 flex items-start gap-3">
-        <span className="text-xl">⚠️</span>
+        <span className="text-xl">{"\u26A0\uFE0F"}</span>
         <p className="text-sm text-amber-800">
           Frequency information is educational only. This is not medical advice. Consult healthcare professionals for clinical needs.
         </p>
@@ -394,7 +696,7 @@ export default function MusicPage() {
         <div className="space-y-6">
           {/* Wave Visualization */}
           <div className="rounded-3xl bg-gradient-to-br from-gray-900 to-slate-900 p-8">
-            <h3 className="text-lg font-bold text-white mb-6">🌊 Brainwave Spectrum</h3>
+            <h3 className="text-lg font-bold text-white mb-6">{"\u{1F30A}"} Brainwave Spectrum</h3>
             <div className="space-y-4">
               {FREQUENCY_DATA.map((freq) => (
                 <div key={freq.wave} className="group">
@@ -447,7 +749,7 @@ export default function MusicPage() {
 
           {/* Use Case Pairings */}
           <div>
-            <h3 className="text-xl font-bold text-gray-900 mb-4">🎯 Use Case Pairings</h3>
+            <h3 className="text-xl font-bold text-gray-900 mb-4">{"\u{1F3AF}"} Use Case Pairings</h3>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
               {USE_CASE_PAIRINGS.map((p) => (
                 <div key={p.label} className="group relative overflow-hidden rounded-2xl bg-white border border-gray-100 shadow-md hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
@@ -491,7 +793,7 @@ export default function MusicPage() {
                         <div className="absolute inset-0 flex items-center justify-center">
                           <div className="h-16 w-16 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center group-hover:scale-110 transition-transform">
                             <div className="h-12 w-12 rounded-full bg-white/30 flex items-center justify-center">
-                              <span className="text-white text-2xl ml-1">▶</span>
+                              <span className="text-white text-2xl ml-1">{"\u25B6"}</span>
                             </div>
                           </div>
                         </div>
@@ -516,7 +818,7 @@ export default function MusicPage() {
       {activeTab === "expansion" && (
         <div className="space-y-6">
           <div className="rounded-3xl bg-gradient-to-br from-gray-900 to-slate-900 p-8">
-            <h3 className="text-2xl font-extrabold text-white mb-2">🌍 Expand Your Musical Palette</h3>
+            <h3 className="text-2xl font-extrabold text-white mb-2">{"\u{1F30D}"} Expand Your Musical Palette</h3>
             <p className="text-white/50 text-sm">Based on your indie preference, here are genres and artists to explore.</p>
           </div>
 
@@ -553,7 +855,7 @@ export default function MusicPage() {
           {/* Recommendations Header */}
           <div className="rounded-3xl bg-gradient-to-br from-gray-900 to-slate-900 p-8">
             <div className="flex items-center gap-3 mb-2">
-              <span className="text-3xl">✨</span>
+              <span className="text-3xl">{"\u2728"}</span>
               <h3 className="text-2xl font-extrabold text-white">Your Personalized Recommendations</h3>
             </div>
             <p className="text-white/50 text-sm ml-12">
@@ -601,7 +903,7 @@ export default function MusicPage() {
                   >
                     {/* Play Button */}
                     <div className="flex-shrink-0 h-10 w-10 rounded-full bg-gray-100 flex items-center justify-center group-hover:bg-gray-200 transition-colors cursor-pointer hover:scale-110 active:scale-95">
-                      <span className="text-gray-500 text-sm ml-0.5">▶</span>
+                      <span className="text-gray-500 text-sm ml-0.5">{"\u25B6"}</span>
                     </div>
 
                     {/* Track Number */}

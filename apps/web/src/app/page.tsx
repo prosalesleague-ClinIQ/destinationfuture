@@ -406,12 +406,119 @@ export default function LandingPage() {
           <div className="flex flex-col">
             {/* Hero Section */}
             <section className="relative flex min-h-screen items-center justify-center overflow-hidden px-4">
-              {/* Background gradient orbs */}
+              {/* Nebula / Galaxy / Astro Background */}
               <div className="pointer-events-none absolute inset-0 overflow-hidden">
-                <div className="absolute -left-40 -top-40 h-96 w-96 rounded-full bg-indigo-500/10 blur-3xl" />
-                <div className="absolute -bottom-40 -right-40 h-96 w-96 rounded-full bg-purple-500/10 blur-3xl" />
-                <div className="absolute left-1/2 top-1/2 h-64 w-64 -translate-x-1/2 -translate-y-1/2 rounded-full bg-indigo-400/5 blur-3xl" />
+                {/* Deep nebula clouds */}
+                <div className="absolute -left-[20%] -top-[10%] h-[600px] w-[800px] rounded-full opacity-30 blur-[120px]"
+                  style={{ background: "radial-gradient(ellipse, rgba(88,28,135,0.6), rgba(49,46,129,0.3), transparent 70%)" }} />
+                <div className="absolute -right-[15%] top-[20%] h-[500px] w-[700px] rounded-full opacity-25 blur-[100px]"
+                  style={{ background: "radial-gradient(ellipse, rgba(79,70,229,0.5), rgba(139,92,246,0.2), transparent 70%)" }} />
+                <div className="absolute left-[10%] bottom-[5%] h-[400px] w-[600px] rounded-full opacity-20 blur-[110px]"
+                  style={{ background: "radial-gradient(ellipse, rgba(14,165,233,0.4), rgba(59,130,246,0.15), transparent 70%)" }} />
+                <div className="absolute right-[5%] -bottom-[10%] h-[500px] w-[500px] rounded-full opacity-15 blur-[130px]"
+                  style={{ background: "radial-gradient(ellipse, rgba(236,72,153,0.3), rgba(168,85,247,0.15), transparent 70%)" }} />
+                {/* Central galaxy core glow */}
+                <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 h-[300px] w-[300px] rounded-full opacity-10 blur-[80px]"
+                  style={{ background: "radial-gradient(circle, rgba(255,255,255,0.3), rgba(129,140,248,0.1), transparent 60%)" }} />
+
+                {/* Zodiac constellation lines */}
+                <svg className="absolute inset-0 w-full h-full opacity-[0.04]" viewBox="0 0 1200 800">
+                  {/* Aries constellation */}
+                  <line x1="100" y1="200" x2="130" y2="180" stroke="white" strokeWidth="1" />
+                  <line x1="130" y1="180" x2="160" y2="190" stroke="white" strokeWidth="1" />
+                  <line x1="160" y1="190" x2="180" y2="170" stroke="white" strokeWidth="1" />
+                  <circle cx="100" cy="200" r="2" fill="white" />
+                  <circle cx="130" cy="180" r="2.5" fill="white" />
+                  <circle cx="160" cy="190" r="2" fill="white" />
+                  <circle cx="180" cy="170" r="3" fill="white" />
+                  {/* Leo constellation */}
+                  <line x1="800" y1="150" x2="830" y2="130" stroke="white" strokeWidth="1" />
+                  <line x1="830" y1="130" x2="870" y2="140" stroke="white" strokeWidth="1" />
+                  <line x1="870" y1="140" x2="890" y2="120" stroke="white" strokeWidth="1" />
+                  <line x1="890" y1="120" x2="920" y2="135" stroke="white" strokeWidth="1" />
+                  <line x1="870" y1="140" x2="860" y2="170" stroke="white" strokeWidth="1" />
+                  <circle cx="800" cy="150" r="2" fill="white" />
+                  <circle cx="830" cy="130" r="2.5" fill="white" />
+                  <circle cx="870" cy="140" r="3" fill="white" />
+                  <circle cx="890" cy="120" r="2" fill="white" />
+                  <circle cx="920" cy="135" r="2.5" fill="white" />
+                  <circle cx="860" cy="170" r="2" fill="white" />
+                  {/* Scorpio constellation */}
+                  <line x1="400" y1="600" x2="430" y2="610" stroke="white" strokeWidth="1" />
+                  <line x1="430" y1="610" x2="460" y2="590" stroke="white" strokeWidth="1" />
+                  <line x1="460" y1="590" x2="490" y2="605" stroke="white" strokeWidth="1" />
+                  <line x1="490" y1="605" x2="510" y2="620" stroke="white" strokeWidth="1" />
+                  <line x1="510" y1="620" x2="530" y2="610" stroke="white" strokeWidth="1" />
+                  <line x1="530" y1="610" x2="540" y2="590" stroke="white" strokeWidth="1" />
+                  <circle cx="400" cy="600" r="2.5" fill="white" />
+                  <circle cx="430" cy="610" r="2" fill="white" />
+                  <circle cx="460" cy="590" r="3" fill="white" />
+                  <circle cx="490" cy="605" r="2" fill="white" />
+                  <circle cx="510" cy="620" r="2.5" fill="white" />
+                  <circle cx="530" cy="610" r="2" fill="white" />
+                  <circle cx="540" cy="590" r="2.5" fill="white" />
+                  {/* Pisces constellation */}
+                  <line x1="950" y1="500" x2="980" y2="490" stroke="white" strokeWidth="1" />
+                  <line x1="980" y1="490" x2="1010" y2="510" stroke="white" strokeWidth="1" />
+                  <line x1="1010" y1="510" x2="1040" y2="500" stroke="white" strokeWidth="1" />
+                  <line x1="1040" y1="500" x2="1070" y2="520" stroke="white" strokeWidth="1" />
+                  <circle cx="950" cy="500" r="2" fill="white" />
+                  <circle cx="980" cy="490" r="2.5" fill="white" />
+                  <circle cx="1010" cy="510" r="3" fill="white" />
+                  <circle cx="1040" cy="500" r="2" fill="white" />
+                  <circle cx="1070" cy="520" r="2.5" fill="white" />
+                </svg>
+
+                {/* Scattered stars — different sizes and brightnesses */}
+                {Array.from({ length: 80 }).map((_, i) => (
+                  <div
+                    key={`star-${i}`}
+                    className="absolute rounded-full bg-white"
+                    style={{
+                      width: `${Math.random() < 0.1 ? 3 : Math.random() < 0.3 ? 2 : 1}px`,
+                      height: `${Math.random() < 0.1 ? 3 : Math.random() < 0.3 ? 2 : 1}px`,
+                      left: `${Math.random() * 100}%`,
+                      top: `${Math.random() * 100}%`,
+                      opacity: Math.random() * 0.5 + 0.1,
+                      animation: `twinkle ${Math.random() * 4 + 3}s ease-in-out infinite`,
+                      animationDelay: `${Math.random() * 5}s`,
+                      boxShadow: Math.random() < 0.15 ? '0 0 6px 1px rgba(255,255,255,0.4)' : 'none',
+                    }}
+                  />
+                ))}
+
+                {/* Floating zodiac glyphs */}
+                {['♈','♉','♊','♋','♌','♍','♎','♏','♐','♑','♒','♓'].map((glyph, i) => (
+                  <div
+                    key={`glyph-${i}`}
+                    className="absolute text-white/[0.04] select-none"
+                    style={{
+                      fontSize: `${Math.random() * 20 + 16}px`,
+                      left: `${(i * 8.3) + Math.random() * 5}%`,
+                      top: `${Math.random() * 90}%`,
+                      animation: `float ${Math.random() * 20 + 30}s linear infinite`,
+                      animationDelay: `${Math.random() * 10}s`,
+                    }}
+                  >
+                    {glyph}
+                  </div>
+                ))}
               </div>
+
+              {/* Inline keyframes for hero */}
+              <style jsx>{`
+                @keyframes twinkle {
+                  0%, 100% { opacity: 0.1; }
+                  50% { opacity: 0.7; }
+                }
+                @keyframes float {
+                  0% { transform: translateY(0) rotate(0deg); opacity: 0.03; }
+                  25% { opacity: 0.06; }
+                  50% { transform: translateY(-30px) rotate(5deg); opacity: 0.04; }
+                  75% { opacity: 0.05; }
+                  100% { transform: translateY(0) rotate(0deg); opacity: 0.03; }
+                }
+              `}</style>
 
               <div className="relative z-10 mx-auto max-w-4xl text-center">
                 <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-indigo-500/30 bg-indigo-500/10 px-4 py-1.5 text-sm font-medium text-indigo-300">
