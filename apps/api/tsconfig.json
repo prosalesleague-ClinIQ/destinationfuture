@@ -1,0 +1,15 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "./dist",
+    "module": "ESNext",
+    "types": ["node"],
+    "paths": {
+      "@destination-future/core": ["../../packages/core/src"],
+      "@destination-future/prompts": ["../../packages/prompts/src"],
+      "@destination-future/config": ["../../packages/config/src"]
+    }
+  },
+  "include": ["src/**/*.ts"],
+  "exclude": ["node_modules", "dist"]
+}

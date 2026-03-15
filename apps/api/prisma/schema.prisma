@@ -1,0 +1,268 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── AUTH & USER ───────────────────────────────────────────────
+
+model User {
+  id               String   @id @default(cuid())
+  email            String   @unique
+  passwordHash     String?  @map("password_hash")
+  nickname         String?
+  firstName        String   @map("first_name")
+  middleName       String?  @map("middle_name")
+  lastName         String?  @map("last_name")
+  subscriptionTier Tier     @default(FREE) @map("subscription_tier")
+  privacySettings  Json     @default("{}") @map("privacy_settings")
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  profile          Profile?
+  modeSessions     ModeSession[]
+  generatedReports GeneratedReport[]
+  userQuests       UserQuest[]
+  userBadges       UserBadge[]
+  xpLedger         XpLedger[]
+  reflectionLogs   ReflectionLog[]
+  secondProfiles   SecondProfile[]
+
+  @@map("users")
+}
+
+enum Tier {
+  FREE
+  PREMIUM
+}
+
+// ─── PROFILE ───────────────────────────────────────────────────
+
+model Profile {
+  id                String   @id @default(cuid())
+  userId            String   @unique @map("user_id")
+  dob               DateTime
+  birthTime         String?  @map("birth_time") // HH:mm format or null
+  birthCity          String   @map("birth_city")
+  birthState         String?  @map("birth_state")
+  birthCountry       String   @map("birth_country")
+  currentCity        String?  @map("current_city")
+  currentState       String?  @map("current_state")
+  currentCountry     String?  @map("current_country")
+  relationshipStatus String?  @map("relationship_status")
+  careerField        String?  @map("career_field")
+  budgetRange        String?  @map("budget_range")
+  stylePreference    String?  @map("style_preference")
+  musicPreference    String?  @map("music_preference")
+  goalsJson          Json     @default("[]") @map("goals_json")
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("profiles")
+}
+
+// ─── SECOND PROFILE (for dual mode) ───────────────────────────
+
+model SecondProfile {
+  id               String   @id @default(cuid())
+  userId           String   @map("user_id")
+  label            String?
+  firstName        String   @map("first_name")
+  dob              DateTime
+  birthTime        String?  @map("birth_time")
+  birthCity        String   @map("birth_city")
+  birthState       String?  @map("birth_state")
+  birthCountry     String   @map("birth_country")
+  relationshipType String   @map("relationship_type") // romantic, friendship, family, collaboration
+
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  modeSessions ModeSession[]
+
+  @@map("second_profiles")
+}
+
+// ─── MODE SESSION ──────────────────────────────────────────────
+
+model ModeSession {
+  id                  String        @id @default(cuid())
+  userId              String        @map("user_id")
+  modeType            ModeType      @map("mode_type")
+  secondProfileId     String?       @map("second_profile_id")
+  selectedSectionsJson Json         @default("[]") @map("selected_sections_json")
+  presetName          String?       @map("preset_name")
+  reportStatus        ReportStatus  @default(PENDING) @map("report_status")
+  createdAt           DateTime      @default(now()) @map("created_at")
+
+  user            User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  secondProfile   SecondProfile?    @relation(fields: [secondProfileId], references: [id])
+  generatedReports GeneratedReport[]
+
+  @@map("mode_sessions")
+}
+
+enum ModeType {
+  SINGLE
+  ROMANTIC
+  FRIENDSHIP
+  FAMILY
+  COLLABORATION
+}
+
+enum ReportStatus {
+  PENDING
+  GENERATING
+  COMPLETED
+  FAILED
+}
+
+// ─── GENERATED REPORT ──────────────────────────────────────────
+
+model GeneratedReport {
+  id                  String   @id @default(cuid())
+  userId              String   @map("user_id")
+  modeSessionId       String   @map("mode_session_id")
+  version             Int      @default(1)
+  selectedSectionsJson Json    @map("selected_sections_json")
+  inputSnapshotJson   Json     @map("input_snapshot_json")
+  outputJson          Json     @map("output_json")
+  summaryText         String?  @map("summary_text")
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  user              User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  modeSession       ModeSession         @relation(fields: [modeSessionId], references: [id], onDelete: Cascade)
+  cityRecommendations CityRecommendation[]
+  playlistPacks     PlaylistPack[]
+  wardrobePacks     WardrobePack[]
+
+  @@map("generated_reports")
+}
+
+// ─── GAMIFICATION ──────────────────────────────────────────────
+
+model Quest {
+  id          String    @id @default(cuid())
+  code        String    @unique
+  title       String
+  description String
+  questType   String    @map("quest_type") // journaling, habit, boundary, city_research, style, playlist, confidence, creativity, conversation, repair, shared_goal, compatibility_checkin, date, environment, home, communication, bonding
+  xpReward    Int       @map("xp_reward")
+  unlockLevel Int       @default(1) @map("unlock_level")
+  modeScope   String    @default("all") @map("mode_scope") // single, dual, family, all
+
+  userQuests UserQuest[]
+
+  @@map("quests")
+}
+
+model UserQuest {
+  id             String    @id @default(cuid())
+  userId         String    @map("user_id")
+  questId        String    @map("quest_id")
+  status         String    @default("available") // available, active, completed
+  completedAt    DateTime? @map("completed_at")
+  reflectionText String?   @map("reflection_text")
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  quest Quest @relation(fields: [questId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, questId])
+  @@map("user_quests")
+}
+
+model Badge {
+  id            String @id @default(cuid())
+  code          String @unique
+  title         String
+  description   String
+  icon          String
+  unlockRuleJson Json  @map("unlock_rule_json")
+
+  userBadges UserBadge[]
+
+  @@map("badges")
+}
+
+model UserBadge {
+  id       String   @id @default(cuid())
+  userId   String   @map("user_id")
+  badgeId  String   @map("badge_id")
+  earnedAt DateTime @default(now()) @map("earned_at")
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  badge Badge @relation(fields: [badgeId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, badgeId])
+  @@map("user_badges")
+}
+
+model XpLedger {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  source    String   // onboarding, birth_info, current_city, goals, daily_reflection, shadow_work, city_exploration, relationship_exercise, profile_update, preferences, module_read, quest_complete
+  amount    Int
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("xp_ledger")
+}
+
+model ReflectionLog {
+  id          String   @id @default(cuid())
+  userId      String   @map("user_id")
+  type        String   // daily, shadow_work, quest, growth
+  contentJson Json     @map("content_json")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("reflection_logs")
+}
+
+// ─── REPORT SUB-MODELS ────────────────────────────────────────
+
+model CityRecommendation {
+  id               String @id @default(cuid())
+  reportId         String @map("report_id")
+  category         String // love, money, creativity, spirituality, community, family, reinvention, shadow_work, short_trips, healing, adventure, transformation, long_term
+  regionScope      String @map("region_scope") // california, usa, world
+  cityName         String @map("city_name")
+  score            Float
+  reason           String
+  risk             String
+  neighborhoodType String @map("neighborhood_type")
+  useCase          String @map("use_case")
+
+  report GeneratedReport @relation(fields: [reportId], references: [id], onDelete: Cascade)
+
+  @@map("city_recommendations")
+}
+
+model PlaylistPack {
+  id        String @id @default(cuid())
+  reportId  String @map("report_id")
+  packType  String @map("pack_type") // focus, calm, mood_lift, sleep, general
+  tracksJson Json  @map("tracks_json")
+
+  report GeneratedReport @relation(fields: [reportId], references: [id], onDelete: Cascade)
+
+  @@map("playlist_packs")
+}
+
+model WardrobePack {
+  id          String @id @default(cuid())
+  reportId    String @map("report_id")
+  paletteJson Json   @map("palette_json")
+  capsuleJson Json   @map("capsule_json")
+  outfitJson  Json   @map("outfit_json")
+  shoppingJson Json  @map("shopping_json")
+
+  report GeneratedReport @relation(fields: [reportId], references: [id], onDelete: Cascade)
+
+  @@map("wardrobe_packs")
+}

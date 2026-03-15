@@ -1,0 +1,38 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "jsx": "preserve",
+    "plugins": [
+      {
+        "name": "next"
+      }
+    ],
+    "paths": {
+      "@/*": [
+        "./src/*"
+      ],
+      "@destination-future/core": [
+        "../../packages/core/src"
+      ],
+      "@destination-future/ui": [
+        "../../packages/ui/src"
+      ],
+      "@destination-future/prompts": [
+        "../../packages/prompts/src"
+      ],
+      "@destination-future/config": [
+        "../../packages/config/src"
+      ]
+    }
+  },
+  "include": [
+    "**/*.ts",
+    "**/*.tsx",
+    "../../packages/*/src/**/*.ts",
+    "next-env.d.ts",
+    ".next/types/**/*.ts"
+  ],
+  "exclude": [
+    "node_modules"
+  ]
+}
