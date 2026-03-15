@@ -40,8 +40,8 @@ async function main() {
       relationshipStatus: "single",
       careerField: "Technology",
       budgetRange: "moderate",
-      stylePreference: "minimalist",
-      musicPreference: "indie",
+      stylePreferencesJson: ["minimalist", "classic"],
+      musicPreferencesJson: ["indie", "jazz", "ambient"],
       goalsJson: ["love", "career", "self_improvement", "relocation"],
     },
   });

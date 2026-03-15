@@ -24,8 +24,8 @@ export interface GenerateReportInput {
     relationshipStatus?: string;
     careerField?: string;
     budgetRange?: string;
-    stylePreference?: string;
-    musicPreference?: string;
+    stylePreferences?: string[];
+    musicPreferences?: string[];
     goals: string[];
   };
   selectedSections: SectionKey[];

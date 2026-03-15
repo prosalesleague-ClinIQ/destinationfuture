@@ -13,8 +13,8 @@ export const TEST_PROFILE_FULL: ProfileInput = {
   relationshipStatus: "single",
   careerField: "Technology",
   budgetRange: "moderate",
-  stylePreference: "minimalist",
-  musicPreference: "indie",
+  stylePreferences: ["minimalist", "classic"],
+  musicPreferences: ["indie", "jazz", "ambient"],
   goals: ["love", "career", "self_improvement", "relocation"] as GoalKey[],
 };
 
@@ -30,8 +30,8 @@ export const TEST_PROFILE_MINIMAL: ProfileInput = {
   relationshipStatus: null,
   careerField: null,
   budgetRange: null,
-  stylePreference: null,
-  musicPreference: null,
+  stylePreferences: [],
+  musicPreferences: [],
   goals: ["career"] as GoalKey[],
 };
 

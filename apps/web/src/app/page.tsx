@@ -3,61 +3,14 @@
 import Link from "next/link";
 
 const FEATURES = [
-  {
-    title: "Identity Snapshot",
-    description: "Uncover your core personality traits, values, and psychological patterns through multi-system analysis.",
-    icon: (
-      <svg className="h-8 w-8" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" />
-      </svg>
-    ),
-  },
-  {
-    title: "Numerology",
-    description: "Decode the hidden meaning in your birth date and name through life path, expression, and soul urge numbers.",
-    icon: (
-      <svg className="h-8 w-8" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 0 0-3.09 3.09ZM18.259 8.715 18 9.75l-.259-1.035a3.375 3.375 0 0 0-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 0 0 2.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 0 0 2.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 0 0-2.456 2.456ZM16.894 20.567 16.5 21.75l-.394-1.183a2.25 2.25 0 0 0-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 0 0 1.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 0 0 1.423 1.423l1.183.394-1.183.394a2.25 2.25 0 0 0-1.423 1.423Z" />
-      </svg>
-    ),
-  },
-  {
-    title: "Location Intelligence",
-    description: "Find your ideal cities based on your personality, lifestyle, and astrological profile with astrocartography.",
-    icon: (
-      <svg className="h-8 w-8" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
-        <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0Z" />
-      </svg>
-    ),
-  },
-  {
-    title: "Compatibility",
-    description: "Understand your relationship dynamics, soulmate timing, love languages, and potential red flags.",
-    icon: (
-      <svg className="h-8 w-8" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12Z" />
-      </svg>
-    ),
-  },
-  {
-    title: "Growth & Shadow Work",
-    description: "Dive deep into your unconscious patterns, triggers, and untapped potential for real transformation.",
-    icon: (
-      <svg className="h-8 w-8" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 18 9 11.25l4.306 4.306a11.95 11.95 0 0 1 5.814-5.518l2.74-1.22m0 0-5.94-2.281m5.94 2.28-2.28 5.941" />
-      </svg>
-    ),
-  },
-  {
-    title: "Future Forecast",
-    description: "Get personalized 7-day, 30-day, and 3-year plans aligned with your cosmic timing and personal goals.",
-    icon: (
-      <svg className="h-8 w-8" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5" />
-      </svg>
-    ),
-  },
+  { title: "Identity Snapshot", description: "Uncover your core personality traits, values, and psychological patterns through multi-system analysis.", emoji: "🧬", gradient: "from-blue-500 to-indigo-600" },
+  { title: "Numerology", description: "Decode the hidden meaning in your birth date and name through life path, expression, and soul urge numbers.", emoji: "🔢", gradient: "from-violet-500 to-purple-600" },
+  { title: "Location Intelligence", description: "Find your ideal cities based on your personality, lifestyle, and astrological profile.", emoji: "🗺️", gradient: "from-cyan-500 to-blue-600" },
+  { title: "Love & Compatibility", description: "Understand your relationship dynamics, soulmate timing, love languages, and potential red flags.", emoji: "💜", gradient: "from-pink-500 to-rose-600" },
+  { title: "Growth & Shadow Work", description: "Dive deep into your unconscious patterns, triggers, and untapped potential for real transformation.", emoji: "🌑", gradient: "from-amber-500 to-orange-600" },
+  { title: "Future Forecast", description: "Get personalized 7-day, 30-day, and 3-year plans aligned with your cosmic timing.", emoji: "🔮", gradient: "from-emerald-500 to-teal-600" },
+  { title: "Style & Fashion", description: "Discover your style archetype, color palette, and capsule wardrobe tailored to your energy.", emoji: "👔", gradient: "from-fuchsia-500 to-pink-600" },
+  { title: "Music & Frequency", description: "Curated playlists, brainwave frequency guide, and personalized music expansion.", emoji: "🎵", gradient: "from-green-500 to-emerald-600" },
 ];
 
 const STEPS = [
@@ -143,17 +96,18 @@ export default function LandingPage() {
           </p>
         </div>
 
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
           {FEATURES.map((feature) => (
             <div
               key={feature.title}
-              className="card-hover group rounded-2xl border border-surface-200 bg-white p-8 shadow-sm"
+              className="card-hover group relative overflow-hidden rounded-2xl border border-surface-200 bg-white p-6 shadow-sm"
             >
-              <div className="mb-4 inline-flex items-center justify-center rounded-xl bg-gradient-to-br from-brand-50 to-cosmic-50 p-3 text-brand-600 transition-colors group-hover:from-brand-100 group-hover:to-cosmic-100">
-                {feature.icon}
+              <div className={`mb-4 inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br ${feature.gradient} text-2xl shadow-lg`}>
+                {feature.emoji}
               </div>
-              <h3 className="mb-2 text-xl font-semibold text-surface-900">{feature.title}</h3>
-              <p className="text-surface-700 leading-relaxed">{feature.description}</p>
+              <h3 className="mb-2 text-lg font-bold text-surface-900">{feature.title}</h3>
+              <p className="text-sm text-surface-700 leading-relaxed">{feature.description}</p>
+              <div className={`absolute -bottom-8 -right-8 h-24 w-24 rounded-full bg-gradient-to-br ${feature.gradient} opacity-[0.07] transition-all duration-300 group-hover:opacity-[0.15] group-hover:scale-150`} />
             </div>
           ))}
         </div>

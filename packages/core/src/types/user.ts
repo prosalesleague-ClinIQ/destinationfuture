@@ -20,8 +20,8 @@ export interface ProfileInput {
   relationshipStatus: string | null;
   careerField: string | null;
   budgetRange: string | null;
-  stylePreference: string | null;
-  musicPreference: string | null;
+  stylePreferences: string[];
+  musicPreferences: string[];
   goals: GoalKey[];
 }
 

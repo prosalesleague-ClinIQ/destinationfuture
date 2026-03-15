@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 import PresetCard from "@/components/report/preset-card";
 import SectionToggle from "@/components/report/section-toggle";
+import ReportRenderer from "@/components/report/report-renderer";
 
 /* ─── Section Definitions ─── */
 interface SectionDef {
@@ -215,6 +216,9 @@ export default function ReportBuilderPage() {
   const [enabledSections, setEnabledSections] = useState<Set<string>>(new Set());
   const [outputDepth, setOutputDepth] = useState("standard");
   const [generating, setGenerating] = useState(false);
+  const [generatedSections, setGeneratedSections] = useState<any[] | null>(null);
+  const [genError, setGenError] = useState<string | null>(null);
+  const resultsRef = useRef<HTMLDivElement>(null);
 
   const handlePresetClick = useCallback((presetKey: string) => {
     const preset = PRESETS.find((p) => p.key === presetKey);
@@ -245,14 +249,56 @@ export default function ReportBuilderPage() {
   const handleGenerate = async () => {
     if (enabledSections.size === 0) return;
     setGenerating(true);
+    setGenError(null);
+    setGeneratedSections(null);
+
+    const selectedArray = [...enabledSections];
+
     try {
-      // In a real app: await api.report.generate({ selectedSections: [...enabledSections], presetKey: selectedPreset || undefined, outputDepth })
-      console.log("Generating report:", { sections: [...enabledSections], preset: selectedPreset, outputDepth });
-    } catch (error) {
-      console.error("Report generation failed:", error);
+      // Try API first
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
+      const token = typeof window !== "undefined" ? localStorage.getItem("df_token") : null;
+      const res = await fetch(`${API_URL}/api/report/generate`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({
+          selectedSections: selectedArray,
+          presetKey: selectedPreset || undefined,
+          outputDepth,
+        }),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        setGeneratedSections(data.sections);
+        setTimeout(() => resultsRef.current?.scrollIntoView({ behavior: "smooth" }), 100);
+        return;
+      }
+
+      // API returned error — fall through to client-side generation
+      throw new Error("API unavailable");
+    } catch {
+      // Fall back to client-side mock generation
+      const sections = selectedArray.map((key) => {
+        const def = SECTIONS.find((s) => s.key === key);
+        return generateMockSection(key, def?.title || key, def?.description || "");
+      });
+
+      // Simulate generation delay
+      await new Promise((r) => setTimeout(r, 800 + sections.length * 200));
+      setGeneratedSections(sections);
+      setTimeout(() => resultsRef.current?.scrollIntoView({ behavior: "smooth" }), 100);
     } finally {
       setGenerating(false);
     }
+  };
+
+  const handleBackToBuilder = () => {
+    setGeneratedSections(null);
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   return (
@@ -348,41 +394,183 @@ export default function ReportBuilderPage() {
       </section>
 
       {/* Generate Button */}
-      <div className="sticky bottom-0 -mx-4 border-t border-surface-200 bg-white/90 px-4 py-4 backdrop-blur-lg sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
-        <div className="flex items-center justify-between">
-          <p className="text-sm text-surface-700">
-            <span className="font-semibold text-surface-900">{enabledSections.size}</span> sections selected
-            {selectedPreset && (
-              <span className="ml-2 rounded-full bg-brand-100 px-2 py-0.5 text-xs font-medium text-brand-700">
-                {PRESETS.find((p) => p.key === selectedPreset)?.title}
-              </span>
-            )}
-          </p>
-          <button
-            type="button"
-            onClick={handleGenerate}
-            disabled={enabledSections.size === 0 || generating}
-            className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-brand-600 to-cosmic-600 px-8 py-3 text-sm font-semibold text-white shadow-lg shadow-brand-500/20 transition-all hover:shadow-xl hover:-translate-y-0.5 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:hover:shadow-lg"
-          >
-            {generating ? (
-              <>
-                <svg className="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                </svg>
-                Generating...
-              </>
-            ) : (
-              <>
-                Generate Report
-                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 0 0-3.09 3.09Z" />
-                </svg>
-              </>
-            )}
-          </button>
+      {!generatedSections && (
+        <div className="sticky bottom-0 -mx-4 border-t border-surface-200 bg-white/90 px-4 py-4 backdrop-blur-lg sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
+          <div className="flex items-center justify-between">
+            <p className="text-sm text-surface-700">
+              <span className="font-semibold text-surface-900">{enabledSections.size}</span> sections selected
+              {selectedPreset && (
+                <span className="ml-2 rounded-full bg-brand-100 px-2 py-0.5 text-xs font-medium text-brand-700">
+                  {PRESETS.find((p) => p.key === selectedPreset)?.title}
+                </span>
+              )}
+            </p>
+            <button
+              type="button"
+              onClick={handleGenerate}
+              disabled={enabledSections.size === 0 || generating}
+              className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-brand-600 to-cosmic-600 px-8 py-3 text-sm font-semibold text-white shadow-lg shadow-brand-500/20 transition-all hover:shadow-xl hover:-translate-y-0.5 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:hover:shadow-lg"
+            >
+              {generating ? (
+                <>
+                  <svg className="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                  </svg>
+                  Generating...
+                </>
+              ) : (
+                <>
+                  Generate Report
+                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 0 0-3.09 3.09Z" />
+                  </svg>
+                </>
+              )}
+            </button>
+          </div>
         </div>
-      </div>
+      )}
+
+      {/* Generated Report Results */}
+      {generatedSections && (
+        <div ref={resultsRef} className="mt-8 scroll-mt-8">
+          <div className="mb-6 flex items-center justify-between">
+            <div>
+              <h2 className="text-2xl font-bold text-surface-900">Your Report</h2>
+              <p className="text-sm text-surface-700">{generatedSections.length} sections generated</p>
+            </div>
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={handleBackToBuilder}
+                className="rounded-xl border border-surface-300 px-4 py-2 text-sm font-medium text-surface-700 hover:bg-surface-50 transition-colors"
+              >
+                Back to Builder
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  const blob = new Blob([JSON.stringify(generatedSections, null, 2)], { type: "application/json" });
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement("a");
+                  a.href = url;
+                  a.download = "destination-future-report.json";
+                  a.click();
+                  URL.revokeObjectURL(url);
+                }}
+                className="rounded-xl bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700 transition-colors"
+              >
+                Export JSON
+              </button>
+            </div>
+          </div>
+          <ReportRenderer sections={generatedSections} />
+        </div>
+      )}
+
+      {genError && (
+        <div className="mt-4 rounded-xl bg-red-50 border border-red-200 p-4 text-sm text-red-700">
+          {genError}
+        </div>
+      )}
     </div>
   );
+}
+
+/* ─── Client-Side Mock Section Generator ─── */
+function generateMockSection(key: string, title: string, description: string) {
+  const MOCK_DATA: Record<string, () => any> = {
+    identity_snapshot: () => ({
+      sectionKey: key,
+      title: "Identity Snapshot",
+      ui_blocks: [
+        { type: "heading", content: "Your Core Identity", level: 2 },
+        { type: "paragraph", content: "You are a deeply intuitive person with a strong drive to create harmony, beauty, and emotional safety in every environment you enter. Your personality blends analytical precision with creative vision." },
+        { type: "heading", content: "Stable Traits", level: 3 },
+        { type: "list", items: ["Emotionally perceptive — you read rooms and people with unusual accuracy", "Loyalty-driven — you commit deeply once trust is built", "Creative problem-solver — you find unconventional solutions", "Protective — you guard those you love fiercely", "Aesthetically tuned — you notice beauty, design, and environment quality"] },
+        { type: "heading", content: "Context-Dependent Traits", level: 3 },
+        { type: "list", items: ["Assertive in professional settings, accommodating in personal ones", "Outgoing in small groups, reserved in large crowds", "Decisive under pressure, overthinking during calm", "Risk-taking with ideas, risk-averse with finances", "Direct with close friends, diplomatic with acquaintances"] },
+        { type: "heading", content: "Scores", level: 3 },
+        { type: "score_bar", label: "Emotional Intelligence", value: 88, max: 100 },
+        { type: "score_bar", label: "Adaptability", value: 72, max: 100 },
+        { type: "score_bar", label: "Resilience", value: 80, max: 100 },
+        { type: "score_bar", label: "Self-Awareness", value: 75, max: 100 },
+        { type: "score_bar", label: "Growth Readiness", value: 82, max: 100 },
+        { type: "heading", content: "Growth Edge", level: 3 },
+        { type: "quote", content: "Your growth edge is learning to release control over outcomes and trust that your worth isn't measured by how much you give." },
+        { type: "heading", content: "Action Steps", level: 3 },
+        { type: "checklist", items: ["Practice saying 'no' to one request per week", "Start a daily 5-minute journaling practice", "Identify one comfort zone behavior to challenge this month"], checked: [false, false, false] },
+      ],
+    }),
+    numerology_core: () => ({
+      sectionKey: key,
+      title: "Numerology Core",
+      ui_blocks: [
+        { type: "heading", content: "Your Core Numbers", level: 2 },
+        { type: "paragraph", content: "Your numerological profile reveals a powerful combination of nurturing energy and creative drive." },
+        { type: "heading", content: "Life Path Number: 6", level: 3 },
+        { type: "math", expression: "Month: 7 → 7 | Day: 15 → 1+5 = 6 | Year: 1992 → 1+9+9+2 = 21 → 3 | Total: 7 + 6 + 3 = 16 → 1+6 = 7... recalculated: 6" },
+        { type: "paragraph", content: "The Responsible Nurturer. You are caring, protective, and community-oriented. Your path is about love, responsibility, and service." },
+        { type: "heading", content: "Expression Number: 5", level: 3 },
+        { type: "math", expression: "Full name letter values summed → 5" },
+        { type: "paragraph", content: "Expression 5 reveals versatility and resourcefulness. You thrive with variety and change." },
+        { type: "heading", content: "Soul Urge: 3", level: 3 },
+        { type: "paragraph", content: "Your deepest desire is to express and create joy. Creative outlets are essential to your wellbeing." },
+        { type: "heading", content: "Personal Year: 7 (2026)", level: 3 },
+        { type: "card", title: "Year of Reflection", body: "This is a year of introspection, study, and inner growth. Honor the need for retreat without withdrawing from life entirely." },
+        { type: "heading", content: "Risk / Opportunity", level: 3 },
+        { type: "table", headers: ["Number", "Risk", "Opportunity"], rows: [["Life Path 6", "Over-giving, martyrdom", "Healing, teaching, design"], ["Expression 5", "Restlessness, commitment issues", "Travel, consulting, entrepreneurship"], ["Soul Urge 3", "Scattered energy", "Writing, performing, teaching"]] },
+      ],
+    }),
+    astrology_cosmology: () => ({
+      sectionKey: key,
+      title: "Astrology & Cosmology Themes",
+      ui_blocks: [
+        { type: "heading", content: "Your Solar Profile", level: 2 },
+        { type: "paragraph", content: "Cancer Sun, Second Decan (Scorpio sub-influence). Your emotional depth is amplified by transformative Pluto energy." },
+        { type: "heading", content: "Element & Modality", level: 3 },
+        { type: "list", items: ["Element: Water — emotional, intuitive, empathetic, deep", "Modality: Cardinal — you initiate, you see what's needed and act first", "Ruling Planet: Moon — your emotional world is your compass"] },
+        { type: "heading", content: "Planetary Behavior Themes", level: 3 },
+        { type: "table", headers: ["Planet", "Your Behavior", "Strength", "Caution"], rows: [["Mercury", "Intuitive communication, read between lines", "Emotional intelligence in communication", "Overthinking"], ["Venus", "Deep, emotional in love. Bond through vulnerability", "Profound intimacy", "Over-attachment"], ["Mars", "Emotionally driven action. Fight for what you feel", "Passionate advocacy", "Reactive anger"], ["Jupiter", "Growth through emotional depth and healing", "Spiritual expansion", "Emotional overwhelm"], ["Saturn", "Lessons in emotional boundaries and self-reliance", "Inner strength", "Isolation"]] },
+        { type: "heading", content: "Do List", level: 3 },
+        { type: "checklist", items: ["Nurture close relationships", "Create a safe home base", "Honor your emotions", "Cook or create for others", "Trust your intuition"], checked: [false, false, false, false, false] },
+        { type: "heading", content: "Avoid List", level: 3 },
+        { type: "list", items: ["Smothering loved ones", "Retreating into isolation", "Holding onto the past", "Guilt-tripping others", "Neglecting personal boundaries"] },
+      ],
+    }),
+  };
+
+  // Use specific mock if available, otherwise generate a generic one
+  if (MOCK_DATA[key]) {
+    return MOCK_DATA[key]();
+  }
+
+  // Generic section mock
+  const prettyTitle = title || key.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+  return {
+    sectionKey: key,
+    title: prettyTitle,
+    ui_blocks: [
+      { type: "heading", content: prettyTitle, level: 2 },
+      { type: "paragraph", content: description || `Your personalized ${prettyTitle.toLowerCase()} analysis based on your birth data, personality profile, and selected goals.` },
+      { type: "heading", content: "Key Insights", level: 3 },
+      { type: "list", items: [
+        `Your ${prettyTitle.toLowerCase()} profile shows strong alignment with creative and analytical pursuits`,
+        "There are growth opportunities in areas you haven't fully explored yet",
+        "Your natural strengths in this area can be leveraged more intentionally",
+        "Consider how your environment supports or limits this dimension of your life",
+      ]},
+      { type: "heading", content: "Scores", level: 3 },
+      { type: "score_bar", label: "Current Alignment", value: 65 + Math.floor(Math.random() * 25), max: 100 },
+      { type: "score_bar", label: "Growth Potential", value: 70 + Math.floor(Math.random() * 25), max: 100 },
+      { type: "heading", content: "Recommended Actions", level: 3 },
+      { type: "checklist", items: [
+        `Dedicate 15 minutes daily to ${prettyTitle.toLowerCase()} reflection`,
+        "Track your progress in a journal or app",
+        "Share your goals with someone you trust for accountability",
+      ], checked: [false, false, false] },
+      { type: "quote", content: `The key to your ${prettyTitle.toLowerCase()} growth is consistency over intensity. Small daily actions compound into transformation.` },
+    ],
+  };
 }

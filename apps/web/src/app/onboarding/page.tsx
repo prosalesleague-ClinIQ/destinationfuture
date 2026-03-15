@@ -72,8 +72,8 @@ interface FormData {
   relationshipStatus: string;
   careerField: string;
   budgetRange: string;
-  stylePreference: string;
-  musicPreference: string;
+  stylePreferences: string[];
+  musicPreferences: string[];
   selectedGoals: string[];
 }
 
@@ -96,8 +96,8 @@ export default function OnboardingPage() {
     relationshipStatus: "",
     careerField: "",
     budgetRange: "",
-    stylePreference: "",
-    musicPreference: "",
+    stylePreferences: [],
+    musicPreferences: [],
     selectedGoals: [],
   });
 
@@ -108,12 +108,12 @@ export default function OnboardingPage() {
     setForm((prev) => ({ ...prev, [field]: value }));
   };
 
-  const toggleGoal = (goalKey: string) => {
+  const toggleArrayField = (field: "stylePreferences" | "musicPreferences" | "selectedGoals", key: string) => {
     setForm((prev) => ({
       ...prev,
-      selectedGoals: prev.selectedGoals.includes(goalKey)
-        ? prev.selectedGoals.filter((g) => g !== goalKey)
-        : [...prev.selectedGoals, goalKey],
+      [field]: prev[field].includes(key)
+        ? prev[field].filter((k: string) => k !== key)
+        : [...prev[field], key],
     }));
   };
 
@@ -440,37 +440,53 @@ export default function OnboardingPage() {
                 </div>
 
                 <div>
-                  <label htmlFor="stylePreference" className="mb-1.5 block text-sm font-medium text-surface-900">
-                    Style Preference
+                  <label className="mb-1.5 block text-sm font-medium text-surface-900">
+                    Style Preferences <span className="text-surface-300 text-xs font-normal">(select all that fit)</span>
                   </label>
-                  <select
-                    id="stylePreference"
-                    value={form.stylePreference}
-                    onChange={(e) => updateField("stylePreference", e.target.value)}
-                    className="w-full rounded-xl border border-surface-300 bg-surface-50 px-4 py-3 text-surface-900 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20 transition-colors"
-                  >
-                    <option value="">Select...</option>
-                    {STYLE_PREFERENCES.map((s) => (
-                      <option key={s.key} value={s.key}>{s.label}</option>
-                    ))}
-                  </select>
+                  <div className="flex flex-wrap gap-2">
+                    {STYLE_PREFERENCES.map((s) => {
+                      const selected = form.stylePreferences.includes(s.key);
+                      return (
+                        <button
+                          key={s.key}
+                          type="button"
+                          onClick={() => toggleArrayField("stylePreferences", s.key)}
+                          className={`rounded-full px-4 py-2 text-sm font-medium transition-all ${
+                            selected
+                              ? "bg-brand-600 text-white shadow-sm"
+                              : "bg-surface-100 text-surface-700 hover:bg-surface-200"
+                          }`}
+                        >
+                          {s.label}
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
 
                 <div>
-                  <label htmlFor="musicPreference" className="mb-1.5 block text-sm font-medium text-surface-900">
-                    Music Preference
+                  <label className="mb-1.5 block text-sm font-medium text-surface-900">
+                    Music Preferences <span className="text-surface-300 text-xs font-normal">(select all that fit)</span>
                   </label>
-                  <select
-                    id="musicPreference"
-                    value={form.musicPreference}
-                    onChange={(e) => updateField("musicPreference", e.target.value)}
-                    className="w-full rounded-xl border border-surface-300 bg-surface-50 px-4 py-3 text-surface-900 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20 transition-colors"
-                  >
-                    <option value="">Select...</option>
-                    {MUSIC_PREFERENCES.map((m) => (
-                      <option key={m.key} value={m.key}>{m.label}</option>
-                    ))}
-                  </select>
+                  <div className="flex flex-wrap gap-2">
+                    {MUSIC_PREFERENCES.map((m) => {
+                      const selected = form.musicPreferences.includes(m.key);
+                      return (
+                        <button
+                          key={m.key}
+                          type="button"
+                          onClick={() => toggleArrayField("musicPreferences", m.key)}
+                          className={`rounded-full px-4 py-2 text-sm font-medium transition-all ${
+                            selected
+                              ? "bg-cosmic-600 text-white shadow-sm"
+                              : "bg-surface-100 text-surface-700 hover:bg-surface-200"
+                          }`}
+                        >
+                          {m.label}
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
               </div>
             </div>
@@ -491,7 +507,7 @@ export default function OnboardingPage() {
                     <button
                       key={goal.key}
                       type="button"
-                      onClick={() => toggleGoal(goal.key)}
+                      onClick={() => toggleArrayField("selectedGoals", goal.key)}
                       className={`flex items-center gap-3 rounded-xl border-2 px-4 py-3 text-left transition-all duration-200 ${
                         isSelected
                           ? "border-brand-500 bg-brand-50 shadow-sm"
@@ -565,12 +581,20 @@ export default function OnboardingPage() {
                 />
                 <ReviewBlock
                   label="Style"
-                  value={STYLE_PREFERENCES.find((s) => s.key === form.stylePreference)?.label || "Not provided"}
+                  value={
+                    form.stylePreferences.length > 0
+                      ? form.stylePreferences.map((k) => STYLE_PREFERENCES.find((s) => s.key === k)?.label).join(", ")
+                      : "Not provided"
+                  }
                   onEdit={() => setStep(3)}
                 />
                 <ReviewBlock
                   label="Music"
-                  value={MUSIC_PREFERENCES.find((m) => m.key === form.musicPreference)?.label || "Not provided"}
+                  value={
+                    form.musicPreferences.length > 0
+                      ? form.musicPreferences.map((k) => MUSIC_PREFERENCES.find((m) => m.key === k)?.label).join(", ")
+                      : "Not provided"
+                  }
                   onEdit={() => setStep(3)}
                 />
                 <ReviewBlock

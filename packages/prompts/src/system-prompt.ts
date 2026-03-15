@@ -54,8 +54,8 @@ USER PROFILE:
 - Relationship Status: ${ctx.relationshipStatus || "Not provided"}
 - Career Field: ${ctx.careerField || "Not provided"}
 - Budget Range: ${ctx.budgetRange || "Not provided"}
-- Style Preference: ${ctx.stylePreference || "Not provided"}
-- Music Preference: ${ctx.musicPreference || "Not provided"}
+- Style Preferences: ${ctx.stylePreferences?.length ? ctx.stylePreferences.join(", ") : "Not provided"}
+- Music Preferences: ${ctx.musicPreferences?.length ? ctx.musicPreferences.join(", ") : "Not provided"}
 - Goals: ${ctx.goals.length > 0 ? ctx.goals.join(", ") : "Not specified"}
 
 SELECTED SECTIONS: ${ctx.selectedSections.join(", ")}`;

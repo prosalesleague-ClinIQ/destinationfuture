@@ -15,8 +15,8 @@ export interface PromptContext {
   relationshipStatus?: string;
   careerField?: string;
   budgetRange?: string;
-  stylePreference?: string;
-  musicPreference?: string;
+  stylePreferences?: string[];
+  musicPreferences?: string[];
   goals: string[];
   selectedSections: SectionKey[];
   outputDepth: "concise" | "standard" | "deep";

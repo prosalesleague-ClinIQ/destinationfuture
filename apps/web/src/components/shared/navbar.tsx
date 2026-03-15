@@ -9,7 +9,12 @@ const NAV_LINKS = [
   { href: "/report", label: "Build Report" },
   { href: "/quests", label: "Quests" },
   { href: "/growth", label: "Growth" },
-  { href: "/settings", label: "Settings" },
+  { href: "/locations", label: "Cities" },
+  { href: "/style", label: "Style" },
+  { href: "/music", label: "Music" },
+  { href: "/films", label: "Film & TV" },
+  { href: "/love-languages", label: "Love" },
+  { href: "/forecast", label: "Forecast" },
 ];
 
 export default function Navbar() {
