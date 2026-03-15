@@ -2,12 +2,18 @@
 
 import { useState } from "react";
 
-type FilmsTab = "films" | "tv" | "taste";
+type FilmsTab = "films" | "tv" | "books" | "taste";
 
 const GENRES = [
   "Thriller", "Sci-Fi", "Drama", "Comedy", "Romance",
   "Horror", "Documentary", "Action", "Animation", "Indie",
   "Mystery", "Fantasy",
+];
+
+const BOOK_GENRES = [
+  "Self-Help", "Psychology", "Sci-Fi", "Fantasy", "Literary Fiction",
+  "Memoir", "Business", "Philosophy", "Spirituality", "True Crime",
+  "History", "Poetry",
 ];
 
 const FILM_CATEGORIES = [
@@ -242,6 +248,133 @@ const TV_CATEGORIES = [
   },
 ];
 
+const BOOK_CATEGORIES = [
+  {
+    label: "For your growth journey...",
+    gradient: "from-emerald-400 to-teal-500",
+    emoji: "\u{1F331}",
+    books: [
+      {
+        title: "The Body Keeps the Score",
+        author: "Bessel van der Kolk",
+        genres: ["Psychology", "Self-Help"],
+        score: 96,
+        reason: "Your shadow work profile suggests deep interest in understanding how trauma shapes behavior",
+        gradient: "from-rose-600 to-red-800",
+      },
+      {
+        title: "Atomic Habits",
+        author: "James Clear",
+        genres: ["Self-Help", "Business"],
+        score: 93,
+        reason: "Your consistency patterns indicate you'd benefit from systems-based approaches",
+        gradient: "from-amber-500 to-yellow-600",
+      },
+      {
+        title: "The Power of Now",
+        author: "Eckhart Tolle",
+        genres: ["Spirituality", "Philosophy"],
+        score: 91,
+        reason: "Your spiritual growth goal aligns with present-moment awareness practices",
+        gradient: "from-indigo-500 to-violet-700",
+      },
+    ],
+  },
+  {
+    label: "For your analytical mind...",
+    gradient: "from-cyan-400 to-blue-500",
+    emoji: "\u{1F9E0}",
+    books: [
+      {
+        title: "Thinking, Fast and Slow",
+        author: "Daniel Kahneman",
+        genres: ["Psychology", "Business"],
+        score: 95,
+        reason: "Your cognitive profile shows strong analytical tendencies",
+        gradient: "from-blue-600 to-indigo-800",
+      },
+      {
+        title: "Sapiens",
+        author: "Yuval Noah Harari",
+        genres: ["History", "Philosophy"],
+        score: 92,
+        reason: "Your curiosity score and philosophical bent match this broad perspective",
+        gradient: "from-orange-500 to-amber-700",
+      },
+      {
+        title: "G\u00F6del, Escher, Bach",
+        author: "Douglas Hofstadter",
+        genres: ["Philosophy", "Sci-Fi"],
+        score: 90,
+        reason: "Your pattern-recognition strength makes this a perfect intellectual challenge",
+        gradient: "from-purple-600 to-fuchsia-800",
+      },
+    ],
+  },
+  {
+    label: "For emotional depth...",
+    gradient: "from-rose-400 to-pink-500",
+    emoji: "\u{1F3AD}",
+    books: [
+      {
+        title: "The Alchemist",
+        author: "Paulo Coelho",
+        genres: ["Literary Fiction", "Spirituality"],
+        score: 94,
+        reason: "Your destiny-oriented goals resonate with this journey narrative",
+        gradient: "from-amber-400 to-orange-600",
+      },
+      {
+        title: "Norwegian Wood",
+        author: "Haruki Murakami",
+        genres: ["Literary Fiction", "Memoir"],
+        score: 91,
+        reason: "Your emotional intelligence score suggests deep appreciation for nuanced feeling",
+        gradient: "from-emerald-600 to-teal-800",
+      },
+      {
+        title: "When Breath Becomes Air",
+        author: "Paul Kalanithi",
+        genres: ["Memoir", "Philosophy"],
+        score: 93,
+        reason: "Your introspective nature connects with existential exploration",
+        gradient: "from-slate-600 to-gray-800",
+      },
+    ],
+  },
+  {
+    label: "Hidden gems for you...",
+    gradient: "from-purple-400 to-violet-500",
+    emoji: "\u{1F48E}",
+    books: [
+      {
+        title: "The Midnight Library",
+        author: "Matt Haig",
+        genres: ["Literary Fiction", "Fantasy"],
+        score: 97,
+        reason: "Your reinvention focus aligns with exploring alternate life paths",
+        gradient: "from-indigo-500 to-blue-700",
+      },
+      {
+        title: "Educated",
+        author: "Tara Westover",
+        genres: ["Memoir", "Self-Help"],
+        score: 95,
+        reason: "Your growth trajectory mirrors themes of self-transformation through learning",
+        gradient: "from-teal-500 to-cyan-700",
+      },
+      {
+        title: "Piranesi",
+        author: "Susanna Clarke",
+        genres: ["Fantasy", "Literary Fiction"],
+        score: 85,
+        reason: "Your aesthetic sensibility and mystery appreciation fit this atmospheric world",
+        gradient: "from-violet-500 to-purple-800",
+      },
+    ],
+  },
+];
+
 const TASTE_DNA = [
   { genre: "Psychological Thriller", pct: 85, gradient: "from-red-500 to-rose-600", emoji: "\u{1F9E0}" },
   { genre: "Sci-Fi / Speculative", pct: 82, gradient: "from-cyan-400 to-blue-500", emoji: "\u{1F680}" },
@@ -285,9 +418,14 @@ export default function FilmsPage() {
   const [selectedGenres, setSelectedGenres] = useState<string[]>([]);
   const [showRecommendations, setShowRecommendations] = useState(true);
 
+  const [favoriteBooks, setFavoriteBooks] = useState(["", "", ""]);
+  const [selectedBookGenres, setSelectedBookGenres] = useState<string[]>([]);
+  const [showBookRecommendations, setShowBookRecommendations] = useState(true);
+
   const tabs: { key: FilmsTab; label: string; emoji: string }[] = [
     { key: "films", label: "Films", emoji: "\u{1F3AC}" },
     { key: "tv", label: "TV Shows", emoji: "\u{1F4FA}" },
+    { key: "books", label: "Books", emoji: "\u{1F4DA}" },
     { key: "taste", label: "Taste DNA", emoji: "\u{1F9EC}" },
   ];
 
@@ -297,9 +435,20 @@ export default function FilmsPage() {
     );
   };
 
+  const toggleBookGenre = (genre: string) => {
+    setSelectedBookGenres((prev) =>
+      prev.includes(genre) ? prev.filter((g) => g !== genre) : [...prev, genre]
+    );
+  };
+
   const handleGetPicks = () => {
     setShowRecommendations(false);
     setTimeout(() => setShowRecommendations(true), 400);
+  };
+
+  const handleGetBookPicks = () => {
+    setShowBookRecommendations(false);
+    setTimeout(() => setShowBookRecommendations(true), 400);
   };
 
   return (
@@ -316,7 +465,7 @@ export default function FilmsPage() {
         </div>
         <div className="relative z-10">
           <p className="text-sm font-medium uppercase tracking-widest text-purple-400 mb-2">{"\u{1F39E}\uFE0F"} Curated For You</p>
-          <h1 className="text-3xl md:text-5xl font-extrabold text-white mb-3">Film & TV Profile</h1>
+          <h1 className="text-3xl md:text-5xl font-extrabold text-white mb-3">Film, TV & Books</h1>
           <p className="text-lg text-white/50 max-w-xl">
             Your taste is a fingerprint. Here is what your personality reveals about the stories that move you.
           </p>
@@ -507,6 +656,127 @@ export default function FilmsPage() {
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* BOOKS TAB */}
+      {activeTab === "books" && (
+        <div className="space-y-8">
+          {/* Book Preference Input */}
+          <div className="rounded-3xl bg-gradient-to-br from-gray-900 via-slate-800 to-gray-900 p-8 border border-white/5 shadow-xl">
+            <div className="flex items-center gap-3 mb-2">
+              <span className="text-2xl">{"\u{1F4D6}"}</span>
+              <h2 className="text-xl font-extrabold text-white">Your Reading Preferences</h2>
+            </div>
+            <p className="text-sm text-white/40 mb-6">Tell us what you read so we can curate your shelf.</p>
+
+            {/* Favorite books inputs */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+              {favoriteBooks.map((book, i) => (
+                <div key={i} className="relative">
+                  <label className="text-xs font-bold text-white/50 uppercase tracking-wider mb-2 block">
+                    Favorite Book {i + 1}
+                  </label>
+                  <input
+                    type="text"
+                    value={book}
+                    onChange={(e) => {
+                      const updated = [...favoriteBooks];
+                      updated[i] = e.target.value;
+                      setFavoriteBooks(updated);
+                    }}
+                    placeholder={["e.g. 1984", "e.g. Meditations", "e.g. Dune"][i]}
+                    className="w-full rounded-xl bg-white/5 border border-white/10 px-4 py-3 text-sm text-white placeholder-white/20 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+                  />
+                </div>
+              ))}
+            </div>
+
+            {/* Book Genre pills */}
+            <div className="mb-6">
+              <label className="text-xs font-bold text-white/50 uppercase tracking-wider mb-3 block">
+                Genres You Love
+              </label>
+              <div className="flex flex-wrap gap-2">
+                {BOOK_GENRES.map((genre) => (
+                  <button
+                    key={genre}
+                    onClick={() => toggleBookGenre(genre)}
+                    className={`rounded-full px-4 py-2 text-sm font-bold transition-all duration-200 ${
+                      selectedBookGenres.includes(genre)
+                        ? "bg-gradient-to-r from-purple-500 to-fuchsia-500 text-white shadow-lg shadow-purple-500/25 scale-105"
+                        : "bg-white/5 text-white/50 border border-white/10 hover:bg-white/10 hover:text-white/80"
+                    }`}
+                  >
+                    {genre}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Get Book Picks button */}
+            <button
+              onClick={handleGetBookPicks}
+              className="w-full md:w-auto rounded-xl bg-gradient-to-r from-purple-500 via-fuchsia-500 to-pink-500 px-8 py-3.5 text-white font-bold text-sm shadow-lg shadow-purple-500/25 hover:shadow-xl hover:shadow-purple-500/30 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200"
+            >
+              {"\u{1F4DA}"} Get Book Picks
+            </button>
+          </div>
+
+          {/* Book Recommendations */}
+          <div className={`space-y-10 transition-all duration-500 ${showBookRecommendations ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}>
+            {BOOK_CATEGORIES.map((category) => (
+              <div key={category.label}>
+                <div className="flex items-center gap-3 mb-5">
+                  <span className="text-2xl">{category.emoji}</span>
+                  <div>
+                    <h2 className="text-xl font-extrabold text-gray-900">{category.label}</h2>
+                    <div className={`h-1 w-20 rounded-full bg-gradient-to-r ${category.gradient} mt-1`} />
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                  {category.books.map((book) => (
+                    <div
+                      key={book.title}
+                      className="group relative overflow-hidden rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 cursor-pointer bg-white"
+                    >
+                      {/* Book cover placeholder */}
+                      <div className={`h-[120px] bg-gradient-to-br ${book.gradient} relative`}>
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
+                        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(255,255,255,0.1),transparent_50%)] opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                        {/* Subtle book spine line */}
+                        <div className="absolute left-6 top-0 bottom-0 w-[2px] bg-white/10" />
+                        {/* Score circle */}
+                        <div className="absolute top-3 right-3">
+                          <ScoreCircle score={book.score} size={48} />
+                        </div>
+                        {/* Genre badges overlaid */}
+                        <div className="absolute bottom-3 left-4 flex flex-wrap gap-1.5">
+                          {book.genres.map((g) => (
+                            <span key={g} className="rounded-full bg-white/20 backdrop-blur-sm px-2.5 py-0.5 text-[10px] font-bold text-white uppercase tracking-wide">
+                              {g}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                      {/* Book details */}
+                      <div className="p-5">
+                        <h3 className="text-base font-extrabold text-gray-900 leading-tight mb-1">{book.title}</h3>
+                        <p className="text-sm text-gray-500 mb-3">by {book.author}</p>
+                        <div className="rounded-xl bg-gradient-to-br from-gray-50 to-gray-100 border border-gray-100 p-3">
+                          <p className="text-[11px] text-gray-500 leading-relaxed italic">
+                            &ldquo;{book.reason}&rdquo;
+                          </p>
+                        </div>
+                      </div>
+                      {/* Hover line */}
+                      <div className={`h-1 bg-gradient-to-r ${book.gradient} opacity-0 group-hover:opacity-100 transition-opacity`} />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 
