@@ -13,6 +13,8 @@ const NAV_LINKS = [
   { href: "/style", label: "Style" },
   { href: "/music", label: "Music" },
   { href: "/films", label: "Film & TV" },
+  { href: "/soulmate", label: "Soulmate" },
+  { href: "/career", label: "Career" },
   { href: "/love-languages", label: "Love" },
   { href: "/forecast", label: "Forecast" },
 ];
