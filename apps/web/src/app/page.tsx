@@ -111,7 +111,14 @@ const STEPS = [
 interface Star {
   x: number; y: number; z: number; px: number; py: number;
   twinkleSpeed: number; twinkleOffset: number;
-  hue: number; // slight color variation
+  hue: number;
+}
+
+interface ShootingStar {
+  x: number; y: number;
+  vx: number; vy: number;
+  life: number; maxLife: number;
+  size: number; brightness: number;
 }
 
 interface CelestialBody {
@@ -129,6 +136,7 @@ function StarWarpBackground() {
   const animRef = useRef<number>(0);
   const starsRef = useRef<Star[]>([]);
   const bodiesRef = useRef<CelestialBody[]>([]);
+  const shootingRef = useRef<ShootingStar[]>([]);
   const timeRef = useRef(0);
 
   useEffect(() => {
@@ -236,7 +244,7 @@ function StarWarpBackground() {
       bodiesRef.current = bodies;
     }
 
-    const speed = 1.5; // Gentle cruising speed
+    const speed = 4; // Brisk cruising speed
     let running = true;
 
     function drawPlanet(ctx: CanvasRenderingContext2D, sx: number, sy: number, r: number, body: CelestialBody, alpha: number) {
@@ -455,6 +463,71 @@ function StarWarpBackground() {
         star.px = sx;
         star.py = sy;
       }
+
+      // --- Shooting stars ---
+      // Spawn new ones randomly
+      if (Math.random() < 0.012) {
+        const fromLeft = Math.random() < 0.5;
+        const startX = fromLeft ? Math.random() * cw * 0.4 : cw * 0.6 + Math.random() * cw * 0.4;
+        const startY = Math.random() * ch * 0.5;
+        const angle = fromLeft ? 0.3 + Math.random() * 0.5 : Math.PI - 0.3 - Math.random() * 0.5;
+        const spd = 12 + Math.random() * 18;
+        shootingRef.current.push({
+          x: startX, y: startY,
+          vx: Math.cos(angle) * spd,
+          vy: Math.sin(angle) * spd,
+          life: 0,
+          maxLife: 30 + Math.random() * 40,
+          size: 1.5 + Math.random() * 1.5,
+          brightness: 0.7 + Math.random() * 0.3,
+        });
+      }
+
+      // Update and draw shooting stars
+      const activeShooting: ShootingStar[] = [];
+      for (const ss of shootingRef.current) {
+        ss.life++;
+        if (ss.life > ss.maxLife) continue;
+        ss.x += ss.vx;
+        ss.y += ss.vy;
+        activeShooting.push(ss);
+
+        const progress = ss.life / ss.maxLife;
+        const fadeIn = Math.min(progress * 5, 1);
+        const fadeOut = 1 - Math.pow(progress, 2);
+        const alpha = fadeIn * fadeOut * ss.brightness;
+
+        // Bright head
+        ctx.beginPath();
+        ctx.arc(ss.x, ss.y, ss.size, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
+        ctx.fill();
+
+        // Glowing head halo
+        ctx.beginPath();
+        ctx.arc(ss.x, ss.y, ss.size * 3, 0, Math.PI * 2);
+        const headGrad = ctx.createRadialGradient(ss.x, ss.y, 0, ss.x, ss.y, ss.size * 3);
+        headGrad.addColorStop(0, `rgba(200, 220, 255, ${alpha * 0.4})`);
+        headGrad.addColorStop(1, "transparent");
+        ctx.fillStyle = headGrad;
+        ctx.fill();
+
+        // Luminous tail
+        const tailLen = 40 + progress * 60;
+        const tailX = ss.x - (ss.vx / Math.sqrt(ss.vx * ss.vx + ss.vy * ss.vy)) * tailLen;
+        const tailY = ss.y - (ss.vy / Math.sqrt(ss.vx * ss.vx + ss.vy * ss.vy)) * tailLen;
+        const tailGrad = ctx.createLinearGradient(ss.x, ss.y, tailX, tailY);
+        tailGrad.addColorStop(0, `rgba(220, 230, 255, ${alpha * 0.6})`);
+        tailGrad.addColorStop(0.3, `rgba(160, 180, 255, ${alpha * 0.2})`);
+        tailGrad.addColorStop(1, "transparent");
+        ctx.beginPath();
+        ctx.moveTo(ss.x, ss.y);
+        ctx.lineTo(tailX, tailY);
+        ctx.strokeStyle = tailGrad;
+        ctx.lineWidth = ss.size * 0.8;
+        ctx.stroke();
+      }
+      shootingRef.current = activeShooting;
 
       animRef.current = requestAnimationFrame(animate);
     };
