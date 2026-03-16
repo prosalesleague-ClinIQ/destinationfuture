@@ -17,6 +17,7 @@ const NAV_LINKS = [
   { href: "/career", label: "Career" },
   { href: "/love-languages", label: "Love" },
   { href: "/forecast", label: "Forecast" },
+  { href: "/future-you", label: "Future You" },
 ];
 
 export default function Navbar() {

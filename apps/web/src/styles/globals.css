@@ -45,3 +45,48 @@
     @apply transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5;
   }
 }
+
+/* Future You pulsing glow */
+@keyframes future-you-glow {
+  0%, 100% {
+    box-shadow:
+      0 0 20px rgba(52, 211, 153, 0.3),
+      0 0 40px rgba(52, 211, 153, 0.1),
+      0 0 60px rgba(34, 211, 238, 0.05);
+  }
+  50% {
+    box-shadow:
+      0 0 25px rgba(52, 211, 153, 0.5),
+      0 0 50px rgba(52, 211, 153, 0.2),
+      0 0 80px rgba(34, 211, 238, 0.1);
+  }
+}
+
+.future-you-pulse {
+  animation: future-you-glow 2.5s ease-in-out infinite;
+}
+
+/* Popup slide-in */
+@keyframes slide-in-from-bottom-4 {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-in.slide-in-from-bottom-4.fade-in {
+  animation: slide-in-from-bottom-4 0.2s ease-out;
+}
+
+/* Hide scrollbar utility */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}

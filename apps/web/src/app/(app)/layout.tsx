@@ -8,6 +8,11 @@ const SymbolicBackground = dynamic(
   { ssr: false }
 );
 
+const FutureYouFab = dynamic(
+  () => import("@/components/future-you/future-you-fab"),
+  { ssr: false }
+);
+
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="relative min-h-screen bg-[#0a0e27] text-white">
@@ -41,6 +46,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       <main className="relative z-10 mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
         {children}
       </main>
+
+      {/* Future You floating button */}
+      <FutureYouFab />
     </div>
   );
 }
