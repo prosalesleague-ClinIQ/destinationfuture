@@ -88,21 +88,27 @@ export default function FutureYouFab() {
       <button
         ref={buttonRef}
         onClick={toggleOpen}
-        className={`fixed bottom-6 right-6 z-[1000] flex h-14 w-14 items-center justify-center rounded-full shadow-2xl transition-all duration-300 ${
+        className={`fixed bottom-6 right-6 z-[1000] flex items-center gap-2.5 rounded-full shadow-2xl transition-all duration-300 ${
           isOpen
-            ? "bg-white/10 border border-white/20 rotate-0 scale-95"
-            : "bg-gradient-to-br from-emerald-400 to-cyan-500 future-you-pulse hover:scale-110 hover:shadow-emerald-500/40"
+            ? "h-12 px-5 bg-white/10 border border-white/20 scale-95"
+            : "h-12 px-5 bg-gradient-to-br from-emerald-400 to-cyan-500 future-you-pulse hover:scale-105 hover:shadow-emerald-500/40"
         }`}
         aria-label="Talk to Future You"
       >
         {isOpen ? (
-          <svg className="h-6 w-6 text-white/70" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 13.5 12 21m0 0-7.5-7.5M12 21V3" />
-          </svg>
+          <>
+            <svg className="h-4 w-4 text-white/70" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 13.5 12 21m0 0-7.5-7.5M12 21V3" />
+            </svg>
+            <span className="text-sm font-medium text-white/70">Close</span>
+          </>
         ) : (
-          <svg className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 0 0-3.09 3.09ZM18.259 8.715 18 9.75l-.259-1.035a3.375 3.375 0 0 0-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 0 0 2.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 0 0 2.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 0 0-2.456 2.456Z" />
-          </svg>
+          <>
+            <svg className="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 0 0-3.09 3.09ZM18.259 8.715 18 9.75l-.259-1.035a3.375 3.375 0 0 0-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 0 0 2.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 0 0 2.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 0 0-2.456 2.456Z" />
+            </svg>
+            <span className="text-sm font-semibold text-white">Future You</span>
+          </>
         )}
       </button>
     </>
