@@ -2,7 +2,13 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import CinematicDashboardShell from "@/components/cinematic/cinematic-dashboard-shell";
+
+const CinematicIntroSequence = dynamic(
+  () => import("@/components/cinematic/intro-sequence"),
+  { ssr: false }
+);
 
 const FEATURES = [
   {
@@ -98,271 +104,7 @@ const STEPS = [
   },
 ];
 
-// ---------------------------------------------------------------------------
-// Intro Sequence Component
-// ---------------------------------------------------------------------------
-
-function IntroSequence({ onComplete }: { onComplete: () => void }) {
-  const [phase, setPhase] = useState<
-    "globe" | "touch" | "city" | "zoom" | "whitewash" | "title" | "done"
-  >("globe");
-
-  useEffect(() => {
-    const timers: ReturnType<typeof setTimeout>[] = [];
-    // Globe spinning — 2s
-    timers.push(setTimeout(() => setPhase("touch"), 2000));
-    // Touch pulse — 1.5s
-    timers.push(setTimeout(() => setPhase("city"), 3500));
-    // City reveal (Paris) — 2s
-    timers.push(setTimeout(() => setPhase("zoom"), 5500));
-    // Zoom into globe — 1.5s
-    timers.push(setTimeout(() => setPhase("whitewash"), 7000));
-    // White wash — 1s
-    timers.push(setTimeout(() => setPhase("title"), 8000));
-    // Title reveal — 2.5s then done
-    timers.push(setTimeout(() => setPhase("done"), 10500));
-
-    return () => timers.forEach(clearTimeout);
-  }, []);
-
-  useEffect(() => {
-    if (phase === "done") onComplete();
-  }, [phase, onComplete]);
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#0a0e27] overflow-hidden">
-      {/* Skip button */}
-      <button
-        onClick={onComplete}
-        className="absolute top-6 right-6 z-[60] text-white/40 hover:text-white/80 text-sm font-medium tracking-wide transition-colors duration-300"
-      >
-        Skip Intro &rarr;
-      </button>
-
-      {/* Stars background */}
-      <div className="absolute inset-0">
-        {Array.from({ length: 60 }).map((_, i) => (
-          <div
-            key={i}
-            className="absolute rounded-full bg-white"
-            style={{
-              width: `${Math.random() * 2 + 1}px`,
-              height: `${Math.random() * 2 + 1}px`,
-              left: `${Math.random() * 100}%`,
-              top: `${Math.random() * 100}%`,
-              opacity: Math.random() * 0.4 + 0.1,
-              animation: `twinkle ${Math.random() * 3 + 2}s ease-in-out infinite`,
-              animationDelay: `${Math.random() * 3}s`,
-            }}
-          />
-        ))}
-      </div>
-
-      {/* Globe */}
-      <div
-        className="relative transition-all duration-[1500ms] ease-in-out"
-        style={{
-          transform:
-            phase === "zoom"
-              ? "scale(8)"
-              : phase === "whitewash" || phase === "title" || phase === "done"
-                ? "scale(12)"
-                : "scale(1)",
-          opacity:
-            phase === "whitewash" || phase === "title" || phase === "done"
-              ? 0
-              : 1,
-        }}
-      >
-        {/* Globe sphere */}
-        <div
-          className="relative w-64 h-64 rounded-full border border-indigo-400/30 overflow-hidden"
-          style={{
-            background:
-              "radial-gradient(circle at 35% 35%, rgba(99,102,241,0.15), rgba(10,14,39,0.9) 70%)",
-            boxShadow:
-              "0 0 80px rgba(99,102,241,0.15), inset 0 0 60px rgba(99,102,241,0.08)",
-          }}
-        >
-          {/* Grid lines */}
-          <div className="absolute inset-0" style={{ opacity: 0.15 }}>
-            {/* Horizontal lines */}
-            {[20, 40, 60, 80].map((top) => (
-              <div
-                key={`h-${top}`}
-                className="absolute w-full border-t border-indigo-300/50"
-                style={{ top: `${top}%` }}
-              />
-            ))}
-            {/* Vertical arcs (simplified) */}
-            {[25, 50, 75].map((left) => (
-              <div
-                key={`v-${left}`}
-                className="absolute h-full border-l border-indigo-300/40"
-                style={{
-                  left: `${left}%`,
-                  borderRadius: "50%",
-                }}
-              />
-            ))}
-          </div>
-
-          {/* Spinning highlight */}
-          <div
-            className="absolute inset-0 rounded-full"
-            style={{
-              background:
-                "conic-gradient(from 0deg, transparent 0%, rgba(99,102,241,0.08) 25%, transparent 50%)",
-              animation: "spin 8s linear infinite",
-            }}
-          />
-
-          {/* City dot — Paris */}
-          <div
-            className="absolute transition-all duration-700"
-            style={{
-              left: "52%",
-              top: "28%",
-              opacity: phase === "city" || phase === "zoom" ? 1 : 0,
-              transform:
-                phase === "city" || phase === "zoom"
-                  ? "scale(1)"
-                  : "scale(0)",
-            }}
-          >
-            <div className="relative">
-              <div className="w-2 h-2 rounded-full bg-indigo-400 animate-ping absolute" />
-              <div className="w-2 h-2 rounded-full bg-white" />
-              <span
-                className="absolute left-4 -top-1 text-xs text-white/80 font-light tracking-wider whitespace-nowrap"
-                style={{
-                  textShadow: "0 0 10px rgba(99,102,241,0.8)",
-                }}
-              >
-                Paris
-              </span>
-            </div>
-          </div>
-        </div>
-
-        {/* Touch ripple */}
-        {(phase === "touch" || phase === "city") && (
-          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-            <div
-              className="w-16 h-16 rounded-full border border-indigo-400/40"
-              style={{
-                animation: "ripple 1.5s ease-out forwards",
-              }}
-            />
-            <div
-              className="absolute w-16 h-16 rounded-full border border-indigo-400/20"
-              style={{
-                animation: "ripple 1.5s ease-out 0.3s forwards",
-              }}
-            />
-          </div>
-        )}
-      </div>
-
-      {/* White wash overlay */}
-      <div
-        className="absolute inset-0 bg-white transition-opacity duration-700 pointer-events-none"
-        style={{
-          opacity:
-            phase === "whitewash"
-              ? 0.9
-              : phase === "title"
-                ? 0
-                : 0,
-        }}
-      />
-
-      {/* Title reveal */}
-      <div
-        className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none transition-opacity duration-1000"
-        style={{
-          opacity: phase === "title" ? 1 : 0,
-        }}
-      >
-        <h1
-          className="text-6xl md:text-8xl font-bold tracking-tight"
-          style={{
-            background:
-              "linear-gradient(135deg, #818cf8, #a78bfa, #c084fc)",
-            WebkitBackgroundClip: "text",
-            WebkitTextFillColor: "transparent",
-            animation:
-              phase === "title"
-                ? "fadeSlideUp 1.2s ease-out forwards"
-                : "none",
-          }}
-        >
-          Destination
-        </h1>
-        <h1
-          className="text-6xl md:text-8xl font-bold tracking-tight text-white/90"
-          style={{
-            animation:
-              phase === "title"
-                ? "fadeSlideUp 1.2s ease-out 0.3s both"
-                : "none",
-          }}
-        >
-          Future
-        </h1>
-        <p
-          className="mt-6 text-lg text-white/40 font-light tracking-[0.25em] uppercase"
-          style={{
-            animation:
-              phase === "title"
-                ? "fadeSlideUp 1s ease-out 0.8s both"
-                : "none",
-          }}
-        >
-          Your journey begins
-        </p>
-      </div>
-
-      {/* Inline keyframes */}
-      <style jsx>{`
-        @keyframes twinkle {
-          0%,
-          100% {
-            opacity: 0.1;
-          }
-          50% {
-            opacity: 0.6;
-          }
-        }
-        @keyframes spin {
-          to {
-            transform: rotate(360deg);
-          }
-        }
-        @keyframes ripple {
-          0% {
-            transform: scale(0.5);
-            opacity: 1;
-          }
-          100% {
-            transform: scale(4);
-            opacity: 0;
-          }
-        }
-        @keyframes fadeSlideUp {
-          0% {
-            opacity: 0;
-            transform: translateY(30px);
-          }
-          100% {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-      `}</style>
-    </div>
-  );
-}
+// Inline IntroSequence removed — using cinematic Three.js intro instead
 
 // ---------------------------------------------------------------------------
 // Landing Page
@@ -392,9 +134,9 @@ export default function LandingPage() {
 
   return (
     <>
-      {/* Intro overlay */}
+      {/* Cinematic intro overlay — Three.js globe + warp */}
       {showIntro && !introComplete && (
-        <IntroSequence onComplete={handleIntroComplete} />
+        <CinematicIntroSequence onComplete={handleIntroComplete} />
       )}
 
       {/* Main landing page with cinematic shell */}

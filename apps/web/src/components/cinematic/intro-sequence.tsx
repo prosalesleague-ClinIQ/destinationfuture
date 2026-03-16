@@ -424,6 +424,142 @@ function PreludeWatermark({ visible }: { visible: boolean }) {
 }
 
 // ---------------------------------------------------------------------------
+// Star warp — flying through space canvas effect
+// ---------------------------------------------------------------------------
+
+function StarWarp({ active }: { active: boolean }) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const animRef = useRef<number>(0);
+  const starsRef = useRef<{ x: number; y: number; z: number; px: number; py: number }[]>([]);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    const dpr = window.devicePixelRatio || 1;
+    const resize = () => {
+      canvas.width = window.innerWidth * dpr;
+      canvas.height = window.innerHeight * dpr;
+      ctx.scale(dpr, dpr);
+    };
+    resize();
+    window.addEventListener("resize", resize);
+
+    const w = () => canvas.width / (window.devicePixelRatio || 1);
+    const h = () => canvas.height / (window.devicePixelRatio || 1);
+
+    // Initialize 1500 stars
+    if (starsRef.current.length === 0) {
+      for (let i = 0; i < 1500; i++) {
+        starsRef.current.push({
+          x: (Math.random() - 0.5) * 2000,
+          y: (Math.random() - 0.5) * 2000,
+          z: Math.random() * 2000,
+          px: 0,
+          py: 0,
+        });
+      }
+    }
+
+    const speed = 15;
+    let running = true;
+
+    const animate = () => {
+      if (!running) return;
+      const cw = w();
+      const ch = h();
+      const cx = cw / 2;
+      const cy = ch / 2;
+
+      // Semi-transparent clear for motion trails
+      ctx.fillStyle = "rgba(5, 8, 16, 0.25)";
+      ctx.fillRect(0, 0, cw, ch);
+
+      for (const star of starsRef.current) {
+        // Move star toward camera
+        star.z -= speed;
+        if (star.z <= 0) {
+          star.x = (Math.random() - 0.5) * 2000;
+          star.y = (Math.random() - 0.5) * 2000;
+          star.z = 2000;
+          star.px = cx + (star.x / star.z) * 400;
+          star.py = cy + (star.y / star.z) * 400;
+        }
+
+        // Project to 2D
+        const sx = cx + (star.x / star.z) * 400;
+        const sy = cy + (star.y / star.z) * 400;
+
+        // Size based on depth
+        const depth = 1 - star.z / 2000;
+        const size = depth * 2.5;
+        const alpha = depth * 0.9;
+
+        // Draw streak line from previous position
+        if (star.px !== 0 && star.py !== 0) {
+          ctx.beginPath();
+          ctx.moveTo(star.px, star.py);
+          ctx.lineTo(sx, sy);
+          ctx.strokeStyle = `rgba(180, 190, 255, ${alpha * 0.6})`;
+          ctx.lineWidth = size * 0.5;
+          ctx.stroke();
+        }
+
+        // Draw star point
+        ctx.beginPath();
+        ctx.arc(sx, sy, size, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
+        ctx.fill();
+
+        // Glow on close stars
+        if (depth > 0.7) {
+          ctx.beginPath();
+          ctx.arc(sx, sy, size * 3, 0, Math.PI * 2);
+          const grad = ctx.createRadialGradient(sx, sy, 0, sx, sy, size * 3);
+          grad.addColorStop(0, `rgba(150, 160, 255, ${alpha * 0.3})`);
+          grad.addColorStop(1, "transparent");
+          ctx.fillStyle = grad;
+          ctx.fill();
+        }
+
+        star.px = sx;
+        star.py = sy;
+      }
+
+      animRef.current = requestAnimationFrame(animate);
+    };
+
+    if (active) {
+      animate();
+    }
+
+    return () => {
+      running = false;
+      cancelAnimationFrame(animRef.current);
+      window.removeEventListener("resize", resize);
+    };
+  }, [active]);
+
+  return (
+    <AnimatePresence>
+      {active && (
+        <motion.canvas
+          ref={canvasRef}
+          className="fixed inset-0 z-0"
+          style={{ width: "100%", height: "100%", background: "#050810" }}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 1.5 }}
+        />
+      )}
+    </AnimatePresence>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Deep space background with nebula hazes
 // ---------------------------------------------------------------------------
 
@@ -580,6 +716,9 @@ export default function IntroSequence({ onComplete }: IntroSequenceProps) {
       animate={{ opacity: phase === "transition-out" ? 0 : 1 }}
       transition={{ duration: 1.5, ease: "easeInOut" }}
     >
+      {/* Flying through space — star warp tunnel */}
+      <StarWarp active={showSpaceBg} />
+
       {/* Deep space background */}
       <SpaceBackground visible={showSpaceBg} />
 
