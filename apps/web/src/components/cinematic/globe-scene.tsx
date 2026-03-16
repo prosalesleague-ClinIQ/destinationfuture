@@ -247,17 +247,26 @@ const globeFragmentShader = /* glsl */ `
   }
 
   void main() {
-    // --- Base colors ---
-    vec3 oceanColor = vec3(0.031, 0.051, 0.169);   // #080d2b
-    vec3 landColor  = vec3(0.059, 0.102, 0.239);    // #0f1a3d
-    vec3 landHighColor = vec3(0.078, 0.133, 0.298); // elevated terrain
+    // --- Base colors — realistic Earth-like palette ---
+    vec3 oceanColor = vec3(0.01, 0.05, 0.22);      // deep ocean blue
+    vec3 oceanShallow = vec3(0.02, 0.12, 0.35);     // coastal shallows
+    vec3 landColor  = vec3(0.12, 0.22, 0.08);       // vegetation green
+    vec3 landDry = vec3(0.25, 0.2, 0.1);            // arid/desert brown
+    vec3 landHighColor = vec3(0.35, 0.3, 0.2);      // mountain/highland
 
     // --- Procedural continent shapes ---
     vec2 noiseCoord = vUv * vec2(10.0, 5.0);
     float continentNoise = fbm(noiseCoord + vec2(0.3, 0.7));
-    float land = smoothstep(0.42, 0.56, continentNoise);
+    float coastline = smoothstep(0.40, 0.44, continentNoise);
+    float land = smoothstep(0.44, 0.56, continentNoise);
     float elevation = smoothstep(0.56, 0.72, continentNoise);
-    vec3 surfaceColor = mix(oceanColor, mix(landColor, landHighColor, elevation), land);
+    float highElev = smoothstep(0.72, 0.85, continentNoise);
+    // Blend ocean with coastal shallows near land
+    vec3 oceanBlend = mix(oceanColor, oceanShallow, coastline * 0.5);
+    // Blend land colors by elevation: green → brown → highland
+    vec3 landBlend = mix(landColor, landDry, elevation * 0.6);
+    landBlend = mix(landBlend, landHighColor, highElev);
+    vec3 surfaceColor = mix(oceanBlend, landBlend, land);
 
     // --- Grid overlay: 15 degree intervals ---
     float latInterval = 12.0; // 180/15 = 12 lines
@@ -288,14 +297,14 @@ const globeFragmentShader = /* glsl */ `
       color += cityColor * (cityGlow + outerGlow) * darkSide * 0.8;
     }
 
-    // --- Fresnel rim brightening for atmosphere ---
-    float fresnel = pow(1.0 - abs(dot(vNormal, vViewDir)), 3.5);
+    // --- Fresnel rim — realistic Earth atmosphere blue-white glow ---
+    float fresnel = pow(1.0 - abs(dot(vNormal, vViewDir)), 3.0);
     vec3 rimColor = mix(
-      vec3(0.31, 0.27, 0.9),  // indigo
-      vec3(0.49, 0.23, 0.93), // violet
+      vec3(0.3, 0.5, 1.0),    // atmospheric blue
+      vec3(0.6, 0.7, 1.0),    // bright sky blue
       fresnel
     );
-    color += rimColor * fresnel * 0.5;
+    color += rimColor * fresnel * 0.6;
 
     // --- Subtle surface shimmer on lit side ---
     float shimmer = noise(vUv * 200.0 + uTime * 0.1) * 0.02 * terminator;
@@ -332,10 +341,10 @@ const atmosphereFragmentShader = /* glsl */ `
     float intensity = pow(0.68 - dot(vNormal, vViewDir), 2.8);
     intensity = clamp(intensity, 0.0, 1.0);
 
-    // Indigo to violet gradient
-    vec3 indigo = vec3(0.31, 0.275, 0.898);  // #4f46e5
-    vec3 violet = vec3(0.486, 0.227, 0.929); // #7c3aed
-    vec3 color = mix(indigo, violet, intensity);
+    // Realistic Earth atmosphere — blue to white gradient
+    vec3 atmoBlue = vec3(0.25, 0.45, 1.0);   // atmospheric blue
+    vec3 atmoWhite = vec3(0.6, 0.75, 1.0);   // bright horizon
+    vec3 color = mix(atmoBlue, atmoWhite, intensity);
 
     // Subtle breathing animation
     float breath = sin(uTime * 0.5) * 0.05 + 1.0;
@@ -525,33 +534,77 @@ function PulseRing({
 // Paris Marker — glowing dot + pulse rings + HTML label
 // ---------------------------------------------------------------------------
 
-function ParisMarker({ active }: { active: boolean }) {
+function ParisMarker({ phase }: { phase: GlobePhase }) {
+  const active = phase === "stopped" || phase === "zooming";
+  const zooming = phase === "zooming";
   const pointRef = useRef<THREE.Mesh>(null);
   const glowRef = useRef<THREE.PointLight>(null);
+  const bloomRef = useRef<THREE.Mesh>(null);
+  const haloRef = useRef<THREE.Mesh>(null);
   const parisNormal = useMemo(() => PARIS_POS.clone().normalize(), []);
+  const zoomStartRef = useRef<number | null>(null);
 
   useFrame(({ clock }) => {
     if (!pointRef.current) return;
     const t = clock.elapsedTime;
-    const pulse = active ? 0.7 + Math.sin(t * 4) * 0.3 : 0.5;
-    pointRef.current.scale.setScalar(pulse);
-    if (glowRef.current) {
-      glowRef.current.intensity = active
-        ? 2.0 + Math.sin(t * 4) * 0.8
-        : 0.3;
+
+    if (zooming) {
+      // Track zoom start time
+      if (zoomStartRef.current === null) zoomStartRef.current = t;
+      const elapsed = t - zoomStartRef.current;
+      const progress = Math.min(elapsed / 3, 1);
+      // Cubic ramp — slow start, explosive finish
+      const intensity = progress * progress * progress;
+
+      // Core star grows and brightens
+      pointRef.current.scale.setScalar(1 + intensity * 8);
+
+      // Point light ramps to blinding
+      if (glowRef.current) {
+        glowRef.current.intensity = 2 + intensity * 80;
+        glowRef.current.distance = 0.8 + intensity * 15;
+      }
+
+      // Massive bloom sphere expands and whitens everything
+      if (bloomRef.current) {
+        bloomRef.current.scale.setScalar(0.05 + intensity * 5);
+        (bloomRef.current.material as THREE.MeshBasicMaterial).opacity = Math.min(intensity * 1.5, 1);
+      }
+
+      // Halo expands
+      if (haloRef.current) {
+        haloRef.current.scale.setScalar(1 + intensity * 12);
+        (haloRef.current.material as THREE.MeshBasicMaterial).opacity = 0.35 + intensity * 0.65;
+      }
+    } else {
+      zoomStartRef.current = null;
+      const pulse = active ? 0.7 + Math.sin(t * 4) * 0.3 : 0.5;
+      pointRef.current.scale.setScalar(pulse);
+      if (glowRef.current) {
+        glowRef.current.intensity = active ? 2.0 + Math.sin(t * 4) * 0.8 : 0.3;
+        glowRef.current.distance = 0.8;
+      }
+      if (bloomRef.current) {
+        bloomRef.current.scale.setScalar(0.05);
+        (bloomRef.current.material as THREE.MeshBasicMaterial).opacity = 0;
+      }
+      if (haloRef.current) {
+        haloRef.current.scale.setScalar(1);
+        (haloRef.current.material as THREE.MeshBasicMaterial).opacity = active ? 0.35 : 0.1;
+      }
     }
   });
 
   return (
     <group>
-      {/* Core dot */}
+      {/* Core star dot */}
       <mesh ref={pointRef} position={PARIS_POS}>
         <sphereGeometry args={[0.018, 16, 16]} />
         <meshBasicMaterial color="#ffffff" toneMapped={false} />
       </mesh>
 
       {/* Emissive glow halo */}
-      <mesh position={PARIS_POS}>
+      <mesh ref={haloRef} position={PARIS_POS}>
         <sphereGeometry args={[0.035, 16, 16]} />
         <meshBasicMaterial
           color="#ffd700"
@@ -559,6 +612,19 @@ function ParisMarker({ active }: { active: boolean }) {
           opacity={active ? 0.35 : 0.1}
           depthWrite={false}
           blending={THREE.AdditiveBlending}
+        />
+      </mesh>
+
+      {/* Massive bloom sphere — grows during zoom to white out screen */}
+      <mesh ref={bloomRef} position={PARIS_POS}>
+        <sphereGeometry args={[1, 32, 32]} />
+        <meshBasicMaterial
+          color="#ffffff"
+          transparent
+          opacity={0}
+          depthWrite={false}
+          blending={THREE.AdditiveBlending}
+          toneMapped={false}
         />
       </mesh>
 
@@ -572,8 +638,8 @@ function ParisMarker({ active }: { active: boolean }) {
         decay={2}
       />
 
-      {/* Pulse rings when active */}
-      {active && (
+      {/* Pulse rings when stopped (not during zoom) */}
+      {active && !zooming && (
         <>
           <PulseRing center={PARIS_POS} normal={parisNormal} delay={0} />
           <PulseRing center={PARIS_POS} normal={parisNormal} delay={0.8} />
@@ -581,8 +647,8 @@ function ParisMarker({ active }: { active: boolean }) {
         </>
       )}
 
-      {/* PARIS label — HTML overlay */}
-      {active && (
+      {/* PARIS label — visible when stopped, hidden during zoom */}
+      {active && !zooming && (
         <Html
           position={[
             PARIS_POS.x + parisNormal.x * 0.12,
@@ -651,30 +717,70 @@ function CityLights() {
 
 function HeroStars() {
   const positions = useMemo(() => {
-    const pts: [number, number, number][] = [];
-    for (let i = 0; i < 20; i++) {
+    const pts: { pos: [number, number, number]; size: number; opacity: number }[] = [];
+    for (let i = 0; i < 100; i++) {
       const theta = Math.random() * Math.PI * 2;
       const phi = Math.acos(2 * Math.random() - 1);
-      const r = 30 + Math.random() * 50;
-      pts.push([
-        r * Math.sin(phi) * Math.cos(theta),
-        r * Math.sin(phi) * Math.sin(theta),
-        r * Math.cos(phi),
-      ]);
+      const r = 20 + Math.random() * 60;
+      const isBright = i < 15;
+      pts.push({
+        pos: [
+          r * Math.sin(phi) * Math.cos(theta),
+          r * Math.sin(phi) * Math.sin(theta),
+          r * Math.cos(phi),
+        ],
+        size: isBright ? 0.12 + Math.random() * 0.15 : 0.04 + Math.random() * 0.08,
+        opacity: isBright ? 0.7 + Math.random() * 0.3 : 0.3 + Math.random() * 0.4,
+      });
     }
     return pts;
   }, []);
 
   return (
     <group>
-      {positions.map((pos, i) => (
-        <mesh key={i} position={pos}>
-          <sphereGeometry args={[0.08 + Math.random() * 0.12, 8, 8]} />
+      {positions.map((star, i) => (
+        <mesh key={i} position={star.pos}>
+          <sphereGeometry args={[star.size, 8, 8]} />
           <meshBasicMaterial
             color="#ffffff"
             transparent
-            opacity={0.6 + Math.random() * 0.4}
+            opacity={star.opacity}
             toneMapped={false}
+          />
+        </mesh>
+      ))}
+    </group>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Nebula clouds — colorful translucent sprites for galaxy atmosphere
+// ---------------------------------------------------------------------------
+
+function NebulaClouds() {
+  const clouds = useMemo(() => [
+    { pos: [-25, 15, -40] as [number, number, number], color: "#4f46e5", size: 30, opacity: 0.04 },
+    { pos: [30, -10, -35] as [number, number, number], color: "#7c3aed", size: 25, opacity: 0.035 },
+    { pos: [-15, -20, -50] as [number, number, number], color: "#581c87", size: 35, opacity: 0.03 },
+    { pos: [20, 25, -45] as [number, number, number], color: "#3b82f6", size: 20, opacity: 0.025 },
+    { pos: [-35, 5, -30] as [number, number, number], color: "#8b5cf6", size: 28, opacity: 0.03 },
+    { pos: [10, -25, -55] as [number, number, number], color: "#6366f1", size: 32, opacity: 0.035 },
+    { pos: [40, 10, -60] as [number, number, number], color: "#a855f7", size: 22, opacity: 0.02 },
+    { pos: [-20, 30, -42] as [number, number, number], color: "#ec4899", size: 18, opacity: 0.02 },
+  ], []);
+
+  return (
+    <group>
+      {clouds.map((cloud, i) => (
+        <mesh key={i} position={cloud.pos}>
+          <planeGeometry args={[cloud.size, cloud.size]} />
+          <meshBasicMaterial
+            color={cloud.color}
+            transparent
+            opacity={cloud.opacity}
+            depthWrite={false}
+            blending={THREE.AdditiveBlending}
+            side={THREE.DoubleSide}
           />
         </mesh>
       ))}
@@ -831,8 +937,8 @@ function Globe({
       {/* City light dots */}
       <CityLights />
 
-      {/* Paris marker */}
-      <ParisMarker active={phase === "stopped"} />
+      {/* Paris marker — intensifies during zoom to white-out */}
+      <ParisMarker phase={phase} />
     </group>
   );
 }
@@ -854,21 +960,21 @@ function CameraController({
 
   useEffect(() => {
     if (phase === "zooming") {
-      // Calculate target near Paris
-      const parisWorld = PARIS_POS.clone().normalize().multiplyScalar(GLOBE_RADIUS * 1.2);
+      // Calculate target very close to Paris — Google Earth style progressive zoom
+      const parisWorld = PARIS_POS.clone().normalize().multiplyScalar(GLOBE_RADIUS * 0.6);
       const targetPos = new THREE.Vector3(
-        parisWorld.x * 1.1,
-        parisWorld.y * 1.1,
-        parisWorld.z * 1.1 + 0.3
+        parisWorld.x * 1.05,
+        parisWorld.y * 1.05,
+        parisWorld.z * 1.05 + 0.15
       );
 
-      // Dramatic zoom: position + FOV compression
+      // Dramatic zoom: position — starts slow, accelerates (continent → country → city)
       gsap.to(camera.position, {
         x: targetPos.x,
         y: targetPos.y,
         z: targetPos.z,
         duration: 3,
-        ease: "power2.inOut",
+        ease: "power3.in",
         onComplete: () => {
           if (!completedRef.current.has("zooming")) {
             completedRef.current.add("zooming");
@@ -877,11 +983,11 @@ function CameraController({
         },
       });
 
-      // Narrow FOV for cinematic lens compression
+      // Dramatic FOV compression — like falling toward Earth
       gsap.to(camera, {
-        fov: 20,
+        fov: 12,
         duration: 3,
-        ease: "power2.inOut",
+        ease: "power3.in",
         onUpdate: () => {
           (camera as THREE.PerspectiveCamera).updateProjectionMatrix();
         },
@@ -971,16 +1077,29 @@ function Scene({
         color="#fff5e6"
       />
 
-      {/* Starfield — high density */}
+      {/* Starfield — massive density for galaxy feel */}
       <Stars
-        radius={80}
-        depth={60}
-        count={5000}
-        factor={3}
+        radius={100}
+        depth={80}
+        count={20000}
+        factor={4}
         saturation={0}
         fade
         speed={0.3}
       />
+      {/* Second star layer — deeper, denser */}
+      <Stars
+        radius={150}
+        depth={100}
+        count={10000}
+        factor={6}
+        saturation={0.1}
+        fade
+        speed={0.15}
+      />
+
+      {/* Nebula clouds — galaxy atmosphere */}
+      <NebulaClouds />
 
       {/* Hero stars — larger bright points */}
       <HeroStars />
@@ -997,20 +1116,20 @@ function Scene({
       {/* Postprocessing stack */}
       <EffectComposer>
         <Bloom
-          intensity={0.4}
-          luminanceThreshold={0.6}
-          luminanceSmoothing={0.3}
+          intensity={0.7}
+          luminanceThreshold={0.4}
+          luminanceSmoothing={0.2}
           mipmapBlur
         />
         <ChromaticAberration
           blendFunction={BlendFunction.NORMAL}
-          offset={new THREE.Vector2(0.0005, 0.0005)}
+          offset={new THREE.Vector2(0.0008, 0.0008)}
           radialModulation={false}
           modulationOffset={0}
         />
         <Vignette
-          darkness={0.5}
-          offset={0.3}
+          darkness={0.6}
+          offset={0.25}
           blendFunction={BlendFunction.NORMAL}
         />
       </EffectComposer>
@@ -1029,7 +1148,7 @@ export default function GlobeScene({
   return (
     <div className="absolute inset-0">
       <Canvas
-        camera={{ position: [0, 0.5, 4.5], fov: 45 }}
+        camera={{ position: [0, 0.5, 6], fov: 50 }}
         dpr={[1, 2]}
         gl={{
           antialias: true,

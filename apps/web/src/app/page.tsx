@@ -418,8 +418,15 @@ export default function LandingPage() {
                 <div className="absolute right-[5%] -bottom-[10%] h-[500px] w-[500px] rounded-full opacity-15 blur-[130px]"
                   style={{ background: "radial-gradient(ellipse, rgba(236,72,153,0.3), rgba(168,85,247,0.15), transparent 70%)" }} />
                 {/* Central galaxy core glow */}
-                <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 h-[300px] w-[300px] rounded-full opacity-10 blur-[80px]"
-                  style={{ background: "radial-gradient(circle, rgba(255,255,255,0.3), rgba(129,140,248,0.1), transparent 60%)" }} />
+                <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 h-[400px] w-[400px] rounded-full opacity-15 blur-[80px]"
+                  style={{ background: "radial-gradient(circle, rgba(255,255,255,0.4), rgba(129,140,248,0.15), transparent 55%)" }} />
+                {/* Extra nebula layers for denser galaxy feel */}
+                <div className="absolute left-[30%] top-[40%] h-[350px] w-[500px] rounded-full opacity-20 blur-[100px]"
+                  style={{ background: "radial-gradient(ellipse, rgba(124,58,237,0.4), rgba(88,28,135,0.15), transparent 65%)" }} />
+                <div className="absolute right-[20%] top-[10%] h-[300px] w-[400px] rounded-full opacity-15 blur-[110px]"
+                  style={{ background: "radial-gradient(ellipse, rgba(59,130,246,0.3), rgba(99,102,241,0.1), transparent 70%)" }} />
+                <div className="absolute left-[50%] bottom-[15%] h-[250px] w-[350px] rounded-full opacity-12 blur-[90px]"
+                  style={{ background: "radial-gradient(ellipse, rgba(168,85,247,0.35), rgba(139,92,246,0.1), transparent 65%)" }} />
 
                 {/* Zodiac constellation lines */}
                 <svg className="absolute inset-0 w-full h-full opacity-[0.04]" viewBox="0 0 1200 800">
@@ -469,23 +476,28 @@ export default function LandingPage() {
                   <circle cx="1070" cy="520" r="2.5" fill="white" />
                 </svg>
 
-                {/* Scattered stars — different sizes and brightnesses */}
-                {Array.from({ length: 80 }).map((_, i) => (
-                  <div
-                    key={`star-${i}`}
-                    className="absolute rounded-full bg-white"
-                    style={{
-                      width: `${Math.random() < 0.1 ? 3 : Math.random() < 0.3 ? 2 : 1}px`,
-                      height: `${Math.random() < 0.1 ? 3 : Math.random() < 0.3 ? 2 : 1}px`,
-                      left: `${Math.random() * 100}%`,
-                      top: `${Math.random() * 100}%`,
-                      opacity: Math.random() * 0.5 + 0.1,
-                      animation: `twinkle ${Math.random() * 4 + 3}s ease-in-out infinite`,
-                      animationDelay: `${Math.random() * 5}s`,
-                      boxShadow: Math.random() < 0.15 ? '0 0 6px 1px rgba(255,255,255,0.4)' : 'none',
-                    }}
-                  />
-                ))}
+                {/* Scattered stars — dense starfield with varying sizes and glows */}
+                {Array.from({ length: 400 }).map((_, i) => {
+                  const isBright = i % 25 === 0;
+                  const isMedium = i % 6 === 0;
+                  const size = isBright ? 3 : isMedium ? 2 : 1;
+                  return (
+                    <div
+                      key={`star-${i}`}
+                      className="absolute rounded-full bg-white"
+                      style={{
+                        width: `${size}px`,
+                        height: `${size}px`,
+                        left: `${(i * 37.7 + i * i * 0.13) % 100}%`,
+                        top: `${(i * 53.3 + i * i * 0.07) % 100}%`,
+                        opacity: isBright ? 0.7 : (i * 17 % 50 + 8) / 100,
+                        animation: `twinkle ${(i % 5) * 0.8 + 2.5}s ease-in-out infinite`,
+                        animationDelay: `${(i * 0.37) % 5}s`,
+                        boxShadow: isBright ? '0 0 8px 2px rgba(255,255,255,0.5)' : isMedium ? '0 0 4px 1px rgba(255,255,255,0.2)' : 'none',
+                      }}
+                    />
+                  );
+                })}
 
                 {/* Floating zodiac glyphs */}
                 {['♈','♉','♊','♋','♌','♍','♎','♏','♐','♑','♒','♓'].map((glyph, i) => (

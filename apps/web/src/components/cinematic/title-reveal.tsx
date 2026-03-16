@@ -90,8 +90,88 @@ function AnamorphicStreak({ active }: { active: boolean }) {
 // Radial glow behind title
 // ---------------------------------------------------------------------------
 
+// ---------------------------------------------------------------------------
+// Dense starfield canvas — thousands of stars for galaxy background
+// ---------------------------------------------------------------------------
+
+function StarfieldCanvas() {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    const dpr = window.devicePixelRatio || 1;
+    const w = canvas.offsetWidth;
+    const h = canvas.offsetHeight;
+    canvas.width = w * dpr;
+    canvas.height = h * dpr;
+    ctx.scale(dpr, dpr);
+
+    // Draw 3000 stars for dense galaxy feel
+    for (let i = 0; i < 3000; i++) {
+      const x = Math.random() * w;
+      const y = Math.random() * h;
+      const isBright = i < 50;
+      const isMedium = i < 200;
+      const r = isBright ? 1.5 : isMedium ? 1 : 0.5;
+      const alpha = isBright ? 0.7 + Math.random() * 0.3 : isMedium ? 0.3 + Math.random() * 0.3 : Math.random() * 0.4 + 0.05;
+
+      ctx.beginPath();
+      ctx.arc(x, y, r, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
+      ctx.fill();
+
+      // Glow on bright stars
+      if (isBright) {
+        const grad = ctx.createRadialGradient(x, y, 0, x, y, r * 6);
+        grad.addColorStop(0, `rgba(255, 255, 255, ${alpha * 0.3})`);
+        grad.addColorStop(0.5, `rgba(129, 140, 248, ${alpha * 0.1})`);
+        grad.addColorStop(1, "transparent");
+        ctx.beginPath();
+        ctx.arc(x, y, r * 6, 0, Math.PI * 2);
+        ctx.fillStyle = grad;
+        ctx.fill();
+      }
+    }
+
+    // Nebula haze
+    const nebulae = [
+      { x: w * 0.2, y: h * 0.3, rx: w * 0.25, ry: h * 0.15, color: "99,102,241", alpha: 0.04 },
+      { x: w * 0.75, y: h * 0.6, rx: w * 0.2, ry: h * 0.2, color: "139,92,246", alpha: 0.035 },
+      { x: w * 0.5, y: h * 0.15, rx: w * 0.3, ry: h * 0.1, color: "88,28,135", alpha: 0.03 },
+      { x: w * 0.15, y: h * 0.75, rx: w * 0.15, ry: h * 0.12, color: "79,70,229", alpha: 0.025 },
+      { x: w * 0.85, y: h * 0.2, rx: w * 0.18, ry: h * 0.15, color: "168,85,247", alpha: 0.02 },
+    ];
+    nebulae.forEach((n) => {
+      const grad = ctx.createRadialGradient(n.x, n.y, 0, n.x, n.y, Math.max(n.rx, n.ry));
+      grad.addColorStop(0, `rgba(${n.color}, ${n.alpha})`);
+      grad.addColorStop(0.6, `rgba(${n.color}, ${n.alpha * 0.3})`);
+      grad.addColorStop(1, "transparent");
+      ctx.beginPath();
+      ctx.ellipse(n.x, n.y, n.rx, n.ry, 0, 0, Math.PI * 2);
+      ctx.fillStyle = grad;
+      ctx.fill();
+    });
+  }, []);
+
+  return (
+    <canvas
+      ref={canvasRef}
+      className="absolute inset-0 w-full h-full pointer-events-none"
+      style={{ zIndex: 1 }}
+    />
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Apple glow — soft pulsing multi-layered glow behind title
+// ---------------------------------------------------------------------------
+
 function TitleGlow({ phase }: { phase: number }) {
-  const glowIntensity = phase >= 4000 ? 1 : phase >= 1500 ? 0.6 : 0.2;
+  const glowIntensity = phase >= 4000 ? 1 : phase >= 1500 ? 0.7 : 0.3;
 
   return (
     <motion.div
@@ -99,27 +179,57 @@ function TitleGlow({ phase }: { phase: number }) {
       animate={{ opacity: glowIntensity }}
       transition={{ duration: 1.5, ease: "easeOut" }}
     >
-      {/* Primary indigo-purple glow */}
-      <div
+      {/* Apple-style wide outer glow — breathing animation */}
+      <motion.div
         className="absolute rounded-full"
         style={{
-          width: "70vw",
-          height: "40vh",
+          width: "90vw",
+          height: "50vh",
           background:
-            "radial-gradient(ellipse, rgba(99,102,241,0.18) 0%, rgba(139,92,246,0.1) 30%, rgba(79,70,229,0.04) 60%, transparent 80%)",
-          filter: "blur(50px)",
+            "radial-gradient(ellipse, rgba(99,102,241,0.25) 0%, rgba(139,92,246,0.15) 25%, rgba(79,70,229,0.06) 55%, transparent 75%)",
+          filter: "blur(60px)",
         }}
+        animate={{ scale: [1, 1.06, 1], opacity: [0.8, 1, 0.8] }}
+        transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
       />
-      {/* Inner bright core */}
-      <div
+      {/* Mid glow — warm purple pulse */}
+      <motion.div
         className="absolute rounded-full"
         style={{
-          width: "30vw",
-          height: "15vh",
+          width: "60vw",
+          height: "30vh",
           background:
-            "radial-gradient(ellipse, rgba(255,255,255,0.06) 0%, rgba(192,132,252,0.04) 40%, transparent 70%)",
+            "radial-gradient(ellipse, rgba(192,132,252,0.2) 0%, rgba(129,140,248,0.1) 35%, transparent 65%)",
+          filter: "blur(45px)",
+        }}
+        animate={{ scale: [1, 1.1, 1], opacity: [0.6, 1, 0.6] }}
+        transition={{ duration: 3, delay: 0.5, repeat: Infinity, ease: "easeInOut" }}
+      />
+      {/* Inner bright core — Apple signature glow */}
+      <motion.div
+        className="absolute rounded-full"
+        style={{
+          width: "35vw",
+          height: "18vh",
+          background:
+            "radial-gradient(ellipse, rgba(255,255,255,0.12) 0%, rgba(224,204,250,0.06) 35%, transparent 60%)",
           filter: "blur(30px)",
         }}
+        animate={{ scale: [1, 1.15, 1], opacity: [0.5, 1, 0.5] }}
+        transition={{ duration: 2.5, delay: 1, repeat: Infinity, ease: "easeInOut" }}
+      />
+      {/* Tight text glow — crisp halo */}
+      <motion.div
+        className="absolute rounded-full"
+        style={{
+          width: "20vw",
+          height: "10vh",
+          background:
+            "radial-gradient(ellipse, rgba(255,255,255,0.08) 0%, rgba(168,85,247,0.04) 50%, transparent 80%)",
+          filter: "blur(15px)",
+        }}
+        animate={{ opacity: [0.4, 0.8, 0.4] }}
+        transition={{ duration: 2, delay: 0.3, repeat: Infinity, ease: "easeInOut" }}
       />
     </motion.div>
   );
@@ -398,10 +508,13 @@ export default function TitleReveal({ show, onComplete }: TitleRevealProps) {
           exit={{ opacity: 0, transition: { duration: 1.0, ease: "easeInOut" } }}
           transition={{ duration: 0.6 }}
         >
+          {/* Dense galaxy starfield */}
+          <StarfieldCanvas />
+
           {/* Film grain texture */}
           <FilmGrain />
 
-          {/* Radial glow behind title */}
+          {/* Apple-style radial glow behind title */}
           <TitleGlow phase={phase} />
 
           {/* Convergence particle system */}

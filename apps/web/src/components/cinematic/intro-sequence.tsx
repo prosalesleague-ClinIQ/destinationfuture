@@ -134,30 +134,51 @@ function Prelude({ active }: { active: boolean }) {
             transition={{ duration: 2, ease: "easeOut" }}
           />
 
-          {/* Faint star-like particles */}
+          {/* Dense star-like particles */}
           <div className="absolute inset-0 overflow-hidden">
-            {Array.from({ length: 60 }).map((_, i) => (
-              <motion.div
-                key={i}
-                className="absolute rounded-full bg-white"
-                style={{
-                  width: Math.random() * 2 + 0.5,
-                  height: Math.random() * 2 + 0.5,
-                  left: `${Math.random() * 100}%`,
-                  top: `${Math.random() * 100}%`,
-                }}
-                initial={{ opacity: 0 }}
-                animate={{
-                  opacity: [0, Math.random() * 0.4 + 0.1, 0],
-                }}
-                transition={{
-                  duration: 2 + Math.random() * 2,
-                  repeat: Infinity,
-                  delay: Math.random() * 1.5,
-                  ease: "easeInOut",
-                }}
-              />
-            ))}
+            {Array.from({ length: 300 }).map((_, i) => {
+              const isBright = i % 30 === 0;
+              const size = isBright ? 2.5 : i % 8 === 0 ? 1.8 : 0.8 + (i % 5) * 0.2;
+              return (
+                <motion.div
+                  key={i}
+                  className="absolute rounded-full bg-white"
+                  style={{
+                    width: size,
+                    height: size,
+                    left: `${(i * 37.7 + i * i * 0.13) % 100}%`,
+                    top: `${(i * 53.3 + i * i * 0.07) % 100}%`,
+                    boxShadow: isBright ? '0 0 6px 2px rgba(255,255,255,0.4)' : 'none',
+                  }}
+                  initial={{ opacity: 0 }}
+                  animate={{
+                    opacity: [0, isBright ? 0.7 : (i * 17 % 40 + 5) / 100, 0],
+                  }}
+                  transition={{
+                    duration: 2 + (i % 4),
+                    repeat: Infinity,
+                    delay: (i * 0.3) % 3,
+                    ease: "easeInOut",
+                  }}
+                />
+              );
+            })}
+          </div>
+
+          {/* Nebula haze layers */}
+          <div className="absolute inset-0 overflow-hidden">
+            <motion.div
+              className="absolute -left-[10%] top-[20%] h-[400px] w-[600px] rounded-full blur-[100px]"
+              style={{ background: "radial-gradient(ellipse, rgba(88,28,135,0.15), transparent 70%)" }}
+              animate={{ opacity: [0.3, 0.6, 0.3], scale: [1, 1.1, 1] }}
+              transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
+            />
+            <motion.div
+              className="absolute right-[5%] bottom-[15%] h-[350px] w-[500px] rounded-full blur-[90px]"
+              style={{ background: "radial-gradient(ellipse, rgba(79,70,229,0.12), transparent 70%)" }}
+              animate={{ opacity: [0.2, 0.5, 0.2], scale: [1, 1.08, 1] }}
+              transition={{ duration: 6, delay: 1, repeat: Infinity, ease: "easeInOut" }}
+            />
           </div>
 
           {/* Atmospheric breathing glow at center */}
@@ -422,14 +443,16 @@ function SpaceBackground({ visible }: { visible: boolean }) {
           exit={{ opacity: 0 }}
           transition={{ duration: 1 }}
         >
-          {/* Nebula haze layers */}
+          {/* Rich nebula haze layers */}
           <div
             className="absolute inset-0"
             style={{
               background:
-                "radial-gradient(ellipse 70% 50% at 25% 35%, rgba(79,70,229,0.05) 0%, transparent 60%), " +
-                "radial-gradient(ellipse 50% 70% at 75% 65%, rgba(124,58,237,0.04) 0%, transparent 60%), " +
-                "radial-gradient(ellipse 80% 40% at 50% 80%, rgba(30,27,75,0.08) 0%, transparent 50%)",
+                "radial-gradient(ellipse 70% 50% at 25% 35%, rgba(79,70,229,0.1) 0%, transparent 55%), " +
+                "radial-gradient(ellipse 50% 70% at 75% 65%, rgba(124,58,237,0.08) 0%, transparent 55%), " +
+                "radial-gradient(ellipse 80% 40% at 50% 80%, rgba(30,27,75,0.12) 0%, transparent 45%), " +
+                "radial-gradient(ellipse 60% 60% at 60% 30%, rgba(88,28,135,0.06) 0%, transparent 50%), " +
+                "radial-gradient(ellipse 40% 50% at 15% 70%, rgba(139,92,246,0.05) 0%, transparent 50%)",
             }}
           />
         </motion.div>
