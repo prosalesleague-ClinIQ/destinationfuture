@@ -141,7 +141,7 @@ export default function ReportViewPage() {
       </div>
 
       {/* Report Content */}
-      <ReportRenderer report={report} />
+      <ReportRenderer sections={Array.isArray(report.sections) ? report.sections : []} />
     </div>
   );
 }
