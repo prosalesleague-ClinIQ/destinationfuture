@@ -1,9 +1,8 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, lazy, Suspense } from "react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
-import CinematicDashboardShell from "@/components/cinematic/cinematic-dashboard-shell";
 
 const CinematicIntroSequence = dynamic(
   () => import("@/components/cinematic/intro-sequence"),
@@ -157,9 +156,9 @@ function StarWarpBackground() {
     const w = () => canvas.width / dpr;
     const h = () => canvas.height / dpr;
 
-    // Initialize 2500 stars with varied properties
+    // Initialize stars with varied properties
     if (starsRef.current.length === 0) {
-      for (let i = 0; i < 2500; i++) {
+      for (let i = 0; i < 800; i++) {
         starsRef.current.push({
           x: (Math.random() - 0.5) * 3000,
           y: (Math.random() - 0.5) * 3000,
@@ -178,14 +177,10 @@ function StarWarpBackground() {
     if (bodiesRef.current.length === 0) {
       const bodies: CelestialBody[] = [];
 
-      // Planets — various sizes, colors, some with rings
+      // Planets — fewer for performance
       const planetDefs = [
         { color1: "#4a6fa5", color2: "#2d4a7a", color3: "#1a3055", size: 35, hasRing: true, ringColor: "rgba(180,170,140,0.3)" },
-        { color1: "#c4956a", color2: "#a07040", color3: "#6b4520", size: 28, hasRing: false },
-        { color1: "#8b6f5e", color2: "#6d5040", color3: "#4a3528", size: 20, hasRing: true, ringColor: "rgba(160,140,120,0.25)" },
         { color1: "#d4a373", color2: "#b07840", color3: "#8a5a28", size: 45, hasRing: true, ringColor: "rgba(200,180,140,0.35)" },
-        { color1: "#7a9bb5", color2: "#5a7a95", color3: "#3a5a75", size: 22, hasRing: false },
-        { color1: "#c97b63", color2: "#a05a40", color3: "#7a3a25", size: 18, hasRing: false },
         { color1: "#6ec4a8", color2: "#4a9a80", color3: "#2a7a60", size: 25, hasRing: false },
       ];
       for (let i = 0; i < planetDefs.length; i++) {
@@ -204,7 +199,7 @@ function StarWarpBackground() {
       }
 
       // Distant galaxies — spiral shapes
-      for (let i = 0; i < 5; i++) {
+      for (let i = 0; i < 2; i++) {
         bodies.push({
           x: (Math.random() - 0.5) * 3000,
           y: (Math.random() - 0.5) * 2000,
@@ -224,8 +219,6 @@ function StarWarpBackground() {
       const nebulaColors = [
         ["rgba(100,60,180,0.06)", "rgba(140,80,220,0.03)", "rgba(80,40,150,0.01)"],
         ["rgba(60,100,200,0.05)", "rgba(80,140,230,0.025)", "rgba(40,80,180,0.01)"],
-        ["rgba(180,60,100,0.04)", "rgba(220,80,130,0.02)", "rgba(150,40,80,0.008)"],
-        ["rgba(60,160,140,0.04)", "rgba(80,200,170,0.02)", "rgba(40,130,110,0.008)"],
       ];
       for (let i = 0; i < nebulaColors.length; i++) {
         const cols = nebulaColors[i];
@@ -313,9 +306,9 @@ function StarWarpBackground() {
       for (let a = 0; a < arms; a++) {
         const angleOffset = (a / arms) * Math.PI * 2;
         ctx.beginPath();
-        for (let t = 0; t < 80; t++) {
+        for (let t = 0; t < 30; t++) {
           const angle = angleOffset + t * 0.12;
-          const dist = (t / 80) * r;
+          const dist = (t / 30) * r;
           const x = Math.cos(angle) * dist;
           const y = Math.sin(angle) * dist * 0.4; // flatten for tilt
           if (t === 0) ctx.moveTo(x, y);
@@ -449,15 +442,14 @@ function StarWarpBackground() {
         }
         ctx.fill();
 
-        // Soft glow on close/bright stars
-        if (depth > 0.6 && twinkle > 0.8) {
+        // Soft glow on close/bright stars — simple circle instead of gradient
+        if (depth > 0.7 && twinkle > 0.85) {
+          ctx.globalAlpha = alpha * 0.08;
           ctx.beginPath();
-          ctx.arc(sx, sy, size * 4, 0, Math.PI * 2);
-          const grad = ctx.createRadialGradient(sx, sy, 0, sx, sy, size * 4);
-          grad.addColorStop(0, `rgba(180, 200, 255, ${alpha * 0.15})`);
-          grad.addColorStop(1, "transparent");
-          ctx.fillStyle = grad;
+          ctx.arc(sx, sy, size * 3, 0, Math.PI * 2);
+          ctx.fillStyle = "rgba(180, 200, 255, 1)";
           ctx.fill();
+          ctx.globalAlpha = 1;
         }
 
         star.px = sx;
@@ -583,12 +575,11 @@ export default function LandingPage() {
         <CinematicIntroSequence onComplete={handleIntroComplete} />
       )}
 
-      {/* Main landing page with cinematic shell */}
+      {/* Main landing page */}
       <div
-        className="transition-opacity duration-1000"
+        className="relative min-h-screen bg-[#0a0e27] text-white transition-opacity duration-1000"
         style={{ opacity: introComplete ? 1 : 0 }}
       >
-        <CinematicDashboardShell>
           <div className="flex flex-col">
             {/* Hero Section */}
             <section className="relative flex min-h-screen items-center justify-center overflow-hidden px-4">
@@ -801,7 +792,6 @@ export default function LandingPage() {
               </div>
             </footer>
           </div>
-        </CinematicDashboardShell>
       </div>
     </>
   );

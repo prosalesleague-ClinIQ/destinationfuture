@@ -411,15 +411,13 @@ function updateParticle(p: Particle, w: number, h: number, time: number): void {
 function drawParticle(ctx: CanvasRenderingContext2D, p: Particle): void {
   ctx.save();
 
-  // Depth-based blur
+  // Depth simulated via lower opacity instead of expensive blur filter
   const layer = DEPTH_LAYERS[p.depth];
-  if (layer.blur > 0) {
-    ctx.filter = `blur(${layer.blur}px)`;
-  }
+  const depthDim = layer.blur > 0 ? 0.6 : 1;
 
-  const currentOpacity = p.category === "star" || p.category === "metric"
+  const currentOpacity = (p.category === "star" || p.category === "metric"
     ? p.opacity
-    : p.baseOpacity;
+    : p.baseOpacity) * depthDim;
 
   ctx.fillStyle = getCategoryColor(p.category, currentOpacity);
 
@@ -515,26 +513,17 @@ export default function SymbolicBackground({ opacity = 1 }: SymbolicBackgroundPr
     // -----------------------------------------------------------------------
     const particles: Particle[] = [];
 
-    // 25 numerology
-    for (let i = 0; i < 25; i++) particles.push(createParticle("numerology", w, h));
-    // 20 astrology
-    for (let i = 0; i < 20; i++) particles.push(createParticle("astrology", w, h));
-    // 10 planets
-    for (let i = 0; i < 10; i++) particles.push(createParticle("planet", w, h));
-    // 20 cities
-    for (let i = 0; i < 20; i++) particles.push(createParticle("city", w, h));
-    // 10 coordinates
-    for (let i = 0; i < 10; i++) particles.push(createParticle("coordinate", w, h));
-    // 15 metrics
-    for (let i = 0; i < 15; i++) particles.push(createParticle("metric", w, h));
-    // 15 formulas
-    for (let i = 0; i < 15; i++) particles.push(createParticle("formula", w, h));
-    // 15 labels
-    for (let i = 0; i < 15; i++) particles.push(createParticle("label", w, h));
-    // 10 timeline markers
-    for (let i = 0; i < 10; i++) particles.push(createParticle("timeline", w, h));
-    // 10 stars
-    for (let i = 0; i < 10; i++) particles.push(createParticle("star", w, h));
+    // Reduced particle counts for performance (60 total)
+    for (let i = 0; i < 10; i++) particles.push(createParticle("numerology", w, h));
+    for (let i = 0; i < 8; i++) particles.push(createParticle("astrology", w, h));
+    for (let i = 0; i < 4; i++) particles.push(createParticle("planet", w, h));
+    for (let i = 0; i < 8; i++) particles.push(createParticle("city", w, h));
+    for (let i = 0; i < 4; i++) particles.push(createParticle("coordinate", w, h));
+    for (let i = 0; i < 6; i++) particles.push(createParticle("metric", w, h));
+    for (let i = 0; i < 6; i++) particles.push(createParticle("formula", w, h));
+    for (let i = 0; i < 6; i++) particles.push(createParticle("label", w, h));
+    for (let i = 0; i < 4; i++) particles.push(createParticle("timeline", w, h));
+    for (let i = 0; i < 4; i++) particles.push(createParticle("star", w, h));
 
     // If reduced motion, render once static and stop
     if (prefersReducedMotion) {
@@ -548,18 +537,22 @@ export default function SymbolicBackground({ opacity = 1 }: SymbolicBackgroundPr
     // Animation loop
     // -----------------------------------------------------------------------
     let time = 0;
+    let lastFrame = 0;
+    const frameInterval = 1000 / 30; // Cap at 30fps for performance
 
-    const animate = () => {
+    const animate = (now: number) => {
+      animId = requestAnimationFrame(animate);
+      const delta = now - lastFrame;
+      if (delta < frameInterval) return;
+      lastFrame = now - (delta % frameInterval);
+
       time += 1;
       ctx.clearRect(0, 0, w, h);
 
-      // Update and draw each particle
       for (let i = 0; i < particles.length; i++) {
         updateParticle(particles[i], w, h, time);
         drawParticle(ctx, particles[i]);
       }
-
-      animId = requestAnimationFrame(animate);
     };
 
     animId = requestAnimationFrame(animate);
