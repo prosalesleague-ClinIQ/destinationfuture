@@ -627,7 +627,7 @@ export default function LandingPage() {
 
                 <div className="flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
                   <Link
-                    href="/onboarding"
+                    href="/register"
                     className="group inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 px-8 py-4 text-lg font-semibold text-white shadow-lg shadow-indigo-500/25 transition-all duration-300 hover:shadow-xl hover:shadow-indigo-500/30 hover:-translate-y-0.5"
                   >
                     Begin Your Journey
@@ -755,7 +755,7 @@ export default function LandingPage() {
                   they truly are.
                 </p>
                 <Link
-                  href="/onboarding"
+                  href="/register"
                   className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 px-8 py-4 text-lg font-semibold text-white shadow-lg shadow-indigo-500/25 transition-all duration-200 hover:shadow-xl hover:-translate-y-0.5"
                 >
                   Get Started Free
