@@ -1330,7 +1330,7 @@ Produce the following:
 
 Date of birth: ${ctx.dob}
 ${ctx.currentCity ? `Current city: ${ctx.currentCity}${ctx.currentState ? `, ${ctx.currentState}` : ""}` : ""}
-${ctx.stylePreference ? `Style preference: ${ctx.stylePreference}` : ""}
+${ctx.stylePreferences?.length ? `Style preferences: ${ctx.stylePreferences?.join(", ")}` : ""}
 ${ctx.goals.length > 0 ? `Goals: ${ctx.goals.join(", ")}` : ""}
 Output depth: ${ctx.outputDepth}
 
@@ -1578,7 +1578,7 @@ Produce the following:
     userPromptTemplate: (ctx: PromptContext) => `Create a personal fashion system for ${ctx.firstName}.
 
 Date of birth: ${ctx.dob}
-${ctx.stylePreference ? `Style preference: ${ctx.stylePreference}` : ""}
+${ctx.stylePreferences?.length ? `Style preferences: ${ctx.stylePreferences?.join(", ")}` : ""}
 ${ctx.budgetRange ? `Budget range: ${ctx.budgetRange}` : ""}
 Output depth: ${ctx.outputDepth}
 
@@ -1703,7 +1703,7 @@ Produce the following:
     userPromptTemplate: (ctx: PromptContext) => `Create a shopping guide for ${ctx.firstName}.
 
 Date of birth: ${ctx.dob}
-${ctx.stylePreference ? `Style preference: ${ctx.stylePreference}` : ""}
+${ctx.stylePreferences?.length ? `Style preferences: ${ctx.stylePreferences?.join(", ")}` : ""}
 ${ctx.budgetRange ? `Budget range: ${ctx.budgetRange}` : ""}
 Output depth: ${ctx.outputDepth}
 
@@ -1786,7 +1786,7 @@ Produce the following:
     userPromptTemplate: (ctx: PromptContext) => `Create a music and frequency guide for ${ctx.firstName}.
 
 Date of birth: ${ctx.dob}
-${ctx.musicPreference ? `Music preference: ${ctx.musicPreference}` : ""}
+${ctx.musicPreferences?.length ? `Music preferences: ${ctx.musicPreferences?.join(", ")}` : ""}
 Output depth: ${ctx.outputDepth}
 
 Produce the following:
@@ -1808,7 +1808,7 @@ Produce the following:
 
 3. **Disclaimer** - Include a clear disclaimer that frequency and music recommendations are for entertainment, relaxation, and personal exploration purposes only and are not medical treatments.
 
-4. **User-Specific Music Expansion** - Based on ${ctx.firstName}'s personality profile${ctx.musicPreference ? ` and stated music preference (${ctx.musicPreference})` : ""}, recommend:
+4. **User-Specific Music Expansion** - Based on ${ctx.firstName}'s personality profile${ctx.musicPreferences?.length ? ` and stated music preferences (${ctx.musicPreferences?.join(", ")})` : ""}, recommend:
    - 5 genres they should explore and why
    - 5 artists they would likely connect with and why
    - 3 types of soundscapes for different times of day
@@ -1859,7 +1859,7 @@ Produce the following:
     userPromptTemplate: (ctx: PromptContext) => `Create a Spotify pack for ${ctx.firstName}.
 
 Date of birth: ${ctx.dob}
-${ctx.musicPreference ? `Music preference: ${ctx.musicPreference}` : ""}
+${ctx.musicPreferences?.length ? `Music preferences: ${ctx.musicPreferences?.join(", ")}` : ""}
 Output depth: ${ctx.outputDepth}
 
 Curate exactly 10 tracks, distributed as follows:
