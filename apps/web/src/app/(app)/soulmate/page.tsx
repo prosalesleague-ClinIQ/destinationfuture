@@ -151,6 +151,8 @@ export default function SoulmatePage() {
 
   const [generated, setGenerated] = useState(false);
   const [generating, setGenerating] = useState(false);
+  const [generatedImages, setGeneratedImages] = useState<(string | null)[]>([null, null, null]);
+  const [genError, setGenError] = useState<string | null>(null);
   const [showPipeline, setShowPipeline] = useState(false);
   const [showMoreOptions, setShowMoreOptions] = useState(false);
   const [activeQuickAdjust, setActiveQuickAdjust] = useState<QuickAdjust | null>(null);
@@ -162,15 +164,40 @@ export default function SoulmatePage() {
     [],
   );
 
-  const handleGenerate = useCallback(() => {
+  const handleGenerate = useCallback(async () => {
     setGenerating(true);
     setGenerated(false);
+    setGenError(null);
     setActiveQuickAdjust(null);
-    setTimeout(() => {
-      setGenerating(false);
+    setGeneratedImages([null, null, null]);
+
+    try {
+      // Generate 3 variations in parallel
+      const results = await Promise.all(
+        [0, 1, 2].map(async (variation) => {
+          const res = await fetch("/api/soulmate", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ ...prefs, variation }),
+          });
+          if (!res.ok) {
+            const err = await res.json();
+            throw new Error(err.error || "Generation failed");
+          }
+          const data = await res.json();
+          return data.url as string;
+        })
+      );
+
+      setGeneratedImages(results);
       setGenerated(true);
-    }, 3000);
-  }, []);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Generation failed";
+      setGenError(message);
+    } finally {
+      setGenerating(false);
+    }
+  }, [prefs]);
 
   const handleRegenerate = useCallback(() => {
     handleGenerate();
@@ -517,7 +544,7 @@ export default function SoulmatePage() {
 
         {/* Generate Button */}
         {!generated && !generating && (
-          <div className="flex justify-center mb-8">
+          <div className="flex flex-col items-center gap-3 mb-8">
             <button
               onClick={handleGenerate}
               className="group relative overflow-hidden rounded-xl bg-gradient-to-r from-rose-600 to-purple-600 px-10 py-4 text-sm font-bold text-white shadow-2xl shadow-purple-500/20 transition-all hover:shadow-purple-500/40 hover:-translate-y-0.5 active:translate-y-0"
@@ -525,6 +552,9 @@ export default function SoulmatePage() {
               <span className="relative z-10">Generate Soulmate Visual</span>
               <div className="absolute inset-0 bg-gradient-to-r from-rose-500 to-purple-500 opacity-0 transition-opacity group-hover:opacity-100" />
             </button>
+            {genError && (
+              <p className="text-sm text-rose-400/80 text-center max-w-md">{genError}</p>
+            )}
           </div>
         )}
 
@@ -539,7 +569,7 @@ export default function SoulmatePage() {
               >
                 {/* Portrait Area */}
                 <div
-                  className={`relative flex h-[280px] items-center justify-center bg-gradient-to-br ${portrait.gradient}`}
+                  className={`relative flex h-[400px] items-center justify-center bg-gradient-to-br ${portrait.gradient}`}
                 >
                   {/* Noise texture overlay */}
                   <div className="absolute inset-0 opacity-[0.03]" style={{
@@ -551,30 +581,20 @@ export default function SoulmatePage() {
                       <div className="relative">
                         <div className="h-12 w-12 rounded-full border-2 border-white/20 border-t-white/70 animate-spin" />
                       </div>
-                      <p className="text-xs text-white/40 animate-pulse">Generating portrait...</p>
+                      <p className="text-xs text-white/40 animate-pulse">
+                        Generating {portrait.sublabel.toLowerCase()}...
+                      </p>
+                      <p className="text-[10px] text-white/20">This may take 15-30 seconds</p>
                     </div>
-                  ) : generated ? (
-                    <div className="flex flex-col items-center gap-3">
-                      {/* Silhouette placeholder */}
-                      <svg
-                        width="80"
-                        height="80"
-                        viewBox="0 0 80 80"
-                        fill="none"
-                        className="text-white/20"
-                      >
-                        <circle cx="40" cy="28" r="16" fill="currentColor" />
-                        <ellipse cx="40" cy="68" rx="26" ry="18" fill="currentColor" />
-                      </svg>
-                      <div className="rounded-full bg-white/[0.08] px-3 py-1">
-                        <p className="text-[10px] font-medium text-white/40">
-                          Portrait rendered
-                        </p>
-                      </div>
-                    </div>
+                  ) : generatedImages[i] ? (
+                    /* eslint-disable-next-line @next/next/no-img-element */
+                    <img
+                      src={generatedImages[i]!}
+                      alt={`${portrait.label} - Soulmate portrait`}
+                      className="absolute inset-0 w-full h-full object-cover"
+                    />
                   ) : (
                     <div className="flex flex-col items-center gap-3">
-                      {/* Silhouette icon */}
                       <svg
                         width="64"
                         height="64"
@@ -597,7 +617,7 @@ export default function SoulmatePage() {
                       <p className="text-sm font-semibold text-white/80">{portrait.label}</p>
                       <p className="text-[10px] text-white/30">{portrait.sublabel}</p>
                     </div>
-                    {generated && (
+                    {generatedImages[i] && (
                       <div className="flex h-6 w-6 items-center justify-center rounded-full bg-green-500/20">
                         <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
                           <path d="M2 6l3 3 5-5" stroke="#4ade80" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
@@ -607,7 +627,7 @@ export default function SoulmatePage() {
                   </div>
 
                   {/* Style notes (shown after generation) */}
-                  {generated && (
+                  {generatedImages[i] && (
                     <div className="mt-2 rounded-lg bg-white/[0.04] px-3 py-2">
                       <p className="text-[10px] leading-relaxed text-white/30">
                         {portrait.note}
@@ -619,6 +639,19 @@ export default function SoulmatePage() {
             </div>
           ))}
         </div>
+
+        {/* Error message */}
+        {genError && generated === false && !generating && (
+          <div className="mt-6 rounded-xl border border-rose-500/20 bg-rose-500/5 px-6 py-4 text-center">
+            <p className="text-sm text-rose-400/80">{genError}</p>
+            <button
+              onClick={handleGenerate}
+              className="mt-3 rounded-lg bg-rose-500/20 px-4 py-2 text-xs font-medium text-rose-300 hover:bg-rose-500/30 transition-colors"
+            >
+              Try Again
+            </button>
+          </div>
+        )}
       </div>
 
       {/* ══════════════════════════════════════════════════════
