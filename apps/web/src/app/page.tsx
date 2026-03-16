@@ -646,10 +646,10 @@ export default function LandingPage() {
                     </svg>
                   </Link>
                   <Link
-                    href="/dashboard"
+                    href="/login"
                     className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 backdrop-blur-sm px-8 py-4 text-lg font-semibold text-white/80 transition-all duration-200 hover:border-indigo-400/30 hover:bg-white/10"
                   >
-                    View Dashboard
+                    Sign In
                   </Link>
                 </div>
               </div>

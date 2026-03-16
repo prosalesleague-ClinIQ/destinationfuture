@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 
 const NAV_LINKS = [
   { href: "/dashboard", label: "Dashboard" },
@@ -22,7 +22,31 @@ const NAV_LINKS = [
 
 export default function Navbar() {
   const pathname = usePathname();
+  const router = useRouter();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [userInitial, setUserInitial] = useState("U");
+
+  useEffect(() => {
+    const token = localStorage.getItem("df_token");
+    const userStr = localStorage.getItem("df_user");
+    if (token && userStr) {
+      try {
+        const user = JSON.parse(userStr);
+        setIsAuthenticated(true);
+        if (user.firstName) setUserInitial(user.firstName.charAt(0).toUpperCase());
+      } catch {
+        // ignore
+      }
+    }
+  }, []);
+
+  const handleLogout = () => {
+    localStorage.removeItem("df_token");
+    localStorage.removeItem("df_user");
+    setIsAuthenticated(false);
+    router.push("/login");
+  };
 
   return (
     <nav className="sticky top-0 z-50 border-b border-white/[0.06] bg-[#0a0e27]/80 backdrop-blur-xl">
@@ -64,12 +88,37 @@ export default function Navbar() {
 
         {/* Right side */}
         <div className="flex items-center gap-3">
-          <Link
-            href="/settings"
-            className="hidden h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-indigo-500/20 to-purple-500/20 text-sm font-semibold text-white/70 border border-white/[0.08] hover:border-indigo-400/30 transition-all md:flex"
-          >
-            U
-          </Link>
+          {isAuthenticated ? (
+            <>
+              <Link
+                href="/settings"
+                className="hidden h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-indigo-500/20 to-purple-500/20 text-sm font-semibold text-white/70 border border-white/[0.08] hover:border-indigo-400/30 transition-all md:flex"
+              >
+                {userInitial}
+              </Link>
+              <button
+                onClick={handleLogout}
+                className="hidden items-center rounded-lg px-3 py-2 text-sm font-medium text-white/40 hover:text-white/70 hover:bg-white/[0.04] transition-all md:flex"
+              >
+                Sign Out
+              </button>
+            </>
+          ) : (
+            <div className="hidden items-center gap-2 md:flex">
+              <Link
+                href="/login"
+                className="rounded-lg px-3 py-2 text-sm font-medium text-white/50 hover:text-white/80 transition-all"
+              >
+                Sign In
+              </Link>
+              <Link
+                href="/register"
+                className="rounded-lg bg-gradient-to-r from-indigo-600 to-purple-600 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-indigo-500/20 transition-all hover:shadow-indigo-500/30"
+              >
+                Create Account
+              </Link>
+            </div>
+          )}
 
           {/* Mobile hamburger */}
           <button
@@ -114,15 +163,42 @@ export default function Navbar() {
             })}
           </div>
           <div className="mt-3 border-t border-white/[0.06] pt-3">
-            <Link href="/settings" className="flex items-center gap-3 rounded-lg px-3 py-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-indigo-500/20 to-purple-500/20 text-sm font-semibold text-white/60 border border-white/[0.08]">
-                U
+            {isAuthenticated ? (
+              <div className="flex items-center justify-between px-3 py-2">
+                <Link href="/settings" className="flex items-center gap-3" onClick={() => setMobileOpen(false)}>
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-indigo-500/20 to-purple-500/20 text-sm font-semibold text-white/60 border border-white/[0.08]">
+                    {userInitial}
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-white/80">Account</p>
+                    <p className="text-xs text-white/30">Settings</p>
+                  </div>
+                </Link>
+                <button
+                  onClick={() => { handleLogout(); setMobileOpen(false); }}
+                  className="text-sm text-white/40 hover:text-white/70"
+                >
+                  Sign Out
+                </button>
               </div>
-              <div>
-                <p className="text-sm font-medium text-white/80">User</p>
-                <p className="text-xs text-white/30">Settings</p>
+            ) : (
+              <div className="flex flex-col gap-2">
+                <Link
+                  href="/login"
+                  onClick={() => setMobileOpen(false)}
+                  className="rounded-lg border border-white/[0.08] px-4 py-2.5 text-center text-sm font-medium text-white/70 hover:bg-white/[0.04]"
+                >
+                  Sign In
+                </Link>
+                <Link
+                  href="/register"
+                  onClick={() => setMobileOpen(false)}
+                  className="rounded-lg bg-gradient-to-r from-indigo-600 to-purple-600 px-4 py-2.5 text-center text-sm font-semibold text-white"
+                >
+                  Create Account
+                </Link>
               </div>
-            </Link>
+            )}
           </div>
         </div>
       )}

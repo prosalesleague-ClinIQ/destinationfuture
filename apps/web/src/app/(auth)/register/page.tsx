@@ -64,80 +64,132 @@ export default function RegisterPage() {
     }
   };
 
+  const handleGoogleSignUp = () => {
+    const demoUser = {
+      id: "google-demo",
+      email: "demo@destinationfuture.com",
+      firstName: "Alex",
+      nickname: null,
+      subscriptionTier: "FREE" as const,
+    };
+    localStorage.setItem("df_token", "demo-token-google");
+    localStorage.setItem("df_user", JSON.stringify(demoUser));
+    router.push("/onboarding");
+  };
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-surface-50 px-4 py-12">
-      <div className="w-full max-w-md">
+    <div className="relative flex min-h-screen items-center justify-center bg-[#0a0e27] px-4 py-12">
+      {/* Background glow */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute -top-32 -right-32 h-96 w-96 rounded-full bg-purple-500/10 blur-[120px]" />
+        <div className="absolute -bottom-32 -left-32 h-96 w-96 rounded-full bg-indigo-500/10 blur-[120px]" />
+      </div>
+
+      <div className="relative z-10 w-full max-w-md">
+        {/* Logo */}
         <div className="mb-8 text-center">
-          <h1 className="text-3xl font-bold text-gradient">Destination Future</h1>
-          <p className="mt-2 text-surface-700">Create your account and begin your journey.</p>
+          <Link href="/" className="inline-flex items-center gap-2.5 mb-4">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 shadow-lg shadow-indigo-500/20">
+              <svg className="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 0 0-3.09 3.09ZM18.259 8.715 18 9.75l-.259-1.035a3.375 3.375 0 0 0-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 0 0 2.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 0 0 2.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 0 0-2.456 2.456Z" />
+              </svg>
+            </div>
+            <span
+              className="text-xl font-bold bg-clip-text text-transparent"
+              style={{ backgroundImage: "linear-gradient(135deg, #818cf8, #a78bfa, #c084fc)" }}
+            >
+              Destination Future
+            </span>
+          </Link>
+          <h1 className="text-2xl font-bold text-white">Create your account</h1>
+          <p className="mt-1 text-white/50">Begin your journey to the best version of you.</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="rounded-2xl bg-white p-8 shadow-sm border border-surface-200">
+        <div className="rounded-2xl border border-white/[0.08] bg-white/[0.04] backdrop-blur-xl p-8">
+          {/* Google Sign Up */}
+          <button
+            type="button"
+            onClick={handleGoogleSignUp}
+            className="flex w-full items-center justify-center gap-3 rounded-xl border border-white/[0.1] bg-white/[0.06] px-4 py-3 text-sm font-medium text-white transition-all hover:bg-white/[0.1] hover:border-white/[0.15]"
+          >
+            <svg className="h-5 w-5" viewBox="0 0 24 24">
+              <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/>
+              <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+              <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+              <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+            </svg>
+            Continue with Google
+          </button>
+
+          {/* Divider */}
+          <div className="relative my-6">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-white/[0.08]" />
+            </div>
+            <div className="relative flex justify-center text-xs">
+              <span className="bg-[#0d1230] px-3 text-white/30">or create with email</span>
+            </div>
+          </div>
+
           {error && (
-            <div className="mb-4 rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
+            <div className="mb-4 rounded-lg bg-red-500/10 border border-red-500/20 px-4 py-3 text-sm text-red-400">
               {error}
             </div>
           )}
 
-          <div className="space-y-4">
-            {/* Name row 1: First + Middle */}
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {/* Name row 1 */}
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label htmlFor="firstName" className="block text-sm font-medium text-surface-700 mb-1">
-                  First Name <span className="text-red-500">*</span>
+                <label htmlFor="firstName" className="block text-sm font-medium text-white/70 mb-1.5">
+                  First Name <span className="text-red-400">*</span>
                 </label>
                 <input
                   id="firstName"
                   type="text"
                   value={firstName}
                   onChange={(e) => setFirstName(e.target.value)}
-                  className="w-full rounded-lg border border-surface-200 px-3 py-2.5 text-sm focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-100"
+                  className="w-full rounded-xl border border-white/[0.08] bg-white/[0.04] px-4 py-3 text-sm text-white placeholder-white/30 outline-none focus:border-indigo-500/40 focus:bg-white/[0.06] transition-all"
                   placeholder="First name"
                   autoComplete="given-name"
                 />
               </div>
               <div>
-                <label htmlFor="middleName" className="block text-sm font-medium text-surface-700 mb-1">
-                  Middle Name
-                </label>
+                <label htmlFor="middleName" className="block text-sm font-medium text-white/70 mb-1.5">Middle</label>
                 <input
                   id="middleName"
                   type="text"
                   value={middleName}
                   onChange={(e) => setMiddleName(e.target.value)}
-                  className="w-full rounded-lg border border-surface-200 px-3 py-2.5 text-sm focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-100"
+                  className="w-full rounded-xl border border-white/[0.08] bg-white/[0.04] px-4 py-3 text-sm text-white placeholder-white/30 outline-none focus:border-indigo-500/40 focus:bg-white/[0.06] transition-all"
                   placeholder="Middle name"
                   autoComplete="additional-name"
                 />
               </div>
             </div>
 
-            {/* Name row 2: Last + Nickname */}
+            {/* Name row 2 */}
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label htmlFor="lastName" className="block text-sm font-medium text-surface-700 mb-1">
-                  Last Name
-                </label>
+                <label htmlFor="lastName" className="block text-sm font-medium text-white/70 mb-1.5">Last Name</label>
                 <input
                   id="lastName"
                   type="text"
                   value={lastName}
                   onChange={(e) => setLastName(e.target.value)}
-                  className="w-full rounded-lg border border-surface-200 px-3 py-2.5 text-sm focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-100"
+                  className="w-full rounded-xl border border-white/[0.08] bg-white/[0.04] px-4 py-3 text-sm text-white placeholder-white/30 outline-none focus:border-indigo-500/40 focus:bg-white/[0.06] transition-all"
                   placeholder="Last name"
                   autoComplete="family-name"
                 />
               </div>
               <div>
-                <label htmlFor="nickname" className="block text-sm font-medium text-surface-700 mb-1">
-                  Nickname
-                </label>
+                <label htmlFor="nickname" className="block text-sm font-medium text-white/70 mb-1.5">Nickname</label>
                 <input
                   id="nickname"
                   type="text"
                   value={nickname}
                   onChange={(e) => setNickname(e.target.value)}
-                  className="w-full rounded-lg border border-surface-200 px-3 py-2.5 text-sm focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-100"
+                  className="w-full rounded-xl border border-white/[0.08] bg-white/[0.04] px-4 py-3 text-sm text-white placeholder-white/30 outline-none focus:border-indigo-500/40 focus:bg-white/[0.06] transition-all"
                   placeholder="Display name"
                   autoComplete="nickname"
                 />
@@ -146,15 +198,15 @@ export default function RegisterPage() {
 
             {/* Email */}
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-surface-700 mb-1">
-                Email <span className="text-red-500">*</span>
+              <label htmlFor="email" className="block text-sm font-medium text-white/70 mb-1.5">
+                Email <span className="text-red-400">*</span>
               </label>
               <input
                 id="email"
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full rounded-lg border border-surface-200 px-3 py-2.5 text-sm focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-100"
+                className="w-full rounded-xl border border-white/[0.08] bg-white/[0.04] px-4 py-3 text-sm text-white placeholder-white/30 outline-none focus:border-indigo-500/40 focus:bg-white/[0.06] transition-all"
                 placeholder="you@example.com"
                 autoComplete="email"
               />
@@ -162,15 +214,15 @@ export default function RegisterPage() {
 
             {/* Password */}
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-surface-700 mb-1">
-                Password <span className="text-red-500">*</span>
+              <label htmlFor="password" className="block text-sm font-medium text-white/70 mb-1.5">
+                Password <span className="text-red-400">*</span>
               </label>
               <input
                 id="password"
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full rounded-lg border border-surface-200 px-3 py-2.5 text-sm focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-100"
+                className="w-full rounded-xl border border-white/[0.08] bg-white/[0.04] px-4 py-3 text-sm text-white placeholder-white/30 outline-none focus:border-indigo-500/40 focus:bg-white/[0.06] transition-all"
                 placeholder="Min. 8 characters"
                 autoComplete="new-password"
               />
@@ -178,44 +230,44 @@ export default function RegisterPage() {
 
             {/* Confirm Password */}
             <div>
-              <label htmlFor="confirmPassword" className="block text-sm font-medium text-surface-700 mb-1">
-                Confirm Password <span className="text-red-500">*</span>
+              <label htmlFor="confirmPassword" className="block text-sm font-medium text-white/70 mb-1.5">
+                Confirm Password <span className="text-red-400">*</span>
               </label>
               <input
                 id="confirmPassword"
                 type="password"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
-                className="w-full rounded-lg border border-surface-200 px-3 py-2.5 text-sm focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-100"
+                className="w-full rounded-xl border border-white/[0.08] bg-white/[0.04] px-4 py-3 text-sm text-white placeholder-white/30 outline-none focus:border-indigo-500/40 focus:bg-white/[0.06] transition-all"
                 placeholder="Re-enter password"
                 autoComplete="new-password"
               />
             </div>
-          </div>
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="mt-6 w-full rounded-lg bg-gradient-to-r from-brand-600 to-cosmic-600 px-4 py-2.5 text-sm font-medium text-white hover:from-brand-700 hover:to-cosmic-700 transition-all shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {loading ? (
-              <span className="flex items-center justify-center gap-2">
-                <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                </svg>
-                Creating account...
-              </span>
-            ) : "Create Account"}
-          </button>
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-indigo-500/20 transition-all hover:shadow-indigo-500/30 hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {loading ? (
+                <span className="flex items-center justify-center gap-2">
+                  <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                  </svg>
+                  Creating account...
+                </span>
+              ) : "Create Account"}
+            </button>
+          </form>
 
-          <p className="mt-4 text-center text-sm text-surface-700">
+          <p className="mt-6 text-center text-sm text-white/40">
             Already have an account?{" "}
-            <Link href="/login" className="font-medium text-brand-600 hover:text-brand-700">
+            <Link href="/login" className="font-medium text-indigo-400 hover:text-indigo-300 transition-colors">
               Sign in
             </Link>
           </p>
-        </form>
+        </div>
       </div>
     </div>
   );

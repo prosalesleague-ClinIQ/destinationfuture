@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import XpProgress from "@/components/dashboard/xp-progress";
 import QuestCard from "@/components/dashboard/quest-card";
@@ -58,13 +59,71 @@ const MOCK_REPORTS = [
   { id: "r3", title: "Career Focus", createdAt: "Mar 12, 9:00 AM", sectionCount: 5, preset: "Career Focus" },
 ];
 
+function DemoBanner() {
+  return (
+    <div className="mb-6 rounded-2xl border border-amber-500/20 bg-gradient-to-r from-amber-500/10 via-orange-500/5 to-transparent p-5">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div className="flex items-start gap-3">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-500/20">
+            <svg className="h-5 w-5 text-amber-400" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H6.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25Z" />
+            </svg>
+          </div>
+          <div>
+            <h3 className="text-sm font-semibold text-white">This is an example dashboard</h3>
+            <p className="mt-0.5 text-sm text-white/50">
+              Dashboards are private and password protected. Sign in or create an account to see your own personalized dashboard.
+            </p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2 sm:shrink-0">
+          <Link
+            href="/login"
+            className="rounded-lg border border-white/[0.1] bg-white/[0.06] px-4 py-2 text-sm font-medium text-white/80 transition-all hover:bg-white/[0.1]"
+          >
+            Sign In
+          </Link>
+          <Link
+            href="/register"
+            className="rounded-lg bg-gradient-to-r from-indigo-600 to-purple-600 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-indigo-500/20 transition-all hover:shadow-indigo-500/30"
+          >
+            Create Account
+          </Link>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function DashboardPage() {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [userName, setUserName] = useState(MOCK_USER.firstName);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+    const token = localStorage.getItem("df_token");
+    const userStr = localStorage.getItem("df_user");
+    if (token && userStr) {
+      try {
+        const user = JSON.parse(userStr);
+        setIsAuthenticated(true);
+        if (user.firstName) setUserName(user.firstName);
+      } catch {
+        // ignore
+      }
+    }
+  }, []);
+
   return (
     <>
+      {/* Demo banner for unauthenticated users */}
+      {mounted && !isAuthenticated && <DemoBanner />}
+
       {/* Greeting */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-white/90">
-          Welcome back, <span className="bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent">{MOCK_USER.firstName}</span>
+          Welcome back, <span className="bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent">{userName}</span>
         </h1>
         <p className="mt-1 text-white/50">Here&apos;s your growth snapshot for today.</p>
       </div>
