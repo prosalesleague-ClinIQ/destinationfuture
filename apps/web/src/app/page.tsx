@@ -105,13 +105,31 @@ const STEPS = [
 ];
 
 // ---------------------------------------------------------------------------
-// Star Warp — flying through space canvas background
+// Milky Way fly-through — smooth gentle drift with planets & galaxies
 // ---------------------------------------------------------------------------
+
+interface Star {
+  x: number; y: number; z: number; px: number; py: number;
+  twinkleSpeed: number; twinkleOffset: number;
+  hue: number; // slight color variation
+}
+
+interface CelestialBody {
+  x: number; y: number; z: number;
+  type: "planet" | "galaxy" | "nebula";
+  size: number;
+  color1: string; color2: string; color3: string;
+  rotation: number; rotationSpeed: number;
+  ringColor?: string; hasRing?: boolean;
+  spiralArms?: number;
+}
 
 function StarWarpBackground() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animRef = useRef<number>(0);
-  const starsRef = useRef<{ x: number; y: number; z: number; px: number; py: number }[]>([]);
+  const starsRef = useRef<Star[]>([]);
+  const bodiesRef = useRef<CelestialBody[]>([]);
+  const timeRef = useRef(0);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -128,74 +146,307 @@ function StarWarpBackground() {
     resize();
     window.addEventListener("resize", resize);
 
-    const w = () => canvas.width / (window.devicePixelRatio || 1);
-    const h = () => canvas.height / (window.devicePixelRatio || 1);
+    const w = () => canvas.width / dpr;
+    const h = () => canvas.height / dpr;
 
-    // Initialize 2000 stars
+    // Initialize 2500 stars with varied properties
     if (starsRef.current.length === 0) {
-      for (let i = 0; i < 2000; i++) {
+      for (let i = 0; i < 2500; i++) {
         starsRef.current.push({
-          x: (Math.random() - 0.5) * 2000,
-          y: (Math.random() - 0.5) * 2000,
-          z: Math.random() * 2000,
-          px: 0,
-          py: 0,
+          x: (Math.random() - 0.5) * 3000,
+          y: (Math.random() - 0.5) * 3000,
+          z: Math.random() * 3000,
+          px: 0, py: 0,
+          twinkleSpeed: 0.5 + Math.random() * 2,
+          twinkleOffset: Math.random() * Math.PI * 2,
+          hue: Math.random() < 0.1 ? 30 + Math.random() * 30 : // warm yellow/orange
+               Math.random() < 0.15 ? 200 + Math.random() * 40 : // blue
+               0, // white
         });
       }
     }
 
-    const speed = 8;
+    // Initialize celestial bodies — planets, galaxies, nebulae
+    if (bodiesRef.current.length === 0) {
+      const bodies: CelestialBody[] = [];
+
+      // Planets — various sizes, colors, some with rings
+      const planetDefs = [
+        { color1: "#4a6fa5", color2: "#2d4a7a", color3: "#1a3055", size: 35, hasRing: true, ringColor: "rgba(180,170,140,0.3)" },
+        { color1: "#c4956a", color2: "#a07040", color3: "#6b4520", size: 28, hasRing: false },
+        { color1: "#8b6f5e", color2: "#6d5040", color3: "#4a3528", size: 20, hasRing: true, ringColor: "rgba(160,140,120,0.25)" },
+        { color1: "#d4a373", color2: "#b07840", color3: "#8a5a28", size: 45, hasRing: true, ringColor: "rgba(200,180,140,0.35)" },
+        { color1: "#7a9bb5", color2: "#5a7a95", color3: "#3a5a75", size: 22, hasRing: false },
+        { color1: "#c97b63", color2: "#a05a40", color3: "#7a3a25", size: 18, hasRing: false },
+        { color1: "#6ec4a8", color2: "#4a9a80", color3: "#2a7a60", size: 25, hasRing: false },
+      ];
+      for (let i = 0; i < planetDefs.length; i++) {
+        const def = planetDefs[i];
+        bodies.push({
+          x: (Math.random() - 0.5) * 2400,
+          y: (Math.random() - 0.5) * 1600,
+          z: 500 + Math.random() * 2500,
+          type: "planet",
+          size: def.size,
+          color1: def.color1, color2: def.color2, color3: def.color3,
+          rotation: Math.random() * Math.PI * 2,
+          rotationSpeed: 0.001 + Math.random() * 0.003,
+          hasRing: def.hasRing, ringColor: def.ringColor,
+        });
+      }
+
+      // Distant galaxies — spiral shapes
+      for (let i = 0; i < 5; i++) {
+        bodies.push({
+          x: (Math.random() - 0.5) * 3000,
+          y: (Math.random() - 0.5) * 2000,
+          z: 1500 + Math.random() * 1500,
+          type: "galaxy",
+          size: 40 + Math.random() * 60,
+          color1: `rgba(${150 + Math.random() * 80}, ${120 + Math.random() * 60}, ${200 + Math.random() * 55}, 0.15)`,
+          color2: `rgba(${100 + Math.random() * 60}, ${80 + Math.random() * 60}, ${180 + Math.random() * 75}, 0.08)`,
+          color3: `rgba(${80 + Math.random() * 40}, ${60 + Math.random() * 40}, ${150 + Math.random() * 50}, 0.03)`,
+          rotation: Math.random() * Math.PI * 2,
+          rotationSpeed: 0.0005 + Math.random() * 0.001,
+          spiralArms: 2 + Math.floor(Math.random() * 3),
+        });
+      }
+
+      // Nebula clouds — large colorful gas clouds
+      const nebulaColors = [
+        ["rgba(100,60,180,0.06)", "rgba(140,80,220,0.03)", "rgba(80,40,150,0.01)"],
+        ["rgba(60,100,200,0.05)", "rgba(80,140,230,0.025)", "rgba(40,80,180,0.01)"],
+        ["rgba(180,60,100,0.04)", "rgba(220,80,130,0.02)", "rgba(150,40,80,0.008)"],
+        ["rgba(60,160,140,0.04)", "rgba(80,200,170,0.02)", "rgba(40,130,110,0.008)"],
+      ];
+      for (let i = 0; i < nebulaColors.length; i++) {
+        const cols = nebulaColors[i];
+        bodies.push({
+          x: (Math.random() - 0.5) * 2800,
+          y: (Math.random() - 0.5) * 1800,
+          z: 800 + Math.random() * 2200,
+          type: "nebula",
+          size: 100 + Math.random() * 150,
+          color1: cols[0], color2: cols[1], color3: cols[2],
+          rotation: Math.random() * Math.PI * 2,
+          rotationSpeed: 0.0002 + Math.random() * 0.0005,
+        });
+      }
+
+      bodiesRef.current = bodies;
+    }
+
+    const speed = 1.5; // Gentle cruising speed
     let running = true;
+
+    function drawPlanet(ctx: CanvasRenderingContext2D, sx: number, sy: number, r: number, body: CelestialBody, alpha: number) {
+      if (r < 1) return;
+      ctx.save();
+
+      // Planet sphere — radial gradient for 3D look
+      const grad = ctx.createRadialGradient(sx - r * 0.3, sy - r * 0.3, r * 0.1, sx, sy, r);
+      grad.addColorStop(0, body.color1);
+      grad.addColorStop(0.6, body.color2);
+      grad.addColorStop(1, body.color3);
+      ctx.globalAlpha = alpha;
+      ctx.beginPath();
+      ctx.arc(sx, sy, r, 0, Math.PI * 2);
+      ctx.fillStyle = grad;
+      ctx.fill();
+
+      // Atmospheric glow
+      const glowGrad = ctx.createRadialGradient(sx, sy, r * 0.8, sx, sy, r * 1.8);
+      glowGrad.addColorStop(0, "transparent");
+      glowGrad.addColorStop(0.5, `rgba(150, 180, 255, ${alpha * 0.08})`);
+      glowGrad.addColorStop(1, "transparent");
+      ctx.beginPath();
+      ctx.arc(sx, sy, r * 1.8, 0, Math.PI * 2);
+      ctx.fillStyle = glowGrad;
+      ctx.fill();
+
+      // Ring if applicable
+      if (body.hasRing && body.ringColor && r > 4) {
+        ctx.globalAlpha = alpha * 0.7;
+        ctx.beginPath();
+        ctx.ellipse(sx, sy, r * 2.2, r * 0.4, body.rotation, 0, Math.PI * 2);
+        ctx.strokeStyle = body.ringColor;
+        ctx.lineWidth = r * 0.15;
+        ctx.stroke();
+        // Second ring
+        ctx.beginPath();
+        ctx.ellipse(sx, sy, r * 1.8, r * 0.3, body.rotation, 0, Math.PI * 2);
+        ctx.strokeStyle = body.ringColor;
+        ctx.lineWidth = r * 0.08;
+        ctx.stroke();
+      }
+
+      ctx.restore();
+    }
+
+    function drawGalaxy(ctx: CanvasRenderingContext2D, sx: number, sy: number, r: number, body: CelestialBody, alpha: number) {
+      if (r < 2) return;
+      ctx.save();
+      ctx.globalAlpha = alpha;
+      ctx.translate(sx, sy);
+      ctx.rotate(body.rotation);
+
+      // Galaxy core glow
+      const coreGrad = ctx.createRadialGradient(0, 0, 0, 0, 0, r * 0.3);
+      coreGrad.addColorStop(0, `rgba(255, 240, 220, ${0.2 * alpha})`);
+      coreGrad.addColorStop(0.5, `rgba(200, 180, 255, ${0.08 * alpha})`);
+      coreGrad.addColorStop(1, "transparent");
+      ctx.beginPath();
+      ctx.arc(0, 0, r * 0.3, 0, Math.PI * 2);
+      ctx.fillStyle = coreGrad;
+      ctx.fill();
+
+      // Spiral arms
+      const arms = body.spiralArms || 2;
+      for (let a = 0; a < arms; a++) {
+        const angleOffset = (a / arms) * Math.PI * 2;
+        ctx.beginPath();
+        for (let t = 0; t < 80; t++) {
+          const angle = angleOffset + t * 0.12;
+          const dist = (t / 80) * r;
+          const x = Math.cos(angle) * dist;
+          const y = Math.sin(angle) * dist * 0.4; // flatten for tilt
+          if (t === 0) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+        }
+        ctx.strokeStyle = body.color1;
+        ctx.lineWidth = r * 0.06;
+        ctx.stroke();
+      }
+
+      // Outer diffuse glow
+      const outerGrad = ctx.createRadialGradient(0, 0, r * 0.2, 0, 0, r);
+      outerGrad.addColorStop(0, body.color2);
+      outerGrad.addColorStop(0.6, body.color3);
+      outerGrad.addColorStop(1, "transparent");
+      ctx.beginPath();
+      ctx.ellipse(0, 0, r, r * 0.4, 0, 0, Math.PI * 2);
+      ctx.fillStyle = outerGrad;
+      ctx.fill();
+
+      ctx.restore();
+    }
+
+    function drawNebula(ctx: CanvasRenderingContext2D, sx: number, sy: number, r: number, body: CelestialBody, alpha: number) {
+      if (r < 3) return;
+      ctx.save();
+      ctx.globalAlpha = alpha;
+
+      // Multiple overlapping gradients for cloud-like shape
+      for (let i = 0; i < 3; i++) {
+        const ox = Math.cos(body.rotation + i * 2.1) * r * 0.2;
+        const oy = Math.sin(body.rotation + i * 2.1) * r * 0.15;
+        const nr = r * (0.6 + i * 0.2);
+        const grad = ctx.createRadialGradient(sx + ox, sy + oy, 0, sx + ox, sy + oy, nr);
+        const col = [body.color1, body.color2, body.color3][i];
+        grad.addColorStop(0, col);
+        grad.addColorStop(0.5, col.replace(/[\d.]+\)$/, `${parseFloat(col.match(/[\d.]+\)$/)?.[0] || "0.03") * 0.5})`));
+        grad.addColorStop(1, "transparent");
+        ctx.beginPath();
+        ctx.ellipse(sx + ox, sy + oy, nr, nr * 0.6, body.rotation, 0, Math.PI * 2);
+        ctx.fillStyle = grad;
+        ctx.fill();
+      }
+
+      ctx.restore();
+    }
 
     const animate = () => {
       if (!running) return;
+      timeRef.current += 0.016;
+      const t = timeRef.current;
       const cw = w();
       const ch = h();
       const cx = cw / 2;
       const cy = ch / 2;
 
-      // Semi-transparent clear for motion trails
-      ctx.fillStyle = "rgba(5, 8, 16, 0.15)";
+      // Clear fully — no motion trails for smooth gentle drift
+      ctx.fillStyle = "#050810";
       ctx.fillRect(0, 0, cw, ch);
 
+      // --- Draw celestial bodies (behind stars, sorted by depth) ---
+      const sortedBodies = [...bodiesRef.current].sort((a, b) => b.z - a.z);
+      for (const body of sortedBodies) {
+        body.z -= speed * 0.6;
+        body.rotation += body.rotationSpeed;
+        if (body.z <= 10) {
+          body.z = 2500 + Math.random() * 500;
+          body.x = (Math.random() - 0.5) * 2800;
+          body.y = (Math.random() - 0.5) * 1800;
+        }
+
+        const sx = cx + (body.x / body.z) * 600;
+        const sy = cy + (body.y / body.z) * 600;
+        const depthFactor = 1 - body.z / 3000;
+        const projectedSize = (body.size / body.z) * 600;
+        const alpha = Math.min(depthFactor * 1.2, 1);
+
+        if (sx < -200 || sx > cw + 200 || sy < -200 || sy > ch + 200) continue;
+
+        if (body.type === "nebula") drawNebula(ctx, sx, sy, projectedSize, body, alpha * 0.7);
+        else if (body.type === "galaxy") drawGalaxy(ctx, sx, sy, projectedSize, body, alpha);
+        else if (body.type === "planet") drawPlanet(ctx, sx, sy, projectedSize, body, alpha);
+      }
+
+      // --- Draw stars ---
       for (const star of starsRef.current) {
         star.z -= speed;
         if (star.z <= 0) {
-          star.x = (Math.random() - 0.5) * 2000;
-          star.y = (Math.random() - 0.5) * 2000;
-          star.z = 2000;
-          star.px = cx + (star.x / star.z) * 500;
-          star.py = cy + (star.y / star.z) * 500;
+          star.x = (Math.random() - 0.5) * 3000;
+          star.y = (Math.random() - 0.5) * 3000;
+          star.z = 3000;
+          star.px = 0; star.py = 0;
         }
 
-        const sx = cx + (star.x / star.z) * 500;
-        const sy = cy + (star.y / star.z) * 500;
-        const depth = 1 - star.z / 2000;
-        const size = depth * 2.5;
-        const alpha = depth * 0.8;
+        const sx = cx + (star.x / star.z) * 600;
+        const sy = cy + (star.y / star.z) * 600;
+        const depth = 1 - star.z / 3000;
 
-        // Streak line
-        if (star.px !== 0 && star.py !== 0) {
-          ctx.beginPath();
-          ctx.moveTo(star.px, star.py);
-          ctx.lineTo(sx, sy);
-          ctx.strokeStyle = `rgba(160, 170, 255, ${alpha * 0.5})`;
-          ctx.lineWidth = size * 0.4;
-          ctx.stroke();
+        // Twinkle
+        const twinkle = 0.6 + 0.4 * Math.sin(t * star.twinkleSpeed + star.twinkleOffset);
+        const alpha = depth * 0.85 * twinkle;
+        const size = depth * 2;
+
+        if (sx < -10 || sx > cw + 10 || sy < -10 || sy > ch + 10) {
+          star.px = sx; star.py = sy;
+          continue;
         }
 
-        // Star point
+        // Subtle drift trail (not warp streak — very short)
+        if (star.px !== 0 && star.py !== 0 && depth > 0.3) {
+          const dx = sx - star.px;
+          const dy = sy - star.py;
+          const trailLen = Math.sqrt(dx * dx + dy * dy);
+          if (trailLen > 0.5 && trailLen < 8) {
+            ctx.beginPath();
+            ctx.moveTo(star.px, star.py);
+            ctx.lineTo(sx, sy);
+            ctx.strokeStyle = `rgba(200, 210, 255, ${alpha * 0.15})`;
+            ctx.lineWidth = size * 0.3;
+            ctx.stroke();
+          }
+        }
+
+        // Star point with color variation
         ctx.beginPath();
         ctx.arc(sx, sy, size, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
+        if (star.hue > 0) {
+          ctx.fillStyle = `hsla(${star.hue}, 60%, 80%, ${alpha})`;
+        } else {
+          ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
+        }
         ctx.fill();
 
-        // Glow on close stars
-        if (depth > 0.75) {
+        // Soft glow on close/bright stars
+        if (depth > 0.6 && twinkle > 0.8) {
           ctx.beginPath();
-          ctx.arc(sx, sy, size * 3, 0, Math.PI * 2);
-          const grad = ctx.createRadialGradient(sx, sy, 0, sx, sy, size * 3);
-          grad.addColorStop(0, `rgba(140, 150, 255, ${alpha * 0.25})`);
+          ctx.arc(sx, sy, size * 4, 0, Math.PI * 2);
+          const grad = ctx.createRadialGradient(sx, sy, 0, sx, sy, size * 4);
+          grad.addColorStop(0, `rgba(180, 200, 255, ${alpha * 0.15})`);
           grad.addColorStop(1, "transparent");
           ctx.fillStyle = grad;
           ctx.fill();
