@@ -181,32 +181,29 @@ export const localDb = {
     return { success: true, user };
   },
 
-  googleSignIn(email: string): { success: true; user: LocalUser } | { success: false; error: string } {
-    const users = getUsers();
-    const user = users.find((u) => u.email.toLowerCase() === email.toLowerCase());
-
-    if (!user) {
-      return { success: false, error: "No account found with this Gmail. Create an account first." };
-    }
-
-    setSession(user);
-    return { success: true, user };
-  },
-
-  googleSignUp(data: {
+  /**
+   * Unified Google auth: auto-signs in if account exists, auto-creates if not.
+   */
+  googleAuth(data: {
     email: string;
     firstName: string;
-  }): { success: true; user: LocalUser } | { success: false; error: string } {
+    lastName?: string;
+    avatar?: string;
+  }): { success: true; user: LocalUser; isNew: boolean } {
     const users = getUsers();
+    const existing = users.find((u) => u.email.toLowerCase() === data.email.toLowerCase());
 
-    if (users.find((u) => u.email.toLowerCase() === data.email.toLowerCase())) {
-      return { success: false, error: "An account with this email already exists. Try signing in." };
+    if (existing) {
+      setSession(existing);
+      return { success: true, user: existing, isNew: false };
     }
 
+    // Auto-create account
     const user: LocalUser = {
       id: crypto.randomUUID(),
       email: data.email.toLowerCase(),
       firstName: data.firstName,
+      lastName: data.lastName,
       provider: "google",
       createdAt: Date.now(),
     };
@@ -219,7 +216,7 @@ export const localDb = {
     saveAllProgress(allProgress);
 
     setSession(user);
-    return { success: true, user };
+    return { success: true, user, isNew: true };
   },
 
   getProgress(userId: string): UserProgress {
