@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { localDb } from "@/lib/local-db";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -38,43 +39,41 @@ export default function RegisterPage() {
     }
 
     setLoading(true);
-    try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000"}/api/auth/register`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          firstName: firstName.trim(),
-          middleName: middleName.trim() || undefined,
-          lastName: lastName.trim() || undefined,
-          nickname: nickname.trim() || undefined,
-          email,
-          password,
-        }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error?.message || "Registration failed");
+    const result = localDb.register({
+      firstName: firstName.trim(),
+      lastName: lastName.trim() || undefined,
+      nickname: nickname.trim() || undefined,
+      email,
+      password,
+    });
+    setLoading(false);
 
-      localStorage.setItem("df_token", data.token);
-      localStorage.setItem("df_user", JSON.stringify(data.user));
-      router.push("/onboarding");
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Registration failed");
-    } finally {
-      setLoading(false);
+    if (!result.success) {
+      setError(result.error);
+      return;
     }
+
+    router.push("/dashboard");
   };
 
   const handleGoogleSignUp = () => {
-    const demoUser = {
-      id: "google-demo",
-      email: "demo@destinationfuture.com",
-      firstName: "Alex",
-      nickname: null,
-      subscriptionTier: "FREE" as const,
-    };
-    localStorage.setItem("df_token", "demo-token-google");
-    localStorage.setItem("df_user", JSON.stringify(demoUser));
-    router.push("/onboarding");
+    setError("");
+    const gmailAddress = prompt("Enter your Gmail address:");
+    if (!gmailAddress) return;
+
+    const displayName = prompt("Enter your first name:") || "User";
+
+    const result = localDb.googleSignUp({
+      email: gmailAddress,
+      firstName: displayName,
+    });
+
+    if (!result.success) {
+      setError(result.error);
+      return;
+    }
+
+    router.push("/dashboard");
   };
 
   return (
@@ -138,7 +137,6 @@ export default function RegisterPage() {
           )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Name row 1 */}
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label htmlFor="firstName" className="block text-sm font-medium text-white/70 mb-1.5">
@@ -168,7 +166,6 @@ export default function RegisterPage() {
               </div>
             </div>
 
-            {/* Name row 2 */}
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label htmlFor="lastName" className="block text-sm font-medium text-white/70 mb-1.5">Last Name</label>
@@ -196,7 +193,6 @@ export default function RegisterPage() {
               </div>
             </div>
 
-            {/* Email */}
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-white/70 mb-1.5">
                 Email <span className="text-red-400">*</span>
@@ -212,7 +208,6 @@ export default function RegisterPage() {
               />
             </div>
 
-            {/* Password */}
             <div>
               <label htmlFor="password" className="block text-sm font-medium text-white/70 mb-1.5">
                 Password <span className="text-red-400">*</span>
@@ -228,7 +223,6 @@ export default function RegisterPage() {
               />
             </div>
 
-            {/* Confirm Password */}
             <div>
               <label htmlFor="confirmPassword" className="block text-sm font-medium text-white/70 mb-1.5">
                 Confirm Password <span className="text-red-400">*</span>
@@ -249,15 +243,7 @@ export default function RegisterPage() {
               disabled={loading}
               className="w-full rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-indigo-500/20 transition-all hover:shadow-indigo-500/30 hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {loading ? (
-                <span className="flex items-center justify-center gap-2">
-                  <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                  </svg>
-                  Creating account...
-                </span>
-              ) : "Create Account"}
+              {loading ? "Creating account..." : "Create Account"}
             </button>
           </form>
 
