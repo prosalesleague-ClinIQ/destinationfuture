@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { db } from "@/lib/db";
 
 const NAV_LINKS = [
   { href: "/dashboard", label: "Dashboard" },
@@ -28,22 +29,17 @@ export default function Navbar() {
   const [userInitial, setUserInitial] = useState("U");
 
   useEffect(() => {
-    const token = localStorage.getItem("df_token");
-    const userStr = localStorage.getItem("df_user");
-    if (token && userStr) {
-      try {
-        const user = JSON.parse(userStr);
+    (async () => {
+      const user = await db.getCurrentUser();
+      if (user) {
         setIsAuthenticated(true);
         if (user.firstName) setUserInitial(user.firstName.charAt(0).toUpperCase());
-      } catch {
-        // ignore
       }
-    }
+    })();
   }, []);
 
-  const handleLogout = () => {
-    localStorage.removeItem("df_token");
-    localStorage.removeItem("df_user");
+  const handleLogout = async () => {
+    await db.logout();
     setIsAuthenticated(false);
     router.push("/login");
   };
@@ -112,7 +108,7 @@ export default function Navbar() {
                 Sign In
               </Link>
               <Link
-                href="/register"
+                href="/login"
                 className="rounded-lg bg-gradient-to-r from-indigo-600 to-purple-600 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-indigo-500/20 transition-all hover:shadow-indigo-500/30"
               >
                 Create Account
@@ -191,7 +187,7 @@ export default function Navbar() {
                   Sign In
                 </Link>
                 <Link
-                  href="/register"
+                  href="/login"
                   onClick={() => setMobileOpen(false)}
                   className="rounded-lg bg-gradient-to-r from-indigo-600 to-purple-600 px-4 py-2.5 text-center text-sm font-semibold text-white"
                 >

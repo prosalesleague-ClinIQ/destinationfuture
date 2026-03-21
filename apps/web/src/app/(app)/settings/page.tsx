@@ -2,6 +2,17 @@
 
 import { useState } from "react";
 
+const US_STATES = [
+  "Alabama","Alaska","Arizona","Arkansas","California","Colorado","Connecticut",
+  "Delaware","Florida","Georgia","Hawaii","Idaho","Illinois","Indiana","Iowa",
+  "Kansas","Kentucky","Louisiana","Maine","Maryland","Massachusetts","Michigan",
+  "Minnesota","Mississippi","Missouri","Montana","Nebraska","Nevada","New Hampshire",
+  "New Jersey","New Mexico","New York","North Carolina","North Dakota","Ohio",
+  "Oklahoma","Oregon","Pennsylvania","Rhode Island","South Carolina","South Dakota",
+  "Tennessee","Texas","Utah","Vermont","Virginia","Washington","West Virginia",
+  "Wisconsin","Wyoming",
+];
+
 export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState<"profile" | "privacy" | "subscription" | "data">("profile");
 
@@ -61,11 +72,24 @@ export default function SettingsPage() {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-white/50 mb-1">Date of Birth</label>
-                <input type="date" className="w-full rounded-lg border border-white/[0.08] bg-white/[0.06] px-3 py-2 text-sm text-white" defaultValue="1992-07-15" />
+                <input type="date" className="w-full rounded-lg border border-white/[0.08] bg-white/[0.06] px-3 py-2 text-sm text-white [color-scheme:dark]" defaultValue="1992-07-15" />
               </div>
               <div>
                 <label className="block text-sm font-medium text-white/50 mb-1">Exact Birth Time</label>
-                <input type="time" className="w-full rounded-lg border border-white/[0.08] bg-white/[0.06] px-3 py-2 text-sm text-white" defaultValue="14:30" />
+                <input type="time" className="w-full rounded-lg border border-white/[0.08] bg-white/[0.06] px-3 py-2 text-sm text-white [color-scheme:dark]" defaultValue="14:30" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-white/50 mb-1">City of Birth</label>
+                <input type="text" className="w-full rounded-lg border border-white/[0.08] bg-white/[0.06] px-3 py-2 text-sm text-white placeholder:text-white/20" placeholder="e.g. Los Angeles" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-white/50 mb-1">State of Birth</label>
+                <select className="w-full rounded-lg border border-white/[0.08] bg-white/[0.06] px-3 py-2 text-sm text-white [color-scheme:dark]">
+                  <option value="" className="bg-[#0d1230]">Select state</option>
+                  {US_STATES.map((s) => (
+                    <option key={s} value={s} className="bg-[#0d1230] text-white">{s}</option>
+                  ))}
+                </select>
               </div>
             </div>
             <button className="mt-4 rounded-lg bg-gradient-to-r from-indigo-600 to-purple-600 px-4 py-2 text-sm font-medium text-white hover:from-indigo-500 hover:to-purple-500 transition-colors">

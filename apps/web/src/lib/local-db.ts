@@ -7,10 +7,16 @@ export interface LocalUser {
   id: string;
   email: string;
   firstName: string;
+  middleName?: string;
   lastName?: string;
   nickname?: string;
+  birthday?: string; // YYYY-MM-DD
+  birthTime?: string; // HH:MM (24h)
+  birthCity?: string;
+  birthState?: string;
   provider: "email" | "google";
   passwordHash?: string; // simple hash for demo — NOT production-grade
+  intakeComplete: boolean;
   createdAt: number;
 }
 
@@ -123,10 +129,8 @@ function setSession(user: LocalUser): void {
 // ─── Public API ───
 
 export const localDb = {
-  register(data: {
-    firstName: string;
-    lastName?: string;
-    nickname?: string;
+  /** Step 1: Create account with just email + password. Intake still required. */
+  createAccount(data: {
     email: string;
     password: string;
   }): { success: true; user: LocalUser } | { success: false; error: string } {
@@ -139,11 +143,10 @@ export const localDb = {
     const user: LocalUser = {
       id: crypto.randomUUID(),
       email: data.email.toLowerCase(),
-      firstName: data.firstName,
-      lastName: data.lastName,
-      nickname: data.nickname,
+      firstName: "",
       provider: "email",
       passwordHash: simpleHash(data.password),
+      intakeComplete: false,
       createdAt: Date.now(),
     };
 
@@ -159,6 +162,53 @@ export const localDb = {
     setSession(user);
 
     return { success: true, user };
+  },
+
+  /** Step 2: Complete intake with personal details. */
+  completeIntake(userId: string, data: {
+    firstName: string;
+    middleName?: string;
+    lastName?: string;
+    nickname?: string;
+    birthday: string;
+    birthTime?: string;
+    birthCity: string;
+    birthState: string;
+  }): { success: true; user: LocalUser } | { success: false; error: string } {
+    const users = getUsers();
+    const user = users.find((u) => u.id === userId);
+    if (!user) return { success: false, error: "User not found." };
+
+    user.firstName = data.firstName;
+    user.middleName = data.middleName;
+    user.lastName = data.lastName;
+    user.nickname = data.nickname;
+    user.birthday = data.birthday;
+    user.birthTime = data.birthTime;
+    user.birthCity = data.birthCity;
+    user.birthState = data.birthState;
+    user.intakeComplete = true;
+
+    saveUsers(users);
+    // Re-set session so firstName is available
+    setSession(user);
+
+    return { success: true, user };
+  },
+
+  /** Check whether the current user has completed intake. */
+  isIntakeComplete(): boolean {
+    try {
+      const userStr = localStorage.getItem("df_user");
+      if (!userStr) return false;
+      const sessionUser = JSON.parse(userStr);
+      if (!sessionUser?.id) return false;
+      const users = getUsers();
+      const user = users.find((u) => u.id === sessionUser.id);
+      return user?.intakeComplete ?? false;
+    } catch {
+      return false;
+    }
   },
 
   login(email: string, password: string): { success: true; user: LocalUser } | { success: false; error: string } {
@@ -205,6 +255,7 @@ export const localDb = {
       firstName: data.firstName,
       lastName: data.lastName,
       provider: "google",
+      intakeComplete: false,
       createdAt: Date.now(),
     };
 
@@ -367,5 +418,13 @@ export const localDb = {
 
   isAuthenticated(): boolean {
     return !!localStorage.getItem("df_token") && !!localStorage.getItem("df_user");
+  },
+
+  /** Wipe all accounts, sessions, and progress. */
+  clearAll(): void {
+    localStorage.removeItem(USERS_KEY);
+    localStorage.removeItem(PROGRESS_KEY);
+    localStorage.removeItem("df_token");
+    localStorage.removeItem("df_user");
   },
 };

@@ -1,7 +1,10 @@
 "use client";
 
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import Navbar from "@/components/shared/navbar";
+import { db } from "@/lib/db";
 
 const SymbolicBackground = dynamic(
   () => import("@/components/cinematic/symbolic-background"),
@@ -14,40 +17,50 @@ const FutureYouFab = dynamic(
 );
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
+  const router = useRouter();
+  const [checked, setChecked] = useState(false);
+
+  useEffect(() => {
+    (async () => {
+      const authed = await db.isAuthenticated();
+      if (!authed) {
+        router.replace("/login");
+        return;
+      }
+      const intakeDone = await db.isIntakeComplete();
+      if (!intakeDone) {
+        router.replace("/intake");
+        return;
+      }
+      setChecked(true);
+    })();
+  }, [router]);
+
+  if (!checked) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-[#0a0e27]">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-indigo-500 border-t-transparent" />
+      </div>
+    );
+  }
+
   return (
     <div className="relative min-h-screen bg-[#0a0e27] text-white">
-      {/* Living symbolic background */}
       <SymbolicBackground opacity={0.5} />
-
-      {/* Vignette overlay */}
       <div
         className="fixed inset-0 pointer-events-none z-[1]"
-        style={{
-          background:
-            "radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.5) 100%)",
-        }}
+        style={{ background: "radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.5) 100%)" }}
       />
-
-      {/* Top gradient for navbar blending */}
       <div
         className="fixed top-0 left-0 right-0 h-24 pointer-events-none z-[2]"
-        style={{
-          background:
-            "linear-gradient(to bottom, rgba(10,14,39,0.9) 0%, transparent 100%)",
-        }}
+        style={{ background: "linear-gradient(to bottom, rgba(10,14,39,0.9) 0%, transparent 100%)" }}
       />
-
-      {/* Navbar */}
       <div className="relative z-50">
         <Navbar />
       </div>
-
-      {/* Page content */}
       <main className="relative z-10 mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
         {children}
       </main>
-
-      {/* Future You floating button */}
       <FutureYouFab />
     </div>
   );

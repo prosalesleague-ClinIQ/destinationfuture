@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "@/styles/globals.css";
+import DataReset from "@/components/shared/data-reset";
 
 export const metadata: Metadata = {
   title: "Destination Future",
@@ -14,6 +15,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="min-h-screen bg-surface-50 text-surface-900 antialiased">
+        <DataReset />
         <div className="flex min-h-screen flex-col">
           {children}
         </div>
