@@ -1,6 +1,9 @@
 "use client";
 
-import { useState, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
+import { db, type UserProfile } from "@/lib/db";
+import { calculateLifePath } from "@destination-future/core";
+import { getSunSign } from "@destination-future/core";
 
 type MusicTab = "frequencies" | "playlist" | "expansion" | "recommendations";
 
@@ -409,6 +412,36 @@ const SPOTIFY_PLAYLISTS = [
   },
 ];
 
+// ─── Element-based genre affinities ───
+
+const ELEMENT_GENRES: Record<string, string[]> = {
+  Water: ["Ambient", "R&B", "Soul", "Classical", "Blues"],
+  Fire: ["Rock", "Hip-Hop", "Electronic", "Metal", "Funk"],
+  Earth: ["Jazz", "Folk", "Classical", "Country", "Blues"],
+  Air: ["Indie", "Alternative", "Pop", "Electronic", "Reggae"],
+};
+
+const ELEMENT_FREQUENCIES: Record<string, { primary: string; secondary: string; description: string }> = {
+  Water: { primary: "Theta", secondary: "Delta", description: "Deep meditation and emotional healing -- your Water element resonates with slower, immersive frequencies that mirror the ocean's depth." },
+  Fire: { primary: "Beta", secondary: "Gamma", description: "Active focus and peak performance -- your Fire element thrives on high-energy brainwave states that fuel passion and drive." },
+  Earth: { primary: "Alpha", secondary: "Theta", description: "Grounded calm and steady focus -- your Earth element aligns with balanced frequencies that promote stability and presence." },
+  Air: { primary: "Gamma", secondary: "Alpha", description: "Insight, creativity, and flow -- your Air element connects with expansive frequencies that spark ideas and mental agility." },
+};
+
+const ELEMENT_COLORS: Record<string, { badge: string; text: string }> = {
+  Water: { badge: "bg-blue-500/20 text-blue-300 border-blue-500/30", text: "text-blue-400" },
+  Fire: { badge: "bg-red-500/20 text-red-300 border-red-500/30", text: "text-red-400" },
+  Earth: { badge: "bg-emerald-500/20 text-emerald-300 border-emerald-500/30", text: "text-emerald-400" },
+  Air: { badge: "bg-cyan-500/20 text-cyan-300 border-cyan-500/30", text: "text-cyan-400" },
+};
+
+const ELEMENT_EMOJIS: Record<string, string> = {
+  Water: "\u{1F30A}",
+  Fire: "\u{1F525}",
+  Earth: "\u{1F33F}",
+  Air: "\u{1F4A8}",
+};
+
 export default function MusicPage() {
   const [activeTab, setActiveTab] = useState<MusicTab>("frequencies");
   const [artist1, setArtist1] = useState("");
@@ -418,6 +451,34 @@ export default function MusicPage() {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [showRecommendations, setShowRecommendations] = useState(false);
   const [copiedPlaylist, setCopiedPlaylist] = useState<string | null>(null);
+
+  // ─── Profile state ───
+  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [profileLoading, setProfileLoading] = useState(true);
+
+  useEffect(() => {
+    db.getProfile().then((p) => {
+      setProfile(p);
+      setProfileLoading(false);
+      // Pre-select element-aligned genres if profile has birthday
+      if (p?.birthday) {
+        const dob = new Date(p.birthday + "T00:00:00");
+        const sign = getSunSign(dob);
+        const elementGenres = ELEMENT_GENRES[sign.element] || [];
+        setSelectedGenres(elementGenres);
+      }
+    }).catch(() => setProfileLoading(false));
+  }, []);
+
+  // ─── Computed profile data ───
+  const profileData = useMemo(() => {
+    if (!profile?.birthday) return null;
+    const dob = new Date(profile.birthday + "T00:00:00");
+    const sunSign = getSunSign(dob);
+    const lifePath = calculateLifePath(dob);
+    const element = sunSign.element;
+    return { sunSign, lifePath, element, firstName: profile.firstName };
+  }, [profile]);
 
   const toggleGenre = useCallback((genre: string) => {
     setSelectedGenres((prev) =>
@@ -467,6 +528,47 @@ export default function MusicPage() {
       : []),
   ];
 
+  if (profileLoading) {
+    return (
+      <div className="mx-auto max-w-5xl flex items-center justify-center py-32">
+        <div className="flex items-center gap-3 text-gray-400">
+          <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+          </svg>
+          <span className="text-sm font-medium">Loading your music profile...</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (!profile || !profile.intakeComplete) {
+    return (
+      <div className="mx-auto max-w-5xl py-16">
+        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-violet-950 via-purple-900 to-indigo-950 p-12 text-center">
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_rgba(139,92,246,0.3),transparent_60%)]" />
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_left,_rgba(6,182,212,0.15),transparent_60%)]" />
+          <div className="relative z-10">
+            <span className="text-5xl mb-4 block">{"\u{1F3B5}"}</span>
+            <h1 className="text-3xl md:text-4xl font-extrabold text-white mb-4">Your Music Awaits</h1>
+            <p className="text-lg text-white/60 max-w-lg mx-auto mb-8">
+              Complete your intake first so we can tune your music and frequency recommendations to your unique cosmic profile.
+            </p>
+            <a
+              href="/intake"
+              className="inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-fuchsia-500 via-purple-500 to-cyan-500 px-8 py-4 text-sm font-bold text-white shadow-xl hover:shadow-2xl hover:scale-105 active:scale-95 transition-all duration-300"
+            >
+              Complete Your Intake
+              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+              </svg>
+            </a>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="mx-auto max-w-5xl space-y-8">
       {/* Hero */}
@@ -488,10 +590,27 @@ export default function MusicPage() {
         </div>
         <div className="relative z-10">
           <p className="text-sm font-medium uppercase tracking-widest text-cyan-400 mb-2">{"\u{1F3A7}"} Tuned to You</p>
-          <h1 className="text-3xl md:text-5xl font-extrabold text-white mb-3">Music & Frequency Guide</h1>
-          <p className="text-lg text-white/60 max-w-xl">
-            Educational guide to brainwave states and your personalized music recommendations.
+          <h1 className="text-3xl md:text-5xl font-extrabold text-white mb-3">
+            {profileData?.firstName ? `${profileData.firstName}'s Music & Frequency Guide` : "Music & Frequency Guide"}
+          </h1>
+          <p className="text-lg text-white/60 max-w-xl mb-4">
+            {profileData
+              ? "Personalized brainwave frequencies and music recommendations aligned to your cosmic profile."
+              : "Educational guide to brainwave states and your personalized music recommendations."}
           </p>
+          {profileData && (
+            <div className="flex flex-wrap items-center gap-3">
+              <span className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold ${ELEMENT_COLORS[profileData.element]?.badge || "bg-white/10 text-white/60 border-white/20"}`}>
+                {ELEMENT_EMOJIS[profileData.element] || ""} {profileData.sunSign.name} {profileData.sunSign.symbol}
+              </span>
+              <span className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold ${ELEMENT_COLORS[profileData.element]?.badge || "bg-white/10 text-white/60 border-white/20"}`}>
+                {ELEMENT_EMOJIS[profileData.element] || ""} {profileData.element} Element
+              </span>
+              <span className="inline-flex items-center gap-1.5 rounded-full border bg-purple-500/20 text-purple-300 border-purple-500/30 px-3 py-1.5 text-xs font-semibold">
+                Life Path {profileData.lifePath.value}{profileData.lifePath.isMaster ? " (Master)" : ""}
+              </span>
+            </div>
+          )}
         </div>
       </div>
 
@@ -694,6 +813,32 @@ export default function MusicPage() {
       {/* FREQUENCIES TAB */}
       {activeTab === "frequencies" && (
         <div className="space-y-6">
+          {/* Element-Based Frequency Insight */}
+          {profileData && ELEMENT_FREQUENCIES[profileData.element] && (
+            <div className={`rounded-3xl border border-white/10 bg-gradient-to-br from-gray-900 to-slate-900 p-8`}>
+              <div className="flex items-center gap-3 mb-4">
+                <span className="text-3xl">{ELEMENT_EMOJIS[profileData.element]}</span>
+                <div>
+                  <h3 className="text-lg font-bold text-white">Your Healing Frequencies</h3>
+                  <p className={`text-sm font-medium ${ELEMENT_COLORS[profileData.element]?.text || "text-white/60"}`}>
+                    Tuned to {profileData.element} Element &middot; {profileData.sunSign.name}
+                  </p>
+                </div>
+              </div>
+              <p className="text-sm text-white/50 mb-5 max-w-2xl">{ELEMENT_FREQUENCIES[profileData.element].description}</p>
+              <div className="flex flex-wrap gap-3">
+                <div className={`rounded-2xl border px-5 py-3 ${ELEMENT_COLORS[profileData.element]?.badge || "bg-white/10 text-white/60 border-white/20"}`}>
+                  <p className="text-[10px] font-bold uppercase tracking-widest opacity-60 mb-1">Primary Wave</p>
+                  <p className="text-lg font-extrabold">{ELEMENT_FREQUENCIES[profileData.element].primary}</p>
+                </div>
+                <div className={`rounded-2xl border px-5 py-3 ${ELEMENT_COLORS[profileData.element]?.badge || "bg-white/10 text-white/60 border-white/20"}`}>
+                  <p className="text-[10px] font-bold uppercase tracking-widest opacity-60 mb-1">Secondary Wave</p>
+                  <p className="text-lg font-extrabold">{ELEMENT_FREQUENCIES[profileData.element].secondary}</p>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Wave Visualization */}
           <div className="rounded-3xl bg-gradient-to-br from-gray-900 to-slate-900 p-8">
             <h3 className="text-lg font-bold text-white mb-6">{"\u{1F30A}"} Brainwave Spectrum</h3>
@@ -819,7 +964,11 @@ export default function MusicPage() {
         <div className="space-y-6">
           <div className="rounded-3xl bg-gradient-to-br from-gray-900 to-slate-900 p-8">
             <h3 className="text-2xl font-extrabold text-white mb-2">{"\u{1F30D}"} Expand Your Musical Palette</h3>
-            <p className="text-white/50 text-sm">Based on your indie preference, here are genres and artists to explore.</p>
+            <p className="text-white/50 text-sm">
+              {profileData
+                ? `Based on your ${profileData.element} element energy (${profileData.sunSign.name}), here are genres and artists to explore.`
+                : "Based on your preferences, here are genres and artists to explore."}
+            </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

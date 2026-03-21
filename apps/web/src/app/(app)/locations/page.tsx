@@ -1,6 +1,8 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
+import { db, type UserProfile } from "@/lib/db";
+import { getSunSign } from "@destination-future/core";
 
 type RegionScope = "usa" | "international" | "world";
 type Category = "reinvention" | "love" | "money" | "creativity" | "spirituality" | "community" | "family" | "short_trips";
@@ -205,12 +207,69 @@ function RiskPill({ risk }: { risk: string }) {
   );
 }
 
+// ── Element-based city affinity scoring ──
+
+const COASTAL_CITIES = new Set([
+  "San Diego", "Miami", "San Francisco", "Charleston", "Savannah",
+  "Kailua-Kona", "Seattle", "Lisbon", "Barcelona", "Cape Town",
+  "Cartagena", "Zanzibar", "Tulum", "Bali", "Auckland",
+]);
+
+const ENERGETIC_CITIES = new Set([
+  "Austin", "New York City", "Miami", "Los Angeles", "Nashville",
+  "Brooklyn", "Dubai", "Singapore", "Tokyo", "Seoul", "Atlanta",
+  "Phoenix", "Berlin", "Marrakech", "New Orleans",
+]);
+
+const STABLE_CITIES = new Set([
+  "Denver", "Raleigh", "Scottsdale", "Richmond", "Boise", "Ann Arbor",
+  "Minneapolis", "Zurich", "Stockholm", "Copenhagen", "Wellington",
+  "San Diego", "Nashville",
+]);
+
+const CULTURAL_CITIES = new Set([
+  "Brooklyn", "Portland", "Berlin", "Paris", "Florence", "Kyoto",
+  "Melbourne", "Ann Arbor", "Amsterdam", "Prague", "Copenhagen",
+  "London", "Tokyo", "Mexico City", "Taipei",
+]);
+
+function getElementBonus(cityName: string, element: string): number {
+  switch (element) {
+    case "Water":
+      return COASTAL_CITIES.has(cityName) ? 5 : -2;
+    case "Fire":
+      return ENERGETIC_CITIES.has(cityName) ? 5 : -2;
+    case "Earth":
+      return STABLE_CITIES.has(cityName) ? 5 : -2;
+    case "Air":
+      return CULTURAL_CITIES.has(cityName) ? 5 : -2;
+    default:
+      return 0;
+  }
+}
+
 export default function LocationsPage() {
   const [region, setRegion] = useState<RegionScope>("usa");
   const [category, setCategory] = useState<Category>("reinvention");
   const [selectedStates, setSelectedStates] = useState<string[]>([]);
   const [selectedContinent, setSelectedContinent] = useState<Continent | null>(null);
   const [selectedCountries, setSelectedCountries] = useState<string[]>([]);
+  const [profile, setProfile] = useState<UserProfile | null | undefined>(undefined);
+
+  useEffect(() => {
+    db.getProfile().then(setProfile);
+  }, []);
+
+  const sunSign = useMemo(() => {
+    if (!profile?.birthday) return null;
+    try {
+      return getSunSign(new Date(profile.birthday));
+    } catch {
+      return null;
+    }
+  }, [profile?.birthday]);
+
+  const element = sunSign?.element ?? null;
 
   const activeCategoryConfig = CATEGORY_CONFIG.find((c) => c.key === category);
 
@@ -259,8 +318,17 @@ export default function LocationsPage() {
     }
     // "world" shows all
 
+    // Apply element-based score adjustments when we have a sun sign
+    if (element) {
+      cities = cities.map((c) => ({
+        ...c,
+        score: Math.max(0, Math.min(100, c.score + getElementBonus(c.name, element))),
+      }));
+      cities.sort((a, b) => b.score - a.score);
+    }
+
     return cities;
-  }, [category, region, selectedStates, selectedContinent, selectedCountries]);
+  }, [category, region, selectedStates, selectedContinent, selectedCountries, element]);
 
   const regionLabel = region === "usa" ? "United States" : region === "international" ? "International" : "Worldwide";
 
@@ -272,12 +340,39 @@ export default function LocationsPage() {
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_left,_rgba(16,185,129,0.15),transparent_60%)]" />
         <div className="relative z-10">
           <p className="text-sm font-medium uppercase tracking-widest text-cyan-400 mb-2">{"\u{1F4CD}"} GPS for Your Soul</p>
-          <h1 className="text-3xl md:text-5xl font-extrabold text-white mb-3">Location Analysis</h1>
+          <h1 className="text-3xl md:text-5xl font-extrabold text-white mb-3">
+            {profile?.firstName ? `${profile.firstName}'s Location Analysis` : "Location Analysis"}
+          </h1>
           <p className="text-lg text-white/50 max-w-xl">
             Discover cities that align with your energy, goals, and growth trajectory.
           </p>
+          {profile?.birthCity && profile?.birthState && (
+            <p className="mt-3 text-sm text-white/40">
+              Your birth city: <span className="text-cyan-400 font-medium">{profile.birthCity}, {profile.birthState}</span>
+              {sunSign && (
+                <span className="ml-3 text-white/40">
+                  {sunSign.symbol} <span className="text-white/60 font-medium">{sunSign.name}</span>
+                  <span className="text-white/30"> ({sunSign.element})</span>
+                  {" \u2014 scores adjusted for your element"}
+                </span>
+              )}
+            </p>
+          )}
         </div>
       </div>
+
+      {/* Intake prompt */}
+      {profile === null && (
+        <div className="rounded-2xl bg-amber-500/10 border border-amber-500/20 p-5 flex items-center gap-4">
+          <span className="text-2xl">{"\u2728"}</span>
+          <div>
+            <p className="text-sm font-bold text-amber-400">Complete your profile for personalized results</p>
+            <p className="text-xs text-white/40 mt-1">
+              Finish the <a href="/intake" className="text-cyan-400 underline underline-offset-2 hover:text-cyan-300">intake questionnaire</a> so we can tailor city scores to your birth chart and element.
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Region Scope — Tier 1 */}
       <div className="flex gap-3">

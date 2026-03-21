@@ -1,6 +1,9 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useMemo } from "react";
+import { db, type UserProfile } from "@/lib/db";
+import { calculateLifePath } from "@destination-future/core";
+import { getSunSign } from "@destination-future/core";
 
 /* ─── Types ─── */
 type StyleOption = "Casual" | "Natural" | "Luxury" | "High-Fashion" | "Streetwear" | "Classic";
@@ -52,12 +55,40 @@ const archetypes: Archetype[] = [
   },
 ];
 
-const styleRationale = [
-  "Your Cancer Sun suggests emotional depth and nurturing energy, reflected in warm, approachable features",
-  "Life Path 6 compatibility indicates someone drawn to beauty, harmony, and domestic comfort",
-  "Your location affinity for creative cities influenced the artistic, slightly bohemian styling",
-  "The romantic energy profile suggests someone with expressive eyes and genuine warmth",
-];
+/* ─── Element Compatibility Maps ─── */
+const ELEMENT_SIGN_MAP: Record<string, string[]> = {
+  Fire: ["Aries", "Leo", "Sagittarius"],
+  Earth: ["Taurus", "Virgo", "Capricorn"],
+  Air: ["Gemini", "Libra", "Aquarius"],
+  Water: ["Cancer", "Scorpio", "Pisces"],
+};
+
+const ELEMENT_COMPAT: Record<string, string[]> = {
+  Fire: ["Fire", "Air"],
+  Earth: ["Earth", "Water"],
+  Air: ["Air", "Fire"],
+  Water: ["Water", "Earth"],
+};
+
+function getCompatibleSigns(element: string): string[] {
+  const compatElements = ELEMENT_COMPAT[element] || [];
+  return compatElements.flatMap((el) => ELEMENT_SIGN_MAP[el] || []);
+}
+
+function getTopSunMatches(element: string): string {
+  const compat = getCompatibleSigns(element);
+  // Pick top 3 that aren't the same element group lead
+  return compat.slice(0, 3).join(", ");
+}
+
+function buildStyleRationale(sunSignName: string, lifePathValue: number): string[] {
+  return [
+    `Your ${sunSignName} Sun shapes the emotional and aesthetic tone, reflected in warm, approachable features`,
+    `Life Path ${lifePathValue} compatibility indicates qualities of harmony, depth, and creative resonance`,
+    "Your location affinity for creative cities influenced the artistic, slightly bohemian styling",
+    "The romantic energy profile suggests someone with expressive eyes and genuine warmth",
+  ];
+}
 
 const pipelineSteps = [
   "Report data",
@@ -138,6 +169,35 @@ function SectionHeading({
 
 /* ─── Main Component ─── */
 export default function SoulmatePage() {
+  const [profile, setProfile] = useState<UserProfile | null | undefined>(undefined); // undefined = loading
+
+  useEffect(() => {
+    db.getProfile().then((p) => setProfile(p ?? null));
+  }, []);
+
+  /* Derived astro data from real profile */
+  const astroData = useMemo(() => {
+    if (!profile?.birthday) return null;
+    const dob = new Date(profile.birthday + "T12:00:00");
+    const sunSign = getSunSign(dob);
+    const lifePath = calculateLifePath(dob);
+    const compatSigns = getTopSunMatches(sunSign.element);
+    return { sunSign, lifePath, compatSigns };
+  }, [profile]);
+
+  const firstName = profile?.firstName || "Profile";
+  const sunLabel = astroData ? `${astroData.sunSign.name} Sun` : "Sun";
+  const lpLabel = astroData ? `LP ${astroData.lifePath.value}` : "LP";
+  const profileTag = `${sunLabel} | ${lpLabel}`;
+  const styleRationale = astroData
+    ? buildStyleRationale(astroData.sunSign.name, astroData.lifePath.value)
+    : [
+        "Complete your intake to see personalised style rationale",
+        "Sun sign compatibility will drive visual features",
+        "Life path resonance will shape the archetype matching",
+        "Location and personality data refine the final output",
+      ];
+
   const [prefs, setPrefs] = useState<VisualPreferences>({
     presentation: 50,
     energy: 40,
@@ -273,6 +333,46 @@ export default function SoulmatePage() {
     },
   ];
 
+  /* Loading state */
+  if (profile === undefined) {
+    return (
+      <div className="mx-auto max-w-5xl pb-24 flex items-center justify-center min-h-[60vh]">
+        <div className="flex flex-col items-center gap-4">
+          <div className="h-10 w-10 rounded-full border-2 border-white/20 border-t-white/70 animate-spin" />
+          <p className="text-sm text-white/40">Loading your profile...</p>
+        </div>
+      </div>
+    );
+  }
+
+  /* No profile — prompt to complete intake */
+  if (profile === null || !profile.intakeComplete) {
+    return (
+      <div className="mx-auto max-w-5xl pb-24 flex items-center justify-center min-h-[60vh]">
+        <div className="flex flex-col items-center gap-6 text-center">
+          <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-white/[0.06] border border-white/[0.08]">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" className="text-rose-400/70">
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z" fill="currentColor" />
+            </svg>
+          </div>
+          <div>
+            <h2 className="text-xl font-bold text-white/90 mb-2">Complete Your Intake First</h2>
+            <p className="max-w-md text-sm text-white/40 leading-relaxed">
+              We need your birth details to calculate your sun sign, life path number, and compatibility profile.
+              Complete the intake questionnaire to unlock the Soulmate feature.
+            </p>
+          </div>
+          <a
+            href="/intake"
+            className="rounded-xl bg-gradient-to-r from-rose-600 to-purple-600 px-8 py-3 text-sm font-bold text-white shadow-lg shadow-purple-500/15 transition-all hover:shadow-purple-500/30 hover:-translate-y-0.5"
+          >
+            Start Intake
+          </a>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="mx-auto max-w-5xl pb-24">
       {/* ══════════════════════════════════════════════════════
@@ -302,15 +402,15 @@ export default function SoulmatePage() {
             </div>
             <div className="hidden md:flex flex-col items-end gap-1">
               <span className="text-xs text-white/20">Compatibility Engine v2</span>
-              <span className="text-xs text-white/20">Profile: Cancer Sun | LP 6</span>
+              <span className="text-xs text-white/20">{firstName}: {profileTag}</span>
             </div>
           </div>
 
           {/* Key Data Points */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
             {[
-              { label: "Best Sun Sign Matches", value: "Scorpio, Pisces, Taurus" },
-              { label: "Best Life Path Matches", value: "2, 3, 9" },
+              { label: "Best Sun Sign Matches", value: astroData ? astroData.compatSigns : "Complete intake" },
+              { label: "Best Life Path Matches", value: astroData ? `${[2, 3, 9].join(", ")}` : "Complete intake" },
               { label: "Relationship Energy", value: "Nurturing Creator" },
               { label: "Likely Meeting Environments", value: "Art events, cafes, retreats" },
             ].map((dp) => (

@@ -1,6 +1,9 @@
 "use client";
 
-import { useState, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
+import { db, type UserProfile } from "@/lib/db";
+import { calculateLifePath } from "@destination-future/core";
+import { getSunSign } from "@destination-future/core";
 
 /* ─── Step Types ─── */
 interface InstructionStep {
@@ -146,6 +149,31 @@ export default function QuestsPage() {
   const [totalXpEarned, setTotalXpEarned] = useState(
     INITIAL_QUESTS.filter((q) => q.status === "completed").reduce((s, q) => s + q.xpReward, 0)
   );
+
+  // Profile-based personalization
+  const [profile, setProfile] = useState<UserProfile | null>(null);
+
+  useEffect(() => {
+    db.getProfile().then(setProfile).catch(() => {});
+  }, []);
+
+  const sunSign = useMemo(() => {
+    if (!profile?.birthday) return null;
+    try {
+      return getSunSign(new Date(profile.birthday));
+    } catch {
+      return null;
+    }
+  }, [profile?.birthday]);
+
+  const lifePath = useMemo(() => {
+    if (!profile?.birthday) return null;
+    try {
+      return calculateLifePath(new Date(profile.birthday));
+    } catch {
+      return null;
+    }
+  }, [profile?.birthday]);
 
   // Which quest is currently expanded
   const [expandedQuestId, setExpandedQuestId] = useState<string | null>(null);
@@ -481,8 +509,24 @@ export default function QuestsPage() {
       <div className="mb-8 rounded-3xl bg-gradient-to-br from-brand-600 via-cosmic-600 to-purple-700 p-8 text-white">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold">Quests</h1>
+            <h1 className="text-3xl font-bold">
+              {profile?.firstName ? `${profile.firstName}'s Quests` : "Quests"}
+            </h1>
             <p className="mt-1 opacity-90">Complete quests to earn XP, level up, and unlock new features.</p>
+            {(sunSign || lifePath) && (
+              <div className="mt-3 flex flex-wrap gap-2">
+                {sunSign && (
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-white/20 backdrop-blur-sm px-3 py-1 text-xs font-medium">
+                    {sunSign.symbol} {sunSign.name}
+                  </span>
+                )}
+                {lifePath && (
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-white/20 backdrop-blur-sm px-3 py-1 text-xs font-medium">
+                    Life Path {lifePath.value}{lifePath.isMaster ? " (Master)" : ""}
+                  </span>
+                )}
+              </div>
+            )}
           </div>
           <div className="hidden sm:block text-6xl">{"\u2694\uFE0F"}</div>
         </div>
@@ -594,7 +638,34 @@ export default function QuestsPage() {
                   >
                     {quest.title}
                   </h3>
-                  <p className="text-sm text-surface-700 leading-relaxed mb-4">{quest.description}</p>
+                  <p className="text-sm text-surface-700 leading-relaxed mb-4">
+                    {quest.description}
+                    {profile?.birthday && quest.id === "q1" && sunSign && (
+                      <span className="block mt-1 text-xs text-surface-400 italic">
+                        Your {sunSign.element} energy thrives with morning intention-setting.
+                      </span>
+                    )}
+                    {profile?.birthday && quest.id === "q2" && lifePath && (
+                      <span className="block mt-1 text-xs text-surface-400 italic">
+                        As a Life Path {lifePath.value}, shadow work can unlock deep self-awareness.
+                      </span>
+                    )}
+                    {profile?.birthday && quest.id === "q4" && lifePath && (
+                      <span className="block mt-1 text-xs text-surface-400 italic">
+                        Your Life Path {lifePath.value} holds unique gifts — explore what they mean.
+                      </span>
+                    )}
+                    {profile?.birthday && quest.id === "q6" && sunSign && (
+                      <span className="block mt-1 text-xs text-surface-400 italic">
+                        Channel your {sunSign.name} determination to conquer all 7 days.
+                      </span>
+                    )}
+                    {profile?.birthday && quest.id === "q11" && lifePath && (
+                      <span className="block mt-1 text-xs text-surface-400 italic">
+                        Life Path {lifePath.value}s often excel when they align career with purpose.
+                      </span>
+                    )}
+                  </p>
 
                   {/* Type + Status */}
                   <div className="flex items-center gap-2 mb-4">

@@ -1,8 +1,124 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { db, type UserProfile } from "@/lib/db";
+import { calculateLifePath } from "@destination-future/core";
+import { getSunSign } from "@destination-future/core";
 
 type GrowthTab = "shadow" | "cbt" | "neuroplasticity" | "boundaries" | "plan";
+
+/* ─── Life Path → Shadow Profile Mapping ─── */
+interface ShadowProfile {
+  primary: string;
+  secondary: string;
+  coreWound: string;
+  growthEdge: string;
+  affirmation: string;
+  patterns: typeof shadowPatterns;
+}
+
+function getShadowProfileForLifePath(lp: number): Omit<ShadowProfile, "patterns"> & { patternOrder: number[] } {
+  const profiles: Record<number, Omit<ShadowProfile, "patterns"> & { patternOrder: number[] }> = {
+    1: {
+      primary: "The Controller",
+      secondary: "The Perfectionist",
+      coreWound: "fear of being insignificant or dependent on others",
+      growthEdge: "learning that vulnerability is strength, not weakness",
+      affirmation: "I am enough without having to prove it. My worth is inherent.",
+      patternOrder: [3, 1, 4, 0, 2], // Controller, Perfectionist, Self-Saboteur, People Pleaser, Avoider
+    },
+    2: {
+      primary: "The People Pleaser",
+      secondary: "The Avoider",
+      coreWound: "fear of being alone or unloved",
+      growthEdge: "learning that your needs matter as much as everyone else's",
+      affirmation: "I can love others without losing myself. My needs are valid.",
+      patternOrder: [0, 2, 3, 1, 4], // People Pleaser, Avoider, Controller, Perfectionist, Self-Saboteur
+    },
+    3: {
+      primary: "The Perfectionist",
+      secondary: "The Self-Saboteur",
+      coreWound: "fear of being seen as worthless without achievement",
+      growthEdge: "learning that you are not your accomplishments",
+      affirmation: "I am valuable for who I am, not just what I produce.",
+      patternOrder: [1, 4, 0, 3, 2], // Perfectionist, Self-Saboteur, People Pleaser, Controller, Avoider
+    },
+    4: {
+      primary: "The Controller",
+      secondary: "The Avoider",
+      coreWound: "fear of chaos and instability",
+      growthEdge: "learning to find security within rather than through rigid structures",
+      affirmation: "I am safe even when things are uncertain. I can adapt and thrive.",
+      patternOrder: [3, 2, 1, 0, 4], // Controller, Avoider, Perfectionist, People Pleaser, Self-Saboteur
+    },
+    5: {
+      primary: "The Avoider",
+      secondary: "The Self-Saboteur",
+      coreWound: "fear of being trapped or constrained",
+      growthEdge: "learning that commitment deepens freedom rather than restricting it",
+      affirmation: "I can be free and connected. Commitment is not a cage.",
+      patternOrder: [2, 4, 3, 1, 0], // Avoider, Self-Saboteur, Controller, Perfectionist, People Pleaser
+    },
+    6: {
+      primary: "The People Pleaser",
+      secondary: "The Controller",
+      coreWound: "fear of being selfish or unneeded",
+      growthEdge: "learning that over-giving is not love — it is control wearing a mask of kindness",
+      affirmation: "I can care deeply without carrying everything. Letting others struggle is not abandonment.",
+      patternOrder: [0, 3, 1, 2, 4], // People Pleaser, Controller, Perfectionist, Avoider, Self-Saboteur
+    },
+    7: {
+      primary: "The Avoider",
+      secondary: "The Perfectionist",
+      coreWound: "fear of being exposed as flawed or intellectually inadequate",
+      growthEdge: "learning to trust your heart as much as your mind",
+      affirmation: "I do not need to understand everything to be at peace. I am safe in not-knowing.",
+      patternOrder: [2, 1, 4, 3, 0], // Avoider, Perfectionist, Self-Saboteur, Controller, People Pleaser
+    },
+    8: {
+      primary: "The Controller",
+      secondary: "The Self-Saboteur",
+      coreWound: "fear of being powerless or betrayed",
+      growthEdge: "learning that true power is vulnerability, not dominance",
+      affirmation: "I do not need to control everything to be safe. My strength includes softness.",
+      patternOrder: [3, 4, 1, 0, 2], // Controller, Self-Saboteur, Perfectionist, People Pleaser, Avoider
+    },
+    9: {
+      primary: "The People Pleaser",
+      secondary: "The Avoider",
+      coreWound: "fear of conflict, loss, and being seen as selfish",
+      growthEdge: "learning that your own needs are not less important than the world's",
+      affirmation: "I matter too. Serving others does not require erasing myself.",
+      patternOrder: [0, 2, 4, 1, 3], // People Pleaser, Avoider, Self-Saboteur, Perfectionist, Controller
+    },
+    11: {
+      primary: "The Perfectionist",
+      secondary: "The People Pleaser",
+      coreWound: "fear of not living up to your potential or spiritual calling",
+      growthEdge: "learning that being human is the spiritual practice — not transcending it",
+      affirmation: "I honor my sensitivity without being consumed by it. My light does not require perfection.",
+      patternOrder: [1, 0, 4, 2, 3],
+    },
+    22: {
+      primary: "The Controller",
+      secondary: "The Perfectionist",
+      coreWound: "fear of failing the massive vision you carry inside",
+      growthEdge: "learning to build step by step instead of demanding the whole cathedral at once",
+      affirmation: "I trust the process. My vision will manifest through patience, not force.",
+      patternOrder: [3, 1, 4, 0, 2],
+    },
+    33: {
+      primary: "The People Pleaser",
+      secondary: "The Self-Saboteur",
+      coreWound: "fear of not being enough for those who depend on you",
+      growthEdge: "learning that the greatest service is modeling healthy boundaries",
+      affirmation: "I heal others by healing myself first. My boundaries are an act of love.",
+      patternOrder: [0, 4, 1, 3, 2],
+    },
+  };
+
+  return profiles[lp] || profiles[9]; // default to 9 for safety
+}
 
 /* ─── Shadow Pattern Data ─── */
 const shadowPatterns = [
@@ -347,6 +463,29 @@ const thirtyDayPlan = {
 
 export default function GrowthPage() {
   const [activeTab, setActiveTab] = useState<GrowthTab>("shadow");
+  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  /* Derived from profile */
+  const lifePathResult = profile?.birthday
+    ? calculateLifePath(new Date(profile.birthday + "T00:00:00"))
+    : null;
+  const lifePath = lifePathResult?.value ?? null;
+  const sunSign = profile?.birthday
+    ? getSunSign(new Date(profile.birthday + "T00:00:00"))
+    : null;
+  const firstName = profile?.nickname || profile?.firstName || "Friend";
+  const shadowProfile = lifePath ? getShadowProfileForLifePath(lifePath) : null;
+  const personalizedPatterns = shadowProfile
+    ? shadowProfile.patternOrder.map((i) => shadowPatterns[i])
+    : shadowPatterns;
+
+  useEffect(() => {
+    db.getProfile().then((p) => {
+      setProfile(p);
+      setLoading(false);
+    });
+  }, []);
 
   /* Shadow Work */
   const [expandedPattern, setExpandedPattern] = useState<string | null>(null);
@@ -395,6 +534,46 @@ export default function GrowthPage() {
     setTimeout(() => setCopiedIdx(null), 2000);
   };
 
+  if (loading) {
+    return (
+      <div className="mx-auto max-w-5xl pb-16">
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="flex flex-col items-center gap-4">
+            <div className="h-10 w-10 animate-spin rounded-full border-4 border-brand-200 border-t-brand-600" />
+            <p className="text-surface-400 text-sm">Loading your growth toolkit...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!profile || !profile.intakeComplete) {
+    return (
+      <div className="mx-auto max-w-5xl pb-16">
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="rounded-2xl bg-white p-8 md:p-12 shadow-sm border border-surface-100 text-center max-w-md">
+            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-brand-500 to-cosmic-600 text-3xl mx-auto mb-4">
+              🌱
+            </div>
+            <h2 className="text-xl font-bold text-surface-900 mb-2">Complete Your Profile First</h2>
+            <p className="text-surface-400 text-sm mb-6">
+              Your Growth Toolkit is personalized to your numerology and cosmic blueprint. Complete the intake questionnaire so we can tailor shadow patterns, CBT exercises, and growth recommendations to your unique wiring.
+            </p>
+            <a
+              href="/intake"
+              className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-brand-600 to-cosmic-600 px-6 py-3 text-sm font-semibold text-white shadow-lg hover:shadow-xl transition-all"
+            >
+              Complete Intake
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </a>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="mx-auto max-w-5xl pb-16">
       {/* ─── Page Header ─── */}
@@ -405,10 +584,12 @@ export default function GrowthPage() {
         </div>
         <div className="relative">
           <h1 className="text-3xl md:text-4xl font-extrabold text-white mb-3">
-            Growth Toolkit
+            {firstName}&apos;s Growth Toolkit
           </h1>
           <p className="text-white/80 text-lg max-w-2xl">
-            Real psychological tools for real change. Shadow work, CBT techniques, neuroplasticity science, and practical scripts — your personal therapy workbook.
+            {lifePath && sunSign
+              ? `Personalized for Life Path ${lifePath} and ${sunSign.name} energy. Your shadow work, CBT tools, and neuroplasticity exercises — tailored to your unique wiring.`
+              : "Real psychological tools for real change. Shadow work, CBT techniques, neuroplasticity science, and practical scripts — your personal therapy workbook."}
           </p>
         </div>
       </div>
@@ -438,9 +619,50 @@ export default function GrowthPage() {
         <div className="space-y-8">
           {/* Section Header */}
           <div>
-            <h2 className="text-2xl font-bold text-surface-900 mb-1">Shadow Work</h2>
-            <p className="text-surface-400">Pattern recognition and interrupt techniques</p>
+            <h2 className="text-2xl font-bold text-surface-900 mb-1">{firstName}&apos;s Shadow Work</h2>
+            <p className="text-surface-400">Pattern recognition and interrupt techniques tailored to your Life Path</p>
           </div>
+
+          {/* Personalized Shadow Insight */}
+          {shadowProfile && lifePath && (
+            <div className="rounded-2xl bg-gradient-to-br from-surface-800 to-surface-900 p-6 md:p-8 text-white">
+              <div className="flex items-start gap-4">
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/10 text-2xl flex-shrink-0">
+                  🔮
+                </div>
+                <div className="space-y-3">
+                  <div>
+                    <h3 className="font-bold text-lg">Life Path {lifePath} Shadow Profile</h3>
+                    <p className="text-white/60 text-sm mt-1">
+                      {firstName}, your numerology reveals specific shadow patterns to watch for.
+                    </p>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div className="rounded-xl bg-white/10 p-4">
+                      <span className="text-xs font-bold text-white/50 uppercase tracking-wide">Primary Shadow</span>
+                      <p className="text-sm font-semibold text-white mt-1">{shadowProfile.primary}</p>
+                    </div>
+                    <div className="rounded-xl bg-white/10 p-4">
+                      <span className="text-xs font-bold text-white/50 uppercase tracking-wide">Secondary Shadow</span>
+                      <p className="text-sm font-semibold text-white mt-1">{shadowProfile.secondary}</p>
+                    </div>
+                    <div className="rounded-xl bg-white/10 p-4">
+                      <span className="text-xs font-bold text-white/50 uppercase tracking-wide">Core Wound</span>
+                      <p className="text-sm text-white/80 mt-1 capitalize">{shadowProfile.coreWound}</p>
+                    </div>
+                    <div className="rounded-xl bg-white/10 p-4">
+                      <span className="text-xs font-bold text-white/50 uppercase tracking-wide">Growth Edge</span>
+                      <p className="text-sm text-white/80 mt-1 capitalize">{shadowProfile.growthEdge}</p>
+                    </div>
+                  </div>
+                  <div className="rounded-xl bg-gradient-to-r from-brand-500/20 to-cosmic-500/20 border border-white/10 p-4">
+                    <span className="text-xs font-bold text-white/50 uppercase tracking-wide">Your Affirmation</span>
+                    <p className="text-sm text-white font-medium mt-1 italic">&ldquo;{shadowProfile.affirmation}&rdquo;</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Pattern Loop Diagram */}
           <div className="rounded-2xl bg-white p-6 md:p-8 shadow-sm border border-surface-100">
@@ -498,9 +720,12 @@ export default function GrowthPage() {
 
           {/* Shadow Patterns */}
           <div>
-            <h3 className="text-lg font-bold text-surface-900 mb-4">5 Common Shadow Patterns</h3>
+            <h3 className="text-lg font-bold text-surface-900 mb-4">
+              {shadowProfile ? `${firstName}'s Shadow Patterns` : "5 Common Shadow Patterns"}
+              {shadowProfile && <span className="text-sm font-normal text-surface-400 ml-2">(ordered by relevance to Life Path {lifePath})</span>}
+            </h3>
             <div className="space-y-4">
-              {shadowPatterns.map((pattern) => {
+              {personalizedPatterns.map((pattern) => {
                 const isExpanded = expandedPattern === pattern.name;
                 return (
                   <div key={pattern.name} className="rounded-2xl bg-white shadow-sm border border-surface-100 overflow-hidden transition-all">
@@ -581,8 +806,12 @@ export default function GrowthPage() {
         <div className="space-y-10">
           {/* Section Header */}
           <div>
-            <h2 className="text-2xl font-bold text-surface-900 mb-1">CBT Tools</h2>
-            <p className="text-surface-400">Cognitive Behavioral Therapy techniques you can use right now</p>
+            <h2 className="text-2xl font-bold text-surface-900 mb-1">{firstName}&apos;s CBT Tools</h2>
+            <p className="text-surface-400">
+              {shadowProfile
+                ? `Cognitive Behavioral Therapy techniques to address your ${shadowProfile.primary.toLowerCase()} and ${shadowProfile.secondary.toLowerCase()} patterns`
+                : "Cognitive Behavioral Therapy techniques you can use right now"}
+            </p>
           </div>
 
           {/* ── Cognitive Distortions ── */}
@@ -830,7 +1059,7 @@ export default function GrowthPage() {
           {/* Section Header */}
           <div>
             <h2 className="text-2xl font-bold text-surface-900 mb-1">Neuroplasticity</h2>
-            <p className="text-surface-400">Your brain is not fixed. Here is how to rewire it.</p>
+            <p className="text-surface-400">{firstName}, your brain is not fixed. Here is how to rewire it.</p>
           </div>
 
           {/* How Neural Pathways Form */}
@@ -1026,9 +1255,11 @@ export default function GrowthPage() {
         <div className="space-y-8">
           {/* Section Header */}
           <div>
-            <h2 className="text-2xl font-bold text-surface-900 mb-1">Boundary Scripts</h2>
+            <h2 className="text-2xl font-bold text-surface-900 mb-1">{firstName}&apos;s Boundary Scripts</h2>
             <p className="text-surface-400">
-              Real words you can use in real situations. Copy them, adapt them, make them yours.
+              {shadowProfile
+                ? `Especially important for your ${shadowProfile.primary.toLowerCase()} pattern. Real words you can use in real situations.`
+                : "Real words you can use in real situations. Copy them, adapt them, make them yours."}
             </p>
           </div>
 
@@ -1121,7 +1352,7 @@ export default function GrowthPage() {
         <div className="space-y-8">
           {/* Section Header */}
           <div>
-            <h2 className="text-2xl font-bold text-surface-900 mb-1">30-Day Growth Plan</h2>
+            <h2 className="text-2xl font-bold text-surface-900 mb-1">{firstName}&apos;s 30-Day Growth Plan</h2>
             <p className="text-surface-400">Four weeks from awareness to transformation. One small task per day.</p>
           </div>
 
@@ -1196,7 +1427,7 @@ export default function GrowthPage() {
           <div className="rounded-2xl bg-gradient-to-br from-surface-800 to-surface-900 p-6 md:p-8 text-white">
             <h4 className="font-bold text-lg mb-2">After 30 Days</h4>
             <p className="text-white/80 text-sm leading-relaxed">
-              You won&apos;t be a completely different person — and that&apos;s not the goal. The goal is to be the same person with different wiring. You&apos;ll still feel the old triggers, but the gap between trigger and response will be wider. You&apos;ll still hear the old thoughts, but you&apos;ll recognize them as echoes instead of commands. That gap, that recognition — that&apos;s freedom.
+              {firstName}, you won&apos;t be a completely different person — and that&apos;s not the goal. The goal is to be the same person with different wiring. You&apos;ll still feel the old triggers, but the gap between trigger and response will be wider. You&apos;ll still hear the old thoughts, but you&apos;ll recognize them as echoes instead of commands. That gap, that recognition — that&apos;s freedom.
             </p>
             <p className="text-white/60 text-xs mt-4">
               If you fall off the plan, don&apos;t restart at Day 1. Pick up where you left off. Progress isn&apos;t linear, and the self-judgment of &ldquo;starting over&rdquo; is just another pattern to interrupt.

@@ -1,6 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
+import { db, type UserProfile } from "@/lib/db";
+import { calculateLifePath } from "@destination-future/core";
+import { getSunSign } from "@destination-future/core";
 
 type FilmsTab = "films" | "tv" | "books" | "taste";
 
@@ -15,6 +18,102 @@ const BOOK_GENRES = [
   "Memoir", "Business", "Philosophy", "Spirituality", "True Crime",
   "History", "Poetry",
 ];
+
+// ─── Element-based Taste DNA profiles ───
+const ELEMENT_TASTE_DNA: Record<string, { genre: string; pct: number; gradient: string; emoji: string }[]> = {
+  Water: [
+    { genre: "Character-Driven Drama", pct: 90, gradient: "from-amber-400 to-orange-500", emoji: "\u{1F3AD}" },
+    { genre: "Mystery / Puzzle Box", pct: 85, gradient: "from-indigo-400 to-blue-500", emoji: "\u{1F50D}" },
+    { genre: "Psychological Thriller", pct: 80, gradient: "from-red-500 to-rose-600", emoji: "\u{1F9E0}" },
+    { genre: "Romantic Drama", pct: 75, gradient: "from-pink-400 to-rose-500", emoji: "\u{1F495}" },
+    { genre: "Visual / Art House", pct: 68, gradient: "from-purple-400 to-violet-500", emoji: "\u{1F3A8}" },
+    { genre: "Dark Comedy", pct: 55, gradient: "from-emerald-400 to-teal-500", emoji: "\u{1F608}" },
+    { genre: "Sci-Fi / Speculative", pct: 45, gradient: "from-cyan-400 to-blue-500", emoji: "\u{1F680}" },
+    { genre: "Action / Adventure", pct: 25, gradient: "from-slate-400 to-gray-500", emoji: "\u2694\uFE0F" },
+  ],
+  Fire: [
+    { genre: "Action / Adventure", pct: 92, gradient: "from-slate-400 to-gray-500", emoji: "\u2694\uFE0F" },
+    { genre: "Psychological Thriller", pct: 85, gradient: "from-red-500 to-rose-600", emoji: "\u{1F9E0}" },
+    { genre: "Sci-Fi / Speculative", pct: 80, gradient: "from-cyan-400 to-blue-500", emoji: "\u{1F680}" },
+    { genre: "Dark Comedy", pct: 72, gradient: "from-emerald-400 to-teal-500", emoji: "\u{1F608}" },
+    { genre: "Character-Driven Drama", pct: 60, gradient: "from-amber-400 to-orange-500", emoji: "\u{1F3AD}" },
+    { genre: "Visual / Art House", pct: 48, gradient: "from-purple-400 to-violet-500", emoji: "\u{1F3A8}" },
+    { genre: "Mystery / Puzzle Box", pct: 42, gradient: "from-indigo-400 to-blue-500", emoji: "\u{1F50D}" },
+    { genre: "Romantic Drama", pct: 30, gradient: "from-pink-400 to-rose-500", emoji: "\u{1F495}" },
+  ],
+  Earth: [
+    { genre: "Character-Driven Drama", pct: 88, gradient: "from-amber-400 to-orange-500", emoji: "\u{1F3AD}" },
+    { genre: "Visual / Art House", pct: 82, gradient: "from-purple-400 to-violet-500", emoji: "\u{1F3A8}" },
+    { genre: "Mystery / Puzzle Box", pct: 75, gradient: "from-indigo-400 to-blue-500", emoji: "\u{1F50D}" },
+    { genre: "Psychological Thriller", pct: 70, gradient: "from-red-500 to-rose-600", emoji: "\u{1F9E0}" },
+    { genre: "Dark Comedy", pct: 62, gradient: "from-emerald-400 to-teal-500", emoji: "\u{1F608}" },
+    { genre: "Romantic Drama", pct: 55, gradient: "from-pink-400 to-rose-500", emoji: "\u{1F495}" },
+    { genre: "Sci-Fi / Speculative", pct: 40, gradient: "from-cyan-400 to-blue-500", emoji: "\u{1F680}" },
+    { genre: "Action / Adventure", pct: 35, gradient: "from-slate-400 to-gray-500", emoji: "\u2694\uFE0F" },
+  ],
+  Air: [
+    { genre: "Sci-Fi / Speculative", pct: 90, gradient: "from-cyan-400 to-blue-500", emoji: "\u{1F680}" },
+    { genre: "Dark Comedy", pct: 85, gradient: "from-emerald-400 to-teal-500", emoji: "\u{1F608}" },
+    { genre: "Psychological Thriller", pct: 78, gradient: "from-red-500 to-rose-600", emoji: "\u{1F9E0}" },
+    { genre: "Mystery / Puzzle Box", pct: 72, gradient: "from-indigo-400 to-blue-500", emoji: "\u{1F50D}" },
+    { genre: "Visual / Art House", pct: 65, gradient: "from-purple-400 to-violet-500", emoji: "\u{1F3A8}" },
+    { genre: "Character-Driven Drama", pct: 55, gradient: "from-amber-400 to-orange-500", emoji: "\u{1F3AD}" },
+    { genre: "Action / Adventure", pct: 40, gradient: "from-slate-400 to-gray-500", emoji: "\u2694\uFE0F" },
+    { genre: "Romantic Drama", pct: 32, gradient: "from-pink-400 to-rose-500", emoji: "\u{1F495}" },
+  ],
+};
+
+// ─── Element-based film category labels ───
+const ELEMENT_FILM_LABELS: Record<string, string[]> = {
+  Water: [
+    "For your emotional depths...",
+    "Stories that mirror your intuition...",
+    "When you need catharsis...",
+    "Hidden gems for your soul...",
+  ],
+  Fire: [
+    "For your bold spirit...",
+    "Fuel for your ambition...",
+    "When you need intensity...",
+    "Hidden gems with spark...",
+  ],
+  Earth: [
+    "For your grounded nature...",
+    "Stories rooted in truth...",
+    "When you crave substance...",
+    "Hidden gems worth savoring...",
+  ],
+  Air: [
+    "For your curious mind...",
+    "Concepts that captivate you...",
+    "When you need mental stimulation...",
+    "Hidden gems to explore...",
+  ],
+};
+
+// ─── Element-based taste insight text ───
+const ELEMENT_TASTE_INSIGHTS: Record<string, { sweetSpot: string; growthEdge: string; directors: string }> = {
+  Water: {
+    sweetSpot: "You gravitate toward emotionally rich narratives with layered characters. Stories about love, loss, and the mysteries of human connection speak to your Water-sign intuition.",
+    growthEdge: "Challenge yourself with more action-driven or experimental fare. Your emotional depth can find resonance even in genres outside your comfort zone.",
+    directors: "Wong Kar-wai, Denis Villeneuve, Celine Sciamma, and Barry Jenkins create the kind of emotionally immersive worlds that resonate with your Water energy.",
+  },
+  Fire: {
+    sweetSpot: "You thrive on high-energy narratives with bold characters and decisive action. Stories about transformation, triumph, and pushing boundaries ignite your Fire-sign passion.",
+    growthEdge: "Slow down with contemplative dramas and art house cinema. The patience they demand can unlock new layers of appreciation in your viewing life.",
+    directors: "Christopher Nolan, Bong Joon-ho, Greta Gerwig, and the Russo Brothers consistently deliver the kinetic storytelling that matches your Fire energy.",
+  },
+  Earth: {
+    sweetSpot: "You appreciate craftsmanship, authenticity, and stories grounded in real human experience. Documentaries and character studies reward your Earth-sign attention to detail.",
+    growthEdge: "Lean into more speculative and fantastical genres. Your practical lens can find surprising depth in sci-fi and surrealist works.",
+    directors: "Wes Anderson, Chloe Zhao, Martin Scorsese, and Hirokazu Kore-eda build the kind of meticulously crafted worlds that satisfy your Earth sensibility.",
+  },
+  Air: {
+    sweetSpot: "You love intellectual puzzles, witty dialogue, and genre-bending narratives. Sci-fi concepts and sharp comedies feed your Air-sign mental agility.",
+    growthEdge: "Dive deeper into raw emotional dramas. Your analytical strength gains new power when paired with visceral feeling.",
+    directors: "Denis Villeneuve, Phoebe Waller-Bridge, Charlie Kaufman, and Yorgos Lanthimos create the conceptually rich, boundary-pushing work that electrifies your Air energy.",
+  },
+};
 
 const FILM_CATEGORIES = [
   {
@@ -375,7 +474,7 @@ const BOOK_CATEGORIES = [
   },
 ];
 
-const TASTE_DNA = [
+const TASTE_DNA_DEFAULT = [
   { genre: "Psychological Thriller", pct: 85, gradient: "from-red-500 to-rose-600", emoji: "\u{1F9E0}" },
   { genre: "Sci-Fi / Speculative", pct: 82, gradient: "from-cyan-400 to-blue-500", emoji: "\u{1F680}" },
   { genre: "Character-Driven Drama", pct: 78, gradient: "from-amber-400 to-orange-500", emoji: "\u{1F3AD}" },
@@ -422,6 +521,51 @@ export default function FilmsPage() {
   const [selectedBookGenres, setSelectedBookGenres] = useState<string[]>([]);
   const [showBookRecommendations, setShowBookRecommendations] = useState(true);
 
+  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    db.getProfile()
+      .then((p) => setProfile(p))
+      .finally(() => setLoading(false));
+  }, []);
+
+  // Compute astrology + numerology from profile birthday
+  const astroInfo = useMemo(() => {
+    if (!profile?.birthday) return null;
+    const dob = new Date(profile.birthday + "T00:00:00");
+    if (isNaN(dob.getTime())) return null;
+    const sunSign = getSunSign(dob);
+    const lifePath = calculateLifePath(dob);
+    return { sunSign, lifePath, element: sunSign.element };
+  }, [profile?.birthday]);
+
+  const element = astroInfo?.element ?? null;
+
+  // Element-aware Taste DNA
+  const tasteDna = element && ELEMENT_TASTE_DNA[element]
+    ? ELEMENT_TASTE_DNA[element]
+    : TASTE_DNA_DEFAULT;
+
+  // Element-aware film category labels
+  const filmCategories = useMemo(() => {
+    if (!element || !ELEMENT_FILM_LABELS[element]) return FILM_CATEGORIES;
+    const labels = ELEMENT_FILM_LABELS[element];
+    return FILM_CATEGORIES.map((cat, i) => ({
+      ...cat,
+      label: labels[i] ?? cat.label,
+    }));
+  }, [element]);
+
+  // Element-aware taste insights
+  const tasteInsights = element && ELEMENT_TASTE_INSIGHTS[element]
+    ? ELEMENT_TASTE_INSIGHTS[element]
+    : {
+        sweetSpot: "You thrive on films that blend intellectual complexity with emotional depth. Puzzle-box narratives with heart are your genre.",
+        growthEdge: "Try leaning into romantic dramas and lighter fare. Not everything needs to be a mind-bender \u2014 sometimes a simple love story hits hardest.",
+        directors: "Denis Villeneuve, Bong Joon-ho, Phoebe Waller-Bridge, and Christopher Nolan consistently create work that resonates with your taste profile.",
+      };
+
   const tabs: { key: FilmsTab; label: string; emoji: string }[] = [
     { key: "films", label: "Films", emoji: "\u{1F3AC}" },
     { key: "tv", label: "TV Shows", emoji: "\u{1F4FA}" },
@@ -451,6 +595,40 @@ export default function FilmsPage() {
     setTimeout(() => setShowBookRecommendations(true), 400);
   };
 
+  if (loading) {
+    return (
+      <div className="mx-auto max-w-5xl flex items-center justify-center py-32">
+        <div className="text-center space-y-4">
+          <div className="h-10 w-10 mx-auto rounded-full border-4 border-purple-500 border-t-transparent animate-spin" />
+          <p className="text-sm text-gray-400 font-medium">Loading your profile...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!profile || !profile.intakeComplete) {
+    return (
+      <div className="mx-auto max-w-5xl py-20">
+        <div className="rounded-3xl bg-gradient-to-br from-gray-950 via-slate-900 to-zinc-900 p-12 text-center">
+          <span className="text-5xl mb-4 block">{"\u{1F39E}\uFE0F"}</span>
+          <h1 className="text-3xl font-extrabold text-white mb-3">Complete Your Profile First</h1>
+          <p className="text-lg text-white/50 max-w-md mx-auto mb-8">
+            We need your birthday to generate personalized film, TV, and book recommendations based on your cosmic profile.
+          </p>
+          <a
+            href="/intake"
+            className="inline-block rounded-xl bg-gradient-to-r from-purple-500 via-fuchsia-500 to-pink-500 px-8 py-3.5 text-white font-bold text-sm shadow-lg shadow-purple-500/25 hover:shadow-xl hover:shadow-purple-500/30 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200"
+          >
+            Start Intake
+          </a>
+        </div>
+      </div>
+    );
+  }
+
+  const displayName = profile.nickname || profile.firstName || "Your";
+  const titleName = displayName === "Your" ? "Your" : `${displayName}\u2019s`;
+
   return (
     <div className="mx-auto max-w-5xl space-y-8">
       {/* Hero */}
@@ -465,10 +643,24 @@ export default function FilmsPage() {
         </div>
         <div className="relative z-10">
           <p className="text-sm font-medium uppercase tracking-widest text-purple-400 mb-2">{"\u{1F39E}\uFE0F"} Curated For You</p>
-          <h1 className="text-3xl md:text-5xl font-extrabold text-white mb-3">Film, TV & Books</h1>
+          <h1 className="text-3xl md:text-5xl font-extrabold text-white mb-3">{titleName} Film & TV Profile</h1>
           <p className="text-lg text-white/50 max-w-xl">
             Your taste is a fingerprint. Here is what your personality reveals about the stories that move you.
           </p>
+          {/* Astro badges */}
+          {astroInfo && (
+            <div className="flex flex-wrap gap-3 mt-5">
+              <span className="inline-flex items-center gap-2 rounded-full bg-white/10 backdrop-blur-sm px-4 py-2 text-sm font-bold text-white border border-white/10">
+                <span>{astroInfo.sunSign.symbol}</span>
+                {astroInfo.sunSign.name}
+                <span className="text-white/40">|</span>
+                <span className="text-white/60">{astroInfo.element}</span>
+              </span>
+              <span className="inline-flex items-center gap-2 rounded-full bg-white/10 backdrop-blur-sm px-4 py-2 text-sm font-bold text-white border border-white/10">
+                Life Path {astroInfo.lifePath.value}
+              </span>
+            </div>
+          )}
         </div>
       </div>
 
@@ -554,7 +746,7 @@ export default function FilmsPage() {
       {/* FILMS TAB */}
       {activeTab === "films" && (
         <div className={`space-y-10 transition-all duration-500 ${showRecommendations ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}>
-          {FILM_CATEGORIES.map((category) => (
+          {filmCategories.map((category) => (
             <div key={category.label}>
               <div className="flex items-center gap-3 mb-5">
                 <span className="text-2xl">{category.emoji}</span>
@@ -792,7 +984,7 @@ export default function FilmsPage() {
             <p className="text-white/40 text-sm mb-8">What your personality says about the stories you gravitate toward.</p>
 
             <div className="space-y-5">
-              {TASTE_DNA.map((genre) => (
+              {tasteDna.map((genre) => (
                 <div key={genre.genre} className="group">
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-2">
@@ -818,21 +1010,21 @@ export default function FilmsPage() {
               <span className="text-3xl mb-3 block">{"\u{1F3AF}"}</span>
               <h4 className="text-sm font-bold text-gray-900 mb-2">Your Sweet Spot</h4>
               <p className="text-xs text-gray-500 leading-relaxed">
-                You thrive on films that blend intellectual complexity with emotional depth. Puzzle-box narratives with heart are your genre.
+                {tasteInsights.sweetSpot}
               </p>
             </div>
             <div className="rounded-2xl bg-white border border-gray-100 shadow-md p-6 hover:shadow-xl transition-shadow">
               <span className="text-3xl mb-3 block">{"\u26A1"}</span>
               <h4 className="text-sm font-bold text-gray-900 mb-2">Growth Edge</h4>
               <p className="text-xs text-gray-500 leading-relaxed">
-                Try leaning into romantic dramas and lighter fare. Not everything needs to be a mind-bender — sometimes a simple love story hits hardest.
+                {tasteInsights.growthEdge}
               </p>
             </div>
             <div className="rounded-2xl bg-white border border-gray-100 shadow-md p-6 hover:shadow-xl transition-shadow">
               <span className="text-3xl mb-3 block">{"\u{1F31F}"}</span>
               <h4 className="text-sm font-bold text-gray-900 mb-2">Director Matches</h4>
               <p className="text-xs text-gray-500 leading-relaxed">
-                Denis Villeneuve, Bong Joon-ho, Phoebe Waller-Bridge, and Christopher Nolan consistently create work that resonates with your taste profile.
+                {tasteInsights.directors}
               </p>
             </div>
           </div>

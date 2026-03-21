@@ -1,14 +1,87 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { db, type UserProfile } from "@/lib/db";
+import { calculateLifePath } from "@destination-future/core";
+import { getSunSign } from "@destination-future/core";
 
-const ARCHETYPES = [
+// ─── Element-based style archetype mappings ───
+
+type ArchetypeEntry = { name: string; pct: number; color: string; ring: string };
+
+const ARCHETYPE_STYLES: Record<string, ArchetypeEntry[]> = {
+  Fire: [
+    { name: "Bold/Statement", pct: 40, color: "from-red-600 to-orange-700", ring: "stroke-red-500" },
+    { name: "Streetwear", pct: 30, color: "from-rose-500 to-pink-700", ring: "stroke-rose-400" },
+    { name: "Minimalist", pct: 20, color: "from-slate-700 to-zinc-900", ring: "stroke-slate-600" },
+    { name: "Classic", pct: 10, color: "from-amber-700 to-yellow-900", ring: "stroke-amber-500" },
+  ],
+  Earth: [
+    { name: "Classic", pct: 40, color: "from-amber-700 to-yellow-900", ring: "stroke-amber-500" },
+    { name: "Minimalist", pct: 30, color: "from-slate-700 to-zinc-900", ring: "stroke-slate-600" },
+    { name: "Luxury", pct: 20, color: "from-yellow-500 to-amber-600", ring: "stroke-yellow-400" },
+    { name: "Streetwear", pct: 10, color: "from-rose-500 to-pink-700", ring: "stroke-rose-400" },
+  ],
+  Air: [
+    { name: "Minimalist", pct: 35, color: "from-slate-700 to-zinc-900", ring: "stroke-slate-600" },
+    { name: "High-Fashion", pct: 30, color: "from-violet-500 to-purple-700", ring: "stroke-violet-400" },
+    { name: "Classic", pct: 20, color: "from-amber-700 to-yellow-900", ring: "stroke-amber-500" },
+    { name: "Streetwear", pct: 15, color: "from-rose-500 to-pink-700", ring: "stroke-rose-400" },
+  ],
+  Water: [
+    { name: "Classic", pct: 35, color: "from-amber-700 to-yellow-900", ring: "stroke-amber-500" },
+    { name: "Minimalist", pct: 30, color: "from-slate-700 to-zinc-900", ring: "stroke-slate-600" },
+    { name: "Romantic", pct: 25, color: "from-pink-400 to-rose-600", ring: "stroke-pink-400" },
+    { name: "Luxury", pct: 10, color: "from-yellow-500 to-amber-600", ring: "stroke-yellow-400" },
+  ],
+};
+
+const DEFAULT_ARCHETYPES: ArchetypeEntry[] = [
   { name: "Minimalist", pct: 60, color: "from-slate-700 to-zinc-900", ring: "stroke-slate-600" },
   { name: "Classic", pct: 30, color: "from-amber-700 to-yellow-900", ring: "stroke-amber-500" },
   { name: "Streetwear", pct: 10, color: "from-rose-500 to-pink-700", ring: "stroke-rose-400" },
 ];
 
-const SAMPLE_PALETTE = [
+// ─── Element-based color palettes ───
+
+type PaletteColor = { name: string; hex: string; light: boolean };
+
+const ELEMENT_PALETTES: Record<string, PaletteColor[]> = {
+  Fire: [
+    { name: "Crimson", hex: "#DC143C", light: false },
+    { name: "Burnt Orange", hex: "#CC5500", light: false },
+    { name: "Gold", hex: "#D4A017", light: false },
+    { name: "Warm Ivory", hex: "#F5F0E8", light: true },
+    { name: "Charcoal", hex: "#3D3D3D", light: false },
+    { name: "Sienna", hex: "#A0522D", light: false },
+  ],
+  Earth: [
+    { name: "Olive", hex: "#708238", light: false },
+    { name: "Terracotta", hex: "#C17A5A", light: false },
+    { name: "Warm Beige", hex: "#D2B48C", light: true },
+    { name: "Forest", hex: "#2C5F2D", light: false },
+    { name: "Espresso", hex: "#3C2415", light: false },
+    { name: "Sand", hex: "#E8D5B7", light: true },
+  ],
+  Air: [
+    { name: "Lavender", hex: "#B4A7D6", light: true },
+    { name: "Sky Blue", hex: "#87CEEB", light: true },
+    { name: "Soft Pink", hex: "#F4C2C2", light: true },
+    { name: "Pearl", hex: "#F0EAD6", light: true },
+    { name: "Silver", hex: "#A8A9AD", light: false },
+    { name: "Mint", hex: "#AAF0D1", light: true },
+  ],
+  Water: [
+    { name: "Deep Navy", hex: "#1B2A4A", light: false },
+    { name: "Teal", hex: "#008080", light: false },
+    { name: "Emerald", hex: "#046307", light: false },
+    { name: "Storm Gray", hex: "#4F5B66", light: false },
+    { name: "Seafoam", hex: "#93E9BE", light: true },
+    { name: "Midnight", hex: "#191970", light: false },
+  ],
+};
+
+const DEFAULT_PALETTE: PaletteColor[] = [
   { name: "Deep Navy", hex: "#1B2A4A", light: false },
   { name: "Warm Ivory", hex: "#F5F0E8", light: true },
   { name: "Sage Green", hex: "#8B9E7F", light: false },
@@ -16,6 +89,22 @@ const SAMPLE_PALETTE = [
   { name: "Charcoal", hex: "#3D3D3D", light: false },
   { name: "Dusty Rose", hex: "#C9A0A0", light: false },
 ];
+
+// ─── Element description helpers ───
+
+const ELEMENT_STYLE_DESCRIPTIONS: Record<string, string> = {
+  Fire: "Your style burns bright — bold colors, statement silhouettes, and pieces that command attention. You dress to express, never to blend in.",
+  Earth: "Your style is grounded in quality and timelessness — classic cuts, natural textures, and a wardrobe that gets better with age.",
+  Air: "Your style floats between worlds — effortlessly modern, intellectually curated, and always one step ahead of the trend.",
+  Water: "Your style flows with intuition — layered, mood-driven, and deeply expressive. You dress to feel, not just to be seen.",
+};
+
+const ELEMENT_METAL: Record<string, string> = {
+  Fire: "Gold",
+  Earth: "Bronze",
+  Air: "Silver",
+  Water: "Platinum",
+};
 
 const SAMPLE_CAPSULE = [
   { category: "Tops", emoji: "\u{1F455}", gradient: "from-blue-500 to-cyan-400", items: ["White crew-neck tee", "Navy linen button-down", "Heather gray crewneck sweater", "Olive bomber jacket"] },
@@ -138,6 +227,59 @@ function ArchetypeRing({ pct, color, size = 100 }: { pct: number; color: string;
 export default function StylePage() {
   const [hoveredColor, setHoveredColor] = useState<string | null>(null);
   const [activeOutfit, setActiveOutfit] = useState(0);
+  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    db.getProfile()
+      .then((p) => setProfile(p))
+      .finally(() => setLoading(false));
+  }, []);
+
+  // Derive astro data from profile
+  const birthday = profile?.birthday ? new Date(profile.birthday + "T00:00:00") : null;
+  const sunSign = birthday ? getSunSign(birthday) : null;
+  const lifePath = birthday ? calculateLifePath(birthday) : null;
+  const element = sunSign?.element || null;
+
+  const archetypes = element ? (ARCHETYPE_STYLES[element] || DEFAULT_ARCHETYPES) : DEFAULT_ARCHETYPES;
+  const palette = element ? (ELEMENT_PALETTES[element] || DEFAULT_PALETTE) : DEFAULT_PALETTE;
+  const styleDescription = element
+    ? ELEMENT_STYLE_DESCRIPTIONS[element]
+    : "Your style leans heavily minimalist with clean lines and neutral tones, grounded by classic tailoring sensibilities. A touch of streetwear influence keeps things modern and approachable.";
+  const metalRec = element ? ELEMENT_METAL[element] : "Silver";
+  const firstName = profile?.firstName || "";
+
+  if (loading) {
+    return (
+      <div className="mx-auto max-w-5xl flex items-center justify-center min-h-[60vh]">
+        <div className="text-center space-y-4">
+          <div className="h-10 w-10 mx-auto animate-spin rounded-full border-4 border-gray-200 border-t-amber-500" />
+          <p className="text-gray-500 font-medium">Loading your style profile...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!profile || !profile.birthday) {
+    return (
+      <div className="mx-auto max-w-5xl flex items-center justify-center min-h-[60vh]">
+        <div className="text-center space-y-4 max-w-md">
+          <div className="text-5xl mb-2">{"\u{1F455}"}</div>
+          <h2 className="text-2xl font-bold text-gray-900">Complete Your Profile First</h2>
+          <p className="text-gray-500">
+            We need your birthday and personal details to build your personalized style system. Complete the intake to unlock your Fashion DNA.
+          </p>
+          <a
+            href="/intake"
+            className="inline-block mt-4 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 px-8 py-3 text-white font-bold shadow-lg hover:shadow-xl hover:scale-105 transition-all"
+          >
+            Complete Intake
+          </a>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="mx-auto max-w-5xl space-y-8">
@@ -147,13 +289,32 @@ export default function StylePage() {
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_left,_rgba(168,85,247,0.1),transparent_60%)]" />
         <div className="relative z-10">
           <p className="text-sm font-medium uppercase tracking-widest text-amber-400 mb-2">Your Style DNA</p>
-          <h1 className="text-3xl md:text-5xl font-extrabold text-white mb-3">Fashion System</h1>
+          <h1 className="text-3xl md:text-5xl font-extrabold text-white mb-3">
+            {firstName ? `${firstName}\u2019s Fashion System` : "Fashion System"}
+          </h1>
+
+          {/* Sun Sign + Life Path badges */}
+          {(sunSign || lifePath) && (
+            <div className="flex flex-wrap gap-3 mb-4">
+              {sunSign && (
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 px-4 py-1.5 text-sm font-semibold text-white">
+                  {sunSign.symbol} {sunSign.name} <span className="text-white/50">|</span> {sunSign.element}
+                </span>
+              )}
+              {lifePath && (
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 px-4 py-1.5 text-sm font-semibold text-white">
+                  {"\u{1F522}"} Life Path {lifePath.value}{lifePath.isMaster ? " (Master)" : ""}
+                </span>
+              )}
+            </div>
+          )}
+
           <p className="text-lg text-white/60 max-w-xl mb-8">
-            Your style leans heavily minimalist with clean lines and neutral tones, grounded by classic tailoring sensibilities. A touch of streetwear influence keeps things modern and approachable.
+            {styleDescription}
           </p>
 
           <div className="flex flex-wrap gap-8 items-end">
-            {ARCHETYPES.map((a) => (
+            {archetypes.map((a) => (
               <div key={a.name} className="flex flex-col items-center gap-2 group">
                 <div className="relative">
                   <ArchetypeRing pct={a.pct} color={a.ring} size={110} />
@@ -178,13 +339,18 @@ export default function StylePage() {
             <p className="text-sm text-gray-400 mt-1">Curated tones that complement your skin tone and energy</p>
           </div>
           <div className="flex items-center gap-2 rounded-full bg-gray-100 px-4 py-2">
-            <div className="h-4 w-4 rounded-full bg-gradient-to-br from-gray-300 to-gray-400 ring-2 ring-white" />
-            <span className="text-sm font-medium text-gray-600">Recommended metal: Silver</span>
+            <div className={`h-4 w-4 rounded-full ring-2 ring-white ${
+              metalRec === "Gold" ? "bg-gradient-to-br from-yellow-400 to-amber-500" :
+              metalRec === "Bronze" ? "bg-gradient-to-br from-amber-600 to-yellow-800" :
+              metalRec === "Platinum" ? "bg-gradient-to-br from-slate-300 to-gray-200" :
+              "bg-gradient-to-br from-gray-300 to-gray-400"
+            }`} />
+            <span className="text-sm font-medium text-gray-600">Recommended metal: {metalRec}</span>
           </div>
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-          {SAMPLE_PALETTE.map((color) => (
+          {palette.map((color) => (
             <div
               key={color.hex}
               className="group cursor-pointer"

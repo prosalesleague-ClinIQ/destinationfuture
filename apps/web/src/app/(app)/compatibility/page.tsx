@@ -1,12 +1,44 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { db, type UserProfile } from "@/lib/db";
+import { calculateLifePath } from "@destination-future/core";
+import { getSunSign } from "@destination-future/core";
 
 type CompatMode = "romantic" | "friendship" | "family" | "collaboration";
 
 export default function CompatibilityPage() {
   const [mode, setMode] = useState<CompatMode>("romantic");
   const [step, setStep] = useState<"select" | "input" | "result">("select");
+  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    db.getProfile().then((p) => {
+      setProfile(p);
+      setLoading(false);
+    });
+  }, []);
+
+  const sunSign = profile?.birthday
+    ? getSunSign(new Date(profile.birthday + "T00:00:00")).name
+    : null;
+
+  const lifePath = profile?.birthday
+    ? calculateLifePath(new Date(profile.birthday + "T00:00:00")).value
+    : null;
+
+  const displayName = profile
+    ? [profile.firstName, profile.lastName].filter(Boolean).join(" ") || "You"
+    : null;
+
+  const formattedBirthday = profile?.birthday
+    ? new Date(profile.birthday + "T00:00:00").toLocaleDateString("en-US", {
+        month: "long",
+        day: "numeric",
+        year: "numeric",
+      })
+    : null;
 
   const modes: { key: CompatMode; title: string; description: string; icon: string }[] = [
     { key: "romantic", title: "Romantic", description: "Deep dive into love, chemistry, and long-term potential", icon: "heart" },
@@ -14,6 +46,34 @@ export default function CompatibilityPage() {
     { key: "family", title: "Family", description: "Understand communication styles and bonding patterns", icon: "home" },
     { key: "collaboration", title: "Collaboration", description: "Assess work compatibility, strengths, and friction", icon: "briefcase" },
   ];
+
+  if (loading) {
+    return (
+      <div className="mx-auto max-w-4xl">
+        <h1 className="text-2xl font-bold text-white/90 mb-2">Compatibility</h1>
+        <p className="text-white/30 mb-8">Loading your profile...</p>
+      </div>
+    );
+  }
+
+  if (!profile || !profile.intakeComplete) {
+    return (
+      <div className="mx-auto max-w-4xl">
+        <h1 className="text-2xl font-bold text-white/90 mb-2">Compatibility</h1>
+        <div className="rounded-xl border border-white/[0.06] bg-white/[0.04] p-8 text-center">
+          <p className="text-white/50 mb-4">
+            Please complete your intake profile before using compatibility features.
+          </p>
+          <a
+            href="/intake"
+            className="inline-block rounded-lg bg-gradient-to-r from-indigo-600 to-purple-600 px-6 py-2 text-sm font-medium text-white hover:from-indigo-500 hover:to-purple-500 transition-all shadow-lg shadow-black/20"
+          >
+            Complete Your Profile
+          </a>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="mx-auto max-w-4xl">
@@ -54,9 +114,13 @@ export default function CompatibilityPage() {
             <div className="space-y-4">
               <h3 className="text-sm font-medium text-white/50">Your Profile</h3>
               <div className="rounded-lg bg-white/[0.06] p-4">
-                <p className="text-sm font-medium text-white/90">Alex Rivera</p>
-                <p className="text-xs text-white/30">Cancer Sun | Life Path 6</p>
-                <p className="text-xs text-white/30">Born: July 15, 1992</p>
+                <p className="text-sm font-medium text-white/90">{displayName}</p>
+                <p className="text-xs text-white/30">
+                  {sunSign ? `${sunSign} Sun` : "Unknown Sun"} | Life Path {lifePath ?? "?"}
+                </p>
+                {formattedBirthday && (
+                  <p className="text-xs text-white/30">Born: {formattedBirthday}</p>
+                )}
               </div>
             </div>
 
