@@ -1,9 +1,12 @@
 "use client";
 
-import { useState, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import PresetCard from "@/components/report/preset-card";
 import SectionToggle from "@/components/report/section-toggle";
 import ReportRenderer from "@/components/report/report-renderer";
+import { db, type UserProfile } from "@/lib/db";
+import { calculateFullNumerology, type NumerologyResult } from "@destination-future/core";
+import { calculateSolarAstrology, type SolarAstrologyResult } from "@destination-future/core";
 
 /* ─── Section Definitions ─── */
 interface SectionDef {
@@ -219,6 +222,14 @@ export default function ReportBuilderPage() {
   const [generatedSections, setGeneratedSections] = useState<any[] | null>(null);
   const [genError, setGenError] = useState<string | null>(null);
   const resultsRef = useRef<HTMLDivElement>(null);
+  const [profile, setProfile] = useState<UserProfile | null>(null);
+
+  useEffect(() => {
+    (async () => {
+      const p = await db.getProfile();
+      if (p) setProfile(p);
+    })();
+  }, []);
 
   const handlePresetClick = useCallback((presetKey: string) => {
     const preset = PRESETS.find((p) => p.key === presetKey);
@@ -284,7 +295,7 @@ export default function ReportBuilderPage() {
       // Fall back to client-side mock generation
       const sections = selectedArray.map((key) => {
         const def = SECTIONS.find((s) => s.key === key);
-        return generateMockSection(key, def?.title || key, def?.description || "");
+        return generateSection(key, def?.title || key, def?.description || "", profile);
       });
 
       // Simulate generation delay
@@ -478,15 +489,186 @@ export default function ReportBuilderPage() {
   );
 }
 
-/* ─── Client-Side Mock Section Generator ─── */
-function generateMockSection(key: string, title: string, description: string) {
-  const MOCK_DATA: Record<string, () => any> = {
-    identity_snapshot: () => ({
+/* ─── Client-Side Section Generator (uses real profile data when available) ─── */
+function generateSection(key: string, title: string, description: string, profile: UserProfile | null) {
+  const firstName = profile?.firstName || "Friend";
+
+  // ─── Numerology Core ───
+  if (key === "numerology_core") {
+    if (profile?.birthday && profile.firstName) {
+      const dob = new Date(profile.birthday + "T00:00:00");
+      const fullName = [profile.firstName, profile.middleName, profile.lastName].filter(Boolean).join(" ");
+      const result = calculateFullNumerology(dob, fullName, new Date().getFullYear());
+
+      const ui_blocks: any[] = [
+        { type: "heading", content: `${firstName}'s Core Numbers`, level: 2 },
+        { type: "paragraph", content: `Your numerological profile is calculated from your birth date (${profile.birthday}) and full name (${fullName}).` },
+
+        { type: "heading", content: `Life Path Number: ${result.lifePath.value}${result.lifePath.isMaster ? " (Master Number)" : ""}`, level: 3 },
+        { type: "math", expression: result.lifePath.math },
+        { type: "paragraph", content: result.lifePath.interpretation },
+
+        { type: "heading", content: `Expression Number: ${result.expressionNumber.value}${result.expressionNumber.isMaster ? " (Master Number)" : ""}`, level: 3 },
+        { type: "math", expression: result.expressionNumber.math },
+        { type: "paragraph", content: result.expressionNumber.interpretation },
+
+        { type: "heading", content: `Soul Urge: ${result.soulUrge.value}${result.soulUrge.isMaster ? " (Master Number)" : ""}`, level: 3 },
+        { type: "math", expression: result.soulUrge.math },
+        { type: "paragraph", content: result.soulUrge.interpretation },
+
+        { type: "heading", content: `Personality Number: ${result.personalityNumber.value}`, level: 3 },
+        { type: "math", expression: result.personalityNumber.math },
+        { type: "paragraph", content: result.personalityNumber.interpretation },
+
+        { type: "heading", content: `Birthday Number: ${result.birthdayNumber.value}`, level: 3 },
+        { type: "math", expression: result.birthdayNumber.math },
+        { type: "paragraph", content: result.birthdayNumber.interpretation },
+
+        { type: "heading", content: `Maturity Number: ${result.maturityNumber.value}`, level: 3 },
+        { type: "math", expression: result.maturityNumber.math },
+        { type: "paragraph", content: result.maturityNumber.interpretation },
+
+        { type: "heading", content: `Personal Year: ${result.personalYear.value} (${new Date().getFullYear()})`, level: 3 },
+        { type: "card", title: `Year of ${result.personalYear.value}`, body: result.personalYear.interpretation },
+
+        { type: "heading", content: "Risk / Opportunity", level: 3 },
+        { type: "table", headers: ["Number", "Risk", "Opportunity"], rows: [
+          [`Life Path ${result.lifePath.value}`, result.lifePath.risk, result.lifePath.opportunity],
+          [`Expression ${result.expressionNumber.value}`, result.expressionNumber.risk, result.expressionNumber.opportunity],
+          [`Soul Urge ${result.soulUrge.value}`, result.soulUrge.risk, result.soulUrge.opportunity],
+          [`Personality ${result.personalityNumber.value}`, result.personalityNumber.risk, result.personalityNumber.opportunity],
+          [`Personal Year ${result.personalYear.value}`, result.personalYear.risk, result.personalYear.opportunity],
+        ]},
+      ];
+
+      // Add pinnacles if present
+      if (result.pinnacles && result.pinnacles.length > 0) {
+        ui_blocks.push({ type: "heading", content: "Life Pinnacles", level: 3 });
+        ui_blocks.push({
+          type: "table",
+          headers: ["Pinnacle", "Age Range", "Value", "Meaning"],
+          rows: result.pinnacles.map((p) => [
+            `Pinnacle ${p.pinnacleNumber}`,
+            p.ageRange,
+            String(p.value),
+            p.interpretation,
+          ]),
+        });
+      }
+
+      // Add challenges if present
+      if (result.challenges && result.challenges.length > 0) {
+        ui_blocks.push({ type: "heading", content: "Life Challenges", level: 3 });
+        ui_blocks.push({
+          type: "table",
+          headers: ["Challenge", "Period", "Value", "Meaning"],
+          rows: result.challenges.map((c) => [
+            `Challenge ${c.challengeNumber}`,
+            c.period,
+            String(c.value),
+            c.interpretation,
+          ]),
+        });
+      }
+
+      return { sectionKey: key, title: "Numerology Core", ui_blocks };
+    }
+
+    // No profile data — show a message prompting the user
+    return {
+      sectionKey: key,
+      title: "Numerology Core",
+      ui_blocks: [
+        { type: "heading", content: "Numerology Core", level: 2 },
+        { type: "paragraph", content: "Complete your intake profile with your full name and birthday to see your real numerology calculations." },
+      ],
+    };
+  }
+
+  // ─── Astrology & Cosmology ───
+  if (key === "astrology_cosmology") {
+    if (profile?.birthday) {
+      const dob = new Date(profile.birthday + "T00:00:00");
+      const hasBirthTime = !!profile.birthTime;
+      const result = calculateSolarAstrology(dob, hasBirthTime);
+
+      const decanLabel = result.decan.number === 1 ? "First" : result.decan.number === 2 ? "Second" : "Third";
+
+      const ui_blocks: any[] = [
+        { type: "heading", content: `${firstName}'s Solar Profile`, level: 2 },
+        { type: "paragraph", content: `${result.sunSign.name} Sun ${result.sunSign.symbol}, ${decanLabel} Decan (${result.decan.subRuler} sub-influence). ${result.decan.description}` },
+
+        { type: "heading", content: "Element & Modality", level: 3 },
+        { type: "list", items: [
+          `Element: ${result.element.name} — ${result.element.traits.join(", ")}`,
+          `Modality: ${result.modality.name} — ${result.modality.approach}`,
+          `Ruling Planet: ${result.sunSign.rulingPlanet}`,
+        ]},
+
+        { type: "heading", content: "Element Strengths & Challenges", level: 3 },
+        { type: "list", items: [
+          `Strengths: ${result.element.strengths.join(", ")}`,
+          `Challenges: ${result.element.challenges.join(", ")}`,
+        ]},
+
+        { type: "heading", content: "Seasonal Energy", level: 3 },
+        { type: "card", title: `${result.seasonalEnergy.season} — ${result.seasonalEnergy.phase}`, body: result.seasonalEnergy.naturalRhythm },
+        { type: "list", items: [
+          `Best months: ${result.seasonalEnergy.bestMonths.join(", ")}`,
+          `Challenge months: ${result.seasonalEnergy.challengeMonths.join(", ")}`,
+        ]},
+      ];
+
+      // Planetary themes table
+      if (result.planetaryThemes.length > 0) {
+        ui_blocks.push({ type: "heading", content: "Planetary Behavior Themes", level: 3 });
+        ui_blocks.push({
+          type: "table",
+          headers: ["Planet", "Your Behavior", "Strength", "Caution"],
+          rows: result.planetaryThemes.map((pt) => [pt.planet, pt.behavior, pt.strength, pt.caution]),
+        });
+      }
+
+      // Do list
+      if (result.doList.length > 0) {
+        ui_blocks.push({ type: "heading", content: "Do List", level: 3 });
+        ui_blocks.push({ type: "checklist", items: result.doList, checked: result.doList.map(() => false) });
+      }
+
+      // Avoid list
+      if (result.avoidList.length > 0) {
+        ui_blocks.push({ type: "heading", content: "Avoid List", level: 3 });
+        ui_blocks.push({ type: "list", items: result.avoidList });
+      }
+
+      // Limitations disclaimer
+      if (result.limitations.length > 0) {
+        ui_blocks.push({ type: "heading", content: "Limitations", level: 3 });
+        ui_blocks.push({ type: "paragraph", content: result.limitations.join(" ") });
+      }
+
+      return { sectionKey: key, title: "Astrology & Cosmology Themes", ui_blocks };
+    }
+
+    // No birthday — prompt user
+    return {
+      sectionKey: key,
+      title: "Astrology & Cosmology Themes",
+      ui_blocks: [
+        { type: "heading", content: "Astrology & Cosmology", level: 2 },
+        { type: "paragraph", content: "Complete your intake profile with your birthday to see your real astrology analysis." },
+      ],
+    };
+  }
+
+  // ─── Identity Snapshot ───
+  if (key === "identity_snapshot") {
+    return {
       sectionKey: key,
       title: "Identity Snapshot",
       ui_blocks: [
-        { type: "heading", content: "Your Core Identity", level: 2 },
-        { type: "paragraph", content: "You are a deeply intuitive person with a strong drive to create harmony, beauty, and emotional safety in every environment you enter. Your personality blends analytical precision with creative vision." },
+        { type: "heading", content: `${firstName}'s Core Identity`, level: 2 },
+        { type: "paragraph", content: `${firstName}, you are a deeply intuitive person with a strong drive to create harmony, beauty, and emotional safety in every environment you enter. Your personality blends analytical precision with creative vision.` },
         { type: "heading", content: "Stable Traits", level: 3 },
         { type: "list", items: ["Emotionally perceptive — you read rooms and people with unusual accuracy", "Loyalty-driven — you commit deeply once trust is built", "Creative problem-solver — you find unconventional solutions", "Protective — you guard those you love fiercely", "Aesthetically tuned — you notice beauty, design, and environment quality"] },
         { type: "heading", content: "Context-Dependent Traits", level: 3 },
@@ -498,65 +680,24 @@ function generateMockSection(key: string, title: string, description: string) {
         { type: "score_bar", label: "Self-Awareness", value: 75, max: 100 },
         { type: "score_bar", label: "Growth Readiness", value: 82, max: 100 },
         { type: "heading", content: "Growth Edge", level: 3 },
-        { type: "quote", content: "Your growth edge is learning to release control over outcomes and trust that your worth isn't measured by how much you give." },
+        { type: "quote", content: `${firstName}, your growth edge is learning to release control over outcomes and trust that your worth isn't measured by how much you give.` },
         { type: "heading", content: "Action Steps", level: 3 },
         { type: "checklist", items: ["Practice saying 'no' to one request per week", "Start a daily 5-minute journaling practice", "Identify one comfort zone behavior to challenge this month"], checked: [false, false, false] },
       ],
-    }),
-    numerology_core: () => ({
-      sectionKey: key,
-      title: "Numerology Core",
-      ui_blocks: [
-        { type: "heading", content: "Your Core Numbers", level: 2 },
-        { type: "paragraph", content: "Your numerological profile reveals a powerful combination of nurturing energy and creative drive." },
-        { type: "heading", content: "Life Path Number: 6", level: 3 },
-        { type: "math", expression: "Month: 7 → 7 | Day: 15 → 1+5 = 6 | Year: 1992 → 1+9+9+2 = 21 → 3 | Total: 7 + 6 + 3 = 16 → 1+6 = 7... recalculated: 6" },
-        { type: "paragraph", content: "The Responsible Nurturer. You are caring, protective, and community-oriented. Your path is about love, responsibility, and service." },
-        { type: "heading", content: "Expression Number: 5", level: 3 },
-        { type: "math", expression: "Full name letter values summed → 5" },
-        { type: "paragraph", content: "Expression 5 reveals versatility and resourcefulness. You thrive with variety and change." },
-        { type: "heading", content: "Soul Urge: 3", level: 3 },
-        { type: "paragraph", content: "Your deepest desire is to express and create joy. Creative outlets are essential to your wellbeing." },
-        { type: "heading", content: "Personal Year: 7 (2026)", level: 3 },
-        { type: "card", title: "Year of Reflection", body: "This is a year of introspection, study, and inner growth. Honor the need for retreat without withdrawing from life entirely." },
-        { type: "heading", content: "Risk / Opportunity", level: 3 },
-        { type: "table", headers: ["Number", "Risk", "Opportunity"], rows: [["Life Path 6", "Over-giving, martyrdom", "Healing, teaching, design"], ["Expression 5", "Restlessness, commitment issues", "Travel, consulting, entrepreneurship"], ["Soul Urge 3", "Scattered energy", "Writing, performing, teaching"]] },
-      ],
-    }),
-    astrology_cosmology: () => ({
-      sectionKey: key,
-      title: "Astrology & Cosmology Themes",
-      ui_blocks: [
-        { type: "heading", content: "Your Solar Profile", level: 2 },
-        { type: "paragraph", content: "Cancer Sun, Second Decan (Scorpio sub-influence). Your emotional depth is amplified by transformative Pluto energy." },
-        { type: "heading", content: "Element & Modality", level: 3 },
-        { type: "list", items: ["Element: Water — emotional, intuitive, empathetic, deep", "Modality: Cardinal — you initiate, you see what's needed and act first", "Ruling Planet: Moon — your emotional world is your compass"] },
-        { type: "heading", content: "Planetary Behavior Themes", level: 3 },
-        { type: "table", headers: ["Planet", "Your Behavior", "Strength", "Caution"], rows: [["Mercury", "Intuitive communication, read between lines", "Emotional intelligence in communication", "Overthinking"], ["Venus", "Deep, emotional in love. Bond through vulnerability", "Profound intimacy", "Over-attachment"], ["Mars", "Emotionally driven action. Fight for what you feel", "Passionate advocacy", "Reactive anger"], ["Jupiter", "Growth through emotional depth and healing", "Spiritual expansion", "Emotional overwhelm"], ["Saturn", "Lessons in emotional boundaries and self-reliance", "Inner strength", "Isolation"]] },
-        { type: "heading", content: "Do List", level: 3 },
-        { type: "checklist", items: ["Nurture close relationships", "Create a safe home base", "Honor your emotions", "Cook or create for others", "Trust your intuition"], checked: [false, false, false, false, false] },
-        { type: "heading", content: "Avoid List", level: 3 },
-        { type: "list", items: ["Smothering loved ones", "Retreating into isolation", "Holding onto the past", "Guilt-tripping others", "Neglecting personal boundaries"] },
-      ],
-    }),
-  };
-
-  // Use specific mock if available, otherwise generate a generic one
-  if (MOCK_DATA[key]) {
-    return MOCK_DATA[key]();
+    };
   }
 
-  // Generic section mock
+  // ─── Generic fallback for all other sections ───
   const prettyTitle = title || key.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
   return {
     sectionKey: key,
     title: prettyTitle,
     ui_blocks: [
-      { type: "heading", content: prettyTitle, level: 2 },
-      { type: "paragraph", content: description || `Your personalized ${prettyTitle.toLowerCase()} analysis based on your birth data, personality profile, and selected goals.` },
+      { type: "heading", content: `${firstName}'s ${prettyTitle}`, level: 2 },
+      { type: "paragraph", content: description || `${firstName}, here is your personalized ${prettyTitle.toLowerCase()} analysis based on your birth data, personality profile, and selected goals.` },
       { type: "heading", content: "Key Insights", level: 3 },
       { type: "list", items: [
-        `Your ${prettyTitle.toLowerCase()} profile shows strong alignment with creative and analytical pursuits`,
+        `${firstName}, your ${prettyTitle.toLowerCase()} profile shows strong alignment with creative and analytical pursuits`,
         "There are growth opportunities in areas you haven't fully explored yet",
         "Your natural strengths in this area can be leveraged more intentionally",
         "Consider how your environment supports or limits this dimension of your life",
@@ -570,7 +711,7 @@ function generateMockSection(key: string, title: string, description: string) {
         "Track your progress in a journal or app",
         "Share your goals with someone you trust for accountability",
       ], checked: [false, false, false] },
-      { type: "quote", content: `The key to your ${prettyTitle.toLowerCase()} growth is consistency over intensity. Small daily actions compound into transformation.` },
+      { type: "quote", content: `${firstName}, the key to your ${prettyTitle.toLowerCase()} growth is consistency over intensity. Small daily actions compound into transformation.` },
     ],
   };
 }
