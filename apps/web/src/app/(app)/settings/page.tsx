@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { db, type UserProfile } from "@/lib/db";
 
 const US_STATES = [
   "Alabama","Alaska","Arizona","Arkansas","California","Colorado","Connecticut",
@@ -13,8 +14,78 @@ const US_STATES = [
   "Wisconsin","Wyoming",
 ];
 
+const inputClass =
+  "w-full rounded-lg border border-white/[0.08] bg-white/[0.06] px-3 py-2 text-sm text-white placeholder:text-white/20";
+
 export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState<"profile" | "privacy" | "subscription" | "data">("profile");
+  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [email, setEmail] = useState("");
+
+  // Profile fields
+  const [firstName, setFirstName] = useState("");
+  const [middleName, setMiddleName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [nickname, setNickname] = useState("");
+
+  // Birth fields
+  const [birthday, setBirthday] = useState("");
+  const [birthTime, setBirthTime] = useState("");
+  const [birthCity, setBirthCity] = useState("");
+  const [birthState, setBirthState] = useState("");
+
+  const [saving, setSaving] = useState(false);
+  const [savingBirth, setSavingBirth] = useState(false);
+  const [message, setMessage] = useState("");
+  const [birthMessage, setBirthMessage] = useState("");
+
+  useEffect(() => {
+    (async () => {
+      const user = await db.getCurrentUser();
+      if (user) setEmail(user.email);
+
+      const p = await db.getProfile();
+      if (p) {
+        setProfile(p);
+        setFirstName(p.firstName || "");
+        setMiddleName(p.middleName || "");
+        setLastName(p.lastName || "");
+        setNickname(p.nickname || "");
+        setBirthday(p.birthday || "");
+        setBirthTime(p.birthTime || "");
+        setBirthCity(p.birthCity || "");
+        setBirthState(p.birthState || "");
+      }
+    })();
+  }, []);
+
+  const handleSaveProfile = async () => {
+    if (!profile) return;
+    setSaving(true);
+    setMessage("");
+    const result = await db.updateProfile(profile.userId, {
+      firstName: firstName.trim(),
+      middleName: middleName.trim() || null,
+      lastName: lastName.trim() || null,
+      nickname: nickname.trim() || null,
+    });
+    setSaving(false);
+    setMessage(result.success ? "Profile saved!" : result.error);
+  };
+
+  const handleSaveBirth = async () => {
+    if (!profile) return;
+    setSavingBirth(true);
+    setBirthMessage("");
+    const result = await db.updateProfile(profile.userId, {
+      birthday: birthday || null,
+      birthTime: birthTime || null,
+      birthCity: birthCity.trim() || null,
+      birthState: birthState || null,
+    });
+    setSavingBirth(false);
+    setBirthMessage(result.success ? "Birth info saved!" : result.error);
+  };
 
   const tabs = [
     { key: "profile" as const, label: "Profile" },
@@ -50,20 +121,39 @@ export default function SettingsPage() {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-white/50 mb-1">First Name</label>
-                <input className="w-full rounded-lg border border-white/[0.08] bg-white/[0.06] px-3 py-2 text-sm text-white placeholder:text-white/20" defaultValue="Alex" />
+                <input className={inputClass} value={firstName} onChange={(e) => setFirstName(e.target.value)} />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-white/50 mb-1">Middle Name</label>
+                <input className={inputClass} value={middleName} onChange={(e) => setMiddleName(e.target.value)} />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-white/50 mb-1">Last Name</label>
+                <input className={inputClass} value={lastName} onChange={(e) => setLastName(e.target.value)} />
               </div>
               <div>
                 <label className="block text-sm font-medium text-white/50 mb-1">Nickname</label>
-                <input className="w-full rounded-lg border border-white/[0.08] bg-white/[0.06] px-3 py-2 text-sm text-white placeholder:text-white/20" defaultValue="DemoExplorer" />
+                <input className={inputClass} value={nickname} onChange={(e) => setNickname(e.target.value)} />
               </div>
               <div>
                 <label className="block text-sm font-medium text-white/50 mb-1">Email</label>
-                <input className="w-full rounded-lg border border-white/[0.08] bg-white/[0.06] px-3 py-2 text-sm text-white/50 placeholder:text-white/20" defaultValue="demo@destinationfuture.app" disabled />
+                <input className={`${inputClass} text-white/50`} value={email} disabled />
               </div>
             </div>
-            <button className="mt-4 rounded-lg bg-gradient-to-r from-indigo-600 to-purple-600 px-4 py-2 text-sm font-medium text-white hover:from-indigo-500 hover:to-purple-500 transition-colors">
-              Save Changes
-            </button>
+            <div className="mt-4 flex items-center gap-3">
+              <button
+                onClick={handleSaveProfile}
+                disabled={saving}
+                className="rounded-lg bg-gradient-to-r from-indigo-600 to-purple-600 px-4 py-2 text-sm font-medium text-white hover:from-indigo-500 hover:to-purple-500 transition-colors disabled:opacity-50"
+              >
+                {saving ? "Saving..." : "Save Changes"}
+              </button>
+              {message && (
+                <span className={`text-sm ${message.includes("saved") ? "text-green-400" : "text-red-400"}`}>
+                  {message}
+                </span>
+              )}
+            </div>
           </div>
 
           <div className="rounded-xl border border-white/[0.06] bg-white/[0.04] p-6 shadow-lg shadow-black/20">
@@ -72,19 +162,19 @@ export default function SettingsPage() {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-white/50 mb-1">Date of Birth</label>
-                <input type="date" className="w-full rounded-lg border border-white/[0.08] bg-white/[0.06] px-3 py-2 text-sm text-white [color-scheme:dark]" defaultValue="1992-07-15" />
+                <input type="date" className={`${inputClass} [color-scheme:dark]`} value={birthday} onChange={(e) => setBirthday(e.target.value)} />
               </div>
               <div>
                 <label className="block text-sm font-medium text-white/50 mb-1">Exact Birth Time</label>
-                <input type="time" className="w-full rounded-lg border border-white/[0.08] bg-white/[0.06] px-3 py-2 text-sm text-white [color-scheme:dark]" defaultValue="14:30" />
+                <input type="time" className={`${inputClass} [color-scheme:dark]`} value={birthTime} onChange={(e) => setBirthTime(e.target.value)} />
               </div>
               <div>
                 <label className="block text-sm font-medium text-white/50 mb-1">City of Birth</label>
-                <input type="text" className="w-full rounded-lg border border-white/[0.08] bg-white/[0.06] px-3 py-2 text-sm text-white placeholder:text-white/20" placeholder="e.g. Los Angeles" />
+                <input type="text" className={inputClass} value={birthCity} onChange={(e) => setBirthCity(e.target.value)} placeholder="e.g. Los Angeles" />
               </div>
               <div>
                 <label className="block text-sm font-medium text-white/50 mb-1">State of Birth</label>
-                <select className="w-full rounded-lg border border-white/[0.08] bg-white/[0.06] px-3 py-2 text-sm text-white [color-scheme:dark]">
+                <select className={`${inputClass} [color-scheme:dark]`} value={birthState} onChange={(e) => setBirthState(e.target.value)}>
                   <option value="" className="bg-[#0d1230]">Select state</option>
                   {US_STATES.map((s) => (
                     <option key={s} value={s} className="bg-[#0d1230] text-white">{s}</option>
@@ -92,9 +182,20 @@ export default function SettingsPage() {
                 </select>
               </div>
             </div>
-            <button className="mt-4 rounded-lg bg-gradient-to-r from-indigo-600 to-purple-600 px-4 py-2 text-sm font-medium text-white hover:from-indigo-500 hover:to-purple-500 transition-colors">
-              Update Birth Info
-            </button>
+            <div className="mt-4 flex items-center gap-3">
+              <button
+                onClick={handleSaveBirth}
+                disabled={savingBirth}
+                className="rounded-lg bg-gradient-to-r from-indigo-600 to-purple-600 px-4 py-2 text-sm font-medium text-white hover:from-indigo-500 hover:to-purple-500 transition-colors disabled:opacity-50"
+              >
+                {savingBirth ? "Saving..." : "Update Birth Info"}
+              </button>
+              {birthMessage && (
+                <span className={`text-sm ${birthMessage.includes("saved") ? "text-green-400" : "text-red-400"}`}>
+                  {birthMessage}
+                </span>
+              )}
+            </div>
           </div>
         </div>
       )}

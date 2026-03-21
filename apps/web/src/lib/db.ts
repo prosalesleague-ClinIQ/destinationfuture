@@ -241,6 +241,69 @@ export const db = {
     return null;
   },
 
+  // ─── Profile ───
+
+  /** Get full profile for the current user. */
+  async getProfile(): Promise<UserProfile | null> {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.user) return null;
+
+    const { data } = await supabase
+      .from("profiles")
+      .select("*")
+      .eq("user_id", session.user.id)
+      .single();
+
+    if (!data) return null;
+
+    return {
+      id: data.id,
+      userId: data.user_id,
+      firstName: data.first_name || "",
+      middleName: data.middle_name,
+      lastName: data.last_name,
+      nickname: data.nickname,
+      birthday: data.birthday,
+      birthTime: data.birth_time,
+      birthCity: data.birth_city,
+      birthState: data.birth_state,
+      intakeComplete: data.intake_complete,
+    };
+  },
+
+  /** Update profile fields. */
+  async updateProfile(
+    userId: string,
+    data: Partial<{
+      firstName: string;
+      middleName: string | null;
+      lastName: string | null;
+      nickname: string | null;
+      birthday: string | null;
+      birthTime: string | null;
+      birthCity: string | null;
+      birthState: string | null;
+    }>
+  ): Promise<{ success: true } | { success: false; error: string }> {
+    const updateData: Record<string, unknown> = {};
+    if (data.firstName !== undefined) updateData.first_name = data.firstName;
+    if (data.middleName !== undefined) updateData.middle_name = data.middleName;
+    if (data.lastName !== undefined) updateData.last_name = data.lastName;
+    if (data.nickname !== undefined) updateData.nickname = data.nickname;
+    if (data.birthday !== undefined) updateData.birthday = data.birthday;
+    if (data.birthTime !== undefined) updateData.birth_time = data.birthTime;
+    if (data.birthCity !== undefined) updateData.birth_city = data.birthCity;
+    if (data.birthState !== undefined) updateData.birth_state = data.birthState;
+
+    const { error } = await supabase
+      .from("profiles")
+      .update(updateData)
+      .eq("user_id", userId);
+
+    if (error) return { success: false, error: error.message };
+    return { success: true };
+  },
+
   // ─── Intake ───
 
   /** Complete intake with personal details. */
