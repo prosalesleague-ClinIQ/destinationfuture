@@ -42,7 +42,7 @@ function TypingIndicator() {
   );
 }
 
-export default function FutureYouChat({ variant = "popup" }: { variant?: "popup" | "full" }) {
+export default function FutureYouChat({ variant = "popup", userContext = "" }: { variant?: "popup" | "full"; userContext?: string }) {
   const { messages, isLoading, error, sendMessage, clearChat } = useFutureYouStore();
   const [input, setInput] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -61,7 +61,7 @@ export default function FutureYouChat({ variant = "popup" }: { variant?: "popup"
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!input.trim() || isLoading) return;
-    sendMessage(input.trim());
+    sendMessage(input.trim(), userContext);
     setInput("");
   };
 
@@ -95,7 +95,7 @@ export default function FutureYouChat({ variant = "popup" }: { variant?: "popup"
               ].map((prompt) => (
                 <button
                   key={prompt}
-                  onClick={() => sendMessage(prompt)}
+                  onClick={() => sendMessage(prompt, userContext)}
                   className="rounded-full border border-white/[0.08] bg-white/[0.04] px-3 py-1.5 text-xs text-white/50 hover:bg-white/[0.08] hover:text-white/70 transition-all"
                 >
                   {prompt}

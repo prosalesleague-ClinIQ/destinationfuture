@@ -18,7 +18,7 @@ const inputClass =
   "w-full rounded-lg border border-white/[0.08] bg-white/[0.06] px-3 py-2 text-sm text-white placeholder:text-white/20";
 
 export default function SettingsPage() {
-  const [activeTab, setActiveTab] = useState<"profile" | "privacy" | "subscription" | "data">("profile");
+  const [activeTab, setActiveTab] = useState<"profile" | "preferences" | "privacy" | "subscription" | "data">("profile");
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [email, setEmail] = useState("");
 
@@ -87,8 +87,41 @@ export default function SettingsPage() {
     setBirthMessage(result.success ? "Birth info saved!" : result.error);
   };
 
+  // Preference fields
+  const [gender, setGender] = useState("");
+  const [genderExpression, setGenderExpression] = useState("");
+  const [relationshipStatus, setRelationshipStatus] = useState("");
+  const [careerField, setCareerField] = useState("");
+  const [savingPrefs, setSavingPrefs] = useState(false);
+  const [prefsMessage, setPrefsMessage] = useState("");
+
+  // Load preference fields from profile
+  useEffect(() => {
+    if (profile) {
+      setGender(profile.gender || "");
+      setGenderExpression(profile.genderExpression || "");
+      setRelationshipStatus(profile.relationshipStatus || "");
+      setCareerField(profile.careerField || "");
+    }
+  }, [profile]);
+
+  const handleSavePreferences = async () => {
+    if (!profile) return;
+    setSavingPrefs(true);
+    setPrefsMessage("");
+    const result = await db.updateProfile(profile.userId, {
+      gender: gender || null,
+      genderExpression: genderExpression || null,
+      relationshipStatus: relationshipStatus || null,
+      careerField: careerField || null,
+    });
+    setSavingPrefs(false);
+    setPrefsMessage(result.success ? "Preferences saved!" : result.error);
+  };
+
   const tabs = [
     { key: "profile" as const, label: "Profile" },
+    { key: "preferences" as const, label: "Preferences" },
     { key: "privacy" as const, label: "Privacy" },
     { key: "subscription" as const, label: "Subscription" },
     { key: "data" as const, label: "Data & Export" },
@@ -193,6 +226,125 @@ export default function SettingsPage() {
               {birthMessage && (
                 <span className={`text-sm ${birthMessage.includes("saved") ? "text-green-400" : "text-red-400"}`}>
                   {birthMessage}
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {activeTab === "preferences" && (
+        <div className="space-y-6">
+          <div className="rounded-xl border border-white/[0.06] bg-white/[0.04] p-6 shadow-lg shadow-black/20">
+            <h2 className="text-lg font-semibold text-white/90 mb-4">About You</h2>
+            <p className="text-sm text-white/30 mb-4">These preferences personalize your style, career, soulmate, and all other sections.</p>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-white/50 mb-1">Sex</label>
+                <select className={`${inputClass} [color-scheme:dark]`} value={gender} onChange={(e) => setGender(e.target.value)}>
+                  <option value="" className="bg-[#0d1230]">Male or Female</option>
+                  {["Male", "Female"].map((g) => (
+                    <option key={g} value={g} className="bg-[#0d1230] text-white">{g}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-white/50 mb-1">Style Expression</label>
+                <select className={`${inputClass} [color-scheme:dark]`} value={genderExpression} onChange={(e) => setGenderExpression(e.target.value)}>
+                  <option value="" className="bg-[#0d1230]">Select</option>
+                  {["Masculine", "Feminine", "Androgynous", "Fluid"].map((g) => (
+                    <option key={g} value={g} className="bg-[#0d1230] text-white">{g}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-white/50 mb-1">Relationship Status</label>
+                <select className={`${inputClass} [color-scheme:dark]`} value={relationshipStatus} onChange={(e) => setRelationshipStatus(e.target.value)}>
+                  <option value="" className="bg-[#0d1230]">Select</option>
+                  {["Single", "In a Relationship", "Married", "Engaged", "Divorced", "It's Complicated", "Prefer not to say"].map((s) => (
+                    <option key={s} value={s} className="bg-[#0d1230] text-white">{s}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-white/50 mb-1">Career Field</label>
+                <select className={`${inputClass} [color-scheme:dark]`} value={careerField} onChange={(e) => setCareerField(e.target.value)}>
+                  <option value="" className="bg-[#0d1230]">Select</option>
+                  {["Technology", "Healthcare", "Creative/Arts", "Business/Finance", "Education", "Engineering", "Marketing/Media", "Law", "Science/Research", "Trades/Skilled Labor", "Entertainment", "Social Work", "Real Estate", "Hospitality", "Government", "Entrepreneurship", "Freelance/Consulting", "Not Sure Yet"].map((f) => (
+                    <option key={f} value={f} className="bg-[#0d1230] text-white">{f}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {/* Display current style/music/film preferences (read-only summary) */}
+            {profile && (
+              <div className="mt-6 space-y-3">
+                {profile.stylePreferences && profile.stylePreferences.length > 0 && (
+                  <div>
+                    <label className="block text-sm font-medium text-white/50 mb-1.5">Style Preferences</label>
+                    <div className="flex flex-wrap gap-2">
+                      {profile.stylePreferences.map((s) => (
+                        <span key={s} className="rounded-lg border border-amber-500/20 bg-amber-500/10 px-2.5 py-1 text-xs font-medium text-amber-300">{s}</span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {profile.musicGenres && profile.musicGenres.length > 0 && (
+                  <div>
+                    <label className="block text-sm font-medium text-white/50 mb-1.5">Music Genres</label>
+                    <div className="flex flex-wrap gap-2">
+                      {profile.musicGenres.map((g) => (
+                        <span key={g} className="rounded-lg border border-emerald-500/20 bg-emerald-500/10 px-2.5 py-1 text-xs font-medium text-emerald-300">{g}</span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {profile.filmGenres && profile.filmGenres.length > 0 && (
+                  <div>
+                    <label className="block text-sm font-medium text-white/50 mb-1.5">Film Genres</label>
+                    <div className="flex flex-wrap gap-2">
+                      {profile.filmGenres.map((g) => (
+                        <span key={g} className="rounded-lg border border-purple-500/20 bg-purple-500/10 px-2.5 py-1 text-xs font-medium text-purple-300">{g}</span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {profile.valuesList && profile.valuesList.length > 0 && (
+                  <div>
+                    <label className="block text-sm font-medium text-white/50 mb-1.5">Core Values</label>
+                    <div className="flex flex-wrap gap-2">
+                      {profile.valuesList.map((v) => (
+                        <span key={v} className="rounded-lg border border-cyan-500/20 bg-cyan-500/10 px-2.5 py-1 text-xs font-medium text-cyan-300">{v}</span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {profile.goals && profile.goals.length > 0 && (
+                  <div>
+                    <label className="block text-sm font-medium text-white/50 mb-1.5">Life Goals</label>
+                    <div className="flex flex-wrap gap-2">
+                      {profile.goals.map((g) => (
+                        <span key={g} className="rounded-lg border border-rose-500/20 bg-rose-500/10 px-2.5 py-1 text-xs font-medium text-rose-300">{g}</span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                <p className="text-xs text-white/20 mt-2">To update style, music, film, values, or goals preferences, go through the intake flow again or contact support.</p>
+              </div>
+            )}
+
+            <div className="mt-4 flex items-center gap-3">
+              <button
+                onClick={handleSavePreferences}
+                disabled={savingPrefs}
+                className="rounded-lg bg-gradient-to-r from-indigo-600 to-purple-600 px-4 py-2 text-sm font-medium text-white hover:from-indigo-500 hover:to-purple-500 transition-colors disabled:opacity-50"
+              >
+                {savingPrefs ? "Saving..." : "Save Preferences"}
+              </button>
+              {prefsMessage && (
+                <span className={`text-sm ${prefsMessage.includes("saved") ? "text-green-400" : "text-red-400"}`}>
+                  {prefsMessage}
                 </span>
               )}
             </div>

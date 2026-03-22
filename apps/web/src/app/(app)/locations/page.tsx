@@ -23,10 +23,89 @@ interface CityInfo {
 }
 
 const US_STATES = [
-  "California", "New York", "Texas", "Florida", "Colorado", "Oregon", "Washington",
-  "Arizona", "Tennessee", "North Carolina", "Georgia", "Massachusetts", "Illinois",
-  "Nevada", "Hawaii", "Virginia", "Utah", "Minnesota", "Michigan", "Pennsylvania",
+  "Alabama", "Alaska", "Arizona", "Arkansas", "California", "Colorado", "Connecticut",
+  "Delaware", "Florida", "Georgia", "Hawaii", "Idaho", "Illinois", "Indiana", "Iowa",
+  "Kansas", "Kentucky", "Louisiana", "Maine", "Maryland", "Massachusetts", "Michigan",
+  "Minnesota", "Mississippi", "Missouri", "Montana", "Nebraska", "Nevada", "New Hampshire",
+  "New Jersey", "New Mexico", "New York", "North Carolina", "North Dakota", "Ohio",
+  "Oklahoma", "Oregon", "Pennsylvania", "Rhode Island", "South Carolina", "South Dakota",
+  "Tennessee", "Texas", "Utah", "Vermont", "Virginia", "Washington", "West Virginia",
+  "Wisconsin", "Wyoming",
 ] as const;
+
+// ─── Cities by state for dynamic generation ───
+const STATE_CITIES: Record<string, { name: string; score: number; reason: string; risk: string; neighborhood: string; gradient: string; emoji: string }[]> = {
+  California: [
+    { name: "Los Angeles", score: 90, reason: "Entertainment capital with unmatched creative and career opportunities. Diverse neighborhoods let you reinvent yourself endlessly.", risk: "High cost of living and traffic congestion", neighborhood: "Silver Lake or Santa Monica", gradient: "from-orange-400 via-pink-500 to-purple-600", emoji: "\u{1F3AC}" },
+    { name: "San Francisco", score: 92, reason: "Global tech hub with world-class dining, culture, and natural beauty. Innovation is in the air.", risk: "Extreme housing costs and homelessness crisis", neighborhood: "Mission District or Hayes Valley", gradient: "from-slate-400 via-blue-500 to-amber-500", emoji: "\u{1F309}" },
+    { name: "San Diego", score: 91, reason: "Year-round sunshine, stunning beaches, and a laid-back vibe that still has career substance in biotech and military.", risk: "High cost of living especially near the coast", neighborhood: "North Park or La Jolla", gradient: "from-sky-400 via-cyan-500 to-blue-600", emoji: "\u{1F3D6}\uFE0F" },
+    { name: "Sacramento", score: 84, reason: "California's capital with affordable housing relative to the coast. Farm-to-fork dining capital with emerging arts scene.", risk: "Extreme summer heat and less cultural density than coastal cities", neighborhood: "Midtown or East Sacramento", gradient: "from-amber-400 via-yellow-500 to-green-500", emoji: "\u{1F33E}" },
+    { name: "Oakland", score: 87, reason: "Culturally rich and diverse with a strong community spirit. More affordable than SF with incredible food and music scenes.", risk: "Safety varies by neighborhood; gentrification tensions", neighborhood: "Temescal or Jack London Square", gradient: "from-emerald-400 via-teal-500 to-cyan-600", emoji: "\u{1F333}" },
+  ],
+  "New York": [
+    { name: "New York City", score: 94, reason: "The world's cultural and financial capital. Unmatched energy, diversity, and opportunity density.", risk: "Extreme cost of living and relentless pace", neighborhood: "Brooklyn Heights or West Village", gradient: "from-slate-500 via-gray-600 to-zinc-700", emoji: "\u{1F5FD}" },
+    { name: "Buffalo", score: 82, reason: "Affordable rust-belt renaissance with stunning architecture, proximity to Niagara Falls, and growing food scene.", risk: "Harsh winters and limited job market outside healthcare/education", neighborhood: "Elmwood Village or Allentown", gradient: "from-blue-400 via-indigo-500 to-violet-500", emoji: "\u2744\uFE0F" },
+    { name: "Rochester", score: 80, reason: "Affordable cost of living with strong universities and emerging tech sector. Beautiful Finger Lakes region nearby.", risk: "Gray winters and declining population in some areas", neighborhood: "Park Avenue or South Wedge", gradient: "from-purple-400 via-violet-500 to-indigo-600", emoji: "\u{1F3D3}" },
+    { name: "Ithaca", score: 83, reason: "Progressive college town with stunning gorges, farm-to-table culture, and a tight-knit creative community.", risk: "Isolated location and harsh winters; very small city", neighborhood: "Collegetown or The Commons", gradient: "from-green-400 via-emerald-500 to-teal-500", emoji: "\u{1F343}" },
+    { name: "Hudson Valley", score: 85, reason: "The new Brooklyn — artists, chefs, and remote workers are building vibrant communities in charming river towns.", risk: "Car-dependent; limited nightlife and urban amenities", neighborhood: "Beacon or Hudson", gradient: "from-amber-400 via-orange-500 to-rose-500", emoji: "\u{1F341}" },
+  ],
+  Texas: [
+    { name: "Austin", score: 92, reason: "Live music capital with booming tech scene. 'Keep Austin Weird' ethos rewards creativity and reinvention.", risk: "Rapid growth straining infrastructure; summer heat is intense", neighborhood: "East Austin or South Congress", gradient: "from-amber-400 via-orange-500 to-red-500", emoji: "\u{1F3B8}" },
+    { name: "Dallas", score: 86, reason: "Major business hub with no state income tax, world-class arts district, and diverse food scene.", risk: "Car-dependent sprawl; extreme summer heat", neighborhood: "Deep Ellum or Bishop Arts", gradient: "from-blue-400 via-indigo-500 to-violet-500", emoji: "\u{1F3D9}\uFE0F" },
+    { name: "Houston", score: 85, reason: "America's most diverse city with massive economy spanning energy, healthcare, and aerospace. Incredible international food.", risk: "Flooding risk, extreme humidity, and sprawling car culture", neighborhood: "Montrose or The Heights", gradient: "from-red-400 via-orange-500 to-amber-500", emoji: "\u{1F680}" },
+    { name: "San Antonio", score: 83, reason: "Rich cultural heritage, affordable living, and growing tech presence. The River Walk and historic missions add soul.", risk: "Summer heat is brutal; slower pace may frustrate ambitious types", neighborhood: "Pearl District or Southtown", gradient: "from-rose-400 via-pink-500 to-fuchsia-500", emoji: "\u{1F3DB}\uFE0F" },
+    { name: "El Paso", score: 78, reason: "One of America's safest large cities with incredibly low cost of living and rich Mexican-American culture.", risk: "Isolated location and limited job market; extreme desert heat", neighborhood: "Downtown or Kern Place", gradient: "from-orange-400 via-red-500 to-rose-600", emoji: "\u{1F3DC}\uFE0F" },
+  ],
+  Florida: [
+    { name: "Miami", score: 89, reason: "Gateway to Latin America with booming fintech/crypto scene, no state income tax, and year-round tropical energy.", risk: "Hurricane risk, humidity, and rising insurance costs", neighborhood: "Wynwood or Brickell", gradient: "from-cyan-400 via-teal-500 to-emerald-500", emoji: "\u{1F334}" },
+    { name: "Tampa", score: 85, reason: "Rapidly growing with excellent cost-to-quality ratio. Vibrant food scene and bay lifestyle at half Miami's price.", risk: "Hurricane vulnerability and car-dependent sprawl", neighborhood: "Seminole Heights or Hyde Park", gradient: "from-blue-400 via-sky-500 to-cyan-500", emoji: "\u{1F30A}" },
+    { name: "St. Petersburg", score: 84, reason: "Arts and culture hub with a walkable downtown, stunning waterfront, and more sunshine than almost any US city.", risk: "Summer storms and flood zones; tourism can overwhelm in season", neighborhood: "Grand Central or Old Northeast", gradient: "from-yellow-400 via-amber-500 to-orange-500", emoji: "\u2600\uFE0F" },
+    { name: "Orlando", score: 82, reason: "Beyond the theme parks — a growing tech corridor, affordable housing, and incredible diversity.", risk: "Tourist-heavy identity; extreme humidity and hurricane risk", neighborhood: "Winter Park or Thornton Park", gradient: "from-purple-400 via-violet-500 to-fuchsia-500", emoji: "\u{1F3A2}" },
+    { name: "Jacksonville", score: 80, reason: "Largest city by area in the US with beautiful beaches, low cost of living, and a growing creative scene.", risk: "Spread-out city requires a car; still developing cultural infrastructure", neighborhood: "Riverside or San Marco", gradient: "from-emerald-400 via-green-500 to-teal-500", emoji: "\u{1F3D6}\uFE0F" },
+  ],
+  Colorado: [
+    { name: "Denver", score: 91, reason: "300 days of sunshine, booming tech scene, and outdoor lifestyle that rewires your daily routine. No state income tax helps.", risk: "Rapidly rising cost of living; altitude adjustment takes weeks", neighborhood: "RiNo or Capitol Hill", gradient: "from-emerald-400 via-teal-500 to-cyan-600", emoji: "\u{1F3D4}\uFE0F" },
+    { name: "Boulder", score: 87, reason: "Nature-meets-tech with stunning Flatirons backdrop. Health-conscious culture and CU Boulder bring vibrant energy.", risk: "Extremely expensive for a small city; can feel insular", neighborhood: "Pearl Street or North Boulder", gradient: "from-green-400 via-emerald-500 to-teal-500", emoji: "\u{1F3DE}\uFE0F" },
+    { name: "Colorado Springs", score: 83, reason: "Garden of the Gods, Pikes Peak, and a growing economy at a fraction of Denver prices.", risk: "More conservative culture; less nightlife and dining variety", neighborhood: "Old Colorado City or Downtown", gradient: "from-red-400 via-rose-500 to-pink-500", emoji: "\u26F0\uFE0F" },
+    { name: "Fort Collins", score: 82, reason: "College town charm with craft beer capital status. Bike-friendly, community-oriented, and close to nature.", risk: "Small city limitations; cold winters", neighborhood: "Old Town or Campus West", gradient: "from-amber-400 via-yellow-500 to-green-500", emoji: "\u{1F37A}" },
+    { name: "Pueblo", score: 76, reason: "Colorado's hidden gem with incredibly affordable housing, rich history, and an authentic community feel.", risk: "Limited job market; perception issues from outsiders", neighborhood: "Union Avenue or Riverwalk", gradient: "from-orange-400 via-red-500 to-amber-500", emoji: "\u{1F3D8}\uFE0F" },
+  ],
+  Georgia: [
+    { name: "Atlanta", score: 88, reason: "A cultural powerhouse with booming industries in tech, film, and music. The city rewards hustlers and visionaries equally.", risk: "Traffic congestion and urban sprawl test patience", neighborhood: "Old Fourth Ward or West Midtown", gradient: "from-red-400 via-rose-500 to-pink-600", emoji: "\u{1F351}" },
+    { name: "Savannah", score: 85, reason: "Spanish moss, midnight garden mystique, and a slow pace that encourages lingering conversations. Designed for beauty.", risk: "Extreme summer heat and humidity; small-city dating pool", neighborhood: "Historic District or Forsyth Park", gradient: "from-emerald-300 via-green-400 to-teal-500", emoji: "\u{1F343}" },
+    { name: "Athens", score: 81, reason: "College town with legendary music scene (R.E.M., B-52s) and a creative, affordable community.", risk: "Small city with limited career options outside UGA", neighborhood: "Five Points or Normaltown", gradient: "from-red-400 via-orange-500 to-amber-500", emoji: "\u{1F3B5}" },
+    { name: "Augusta", score: 78, reason: "Home of the Masters, with a revitalizing downtown and low cost of living along the Savannah River.", risk: "Limited cultural amenities; economic opportunities concentrated in healthcare", neighborhood: "Summerville or Downtown", gradient: "from-green-400 via-emerald-500 to-green-600", emoji: "\u26F3" },
+    { name: "Decatur", score: 83, reason: "Walkable, progressive suburb of Atlanta with excellent restaurants, craft beer, and strong community identity.", risk: "Rising home prices; technically a suburb, not a standalone city", neighborhood: "Downtown Decatur or Oakhurst", gradient: "from-blue-400 via-indigo-500 to-violet-500", emoji: "\u{1F3E1}" },
+  ],
+  Oregon: [
+    { name: "Portland", score: 88, reason: "DIY culture, incredible food scene, and a maker ethos that rewards creativity. Bike-friendly and walkable.", risk: "Gray winters and growing homelessness crisis", neighborhood: "Alberta Arts or Division", gradient: "from-green-500 via-emerald-500 to-lime-500", emoji: "\u{1F332}" },
+    { name: "Bend", score: 84, reason: "Outdoor paradise with craft beer culture, growing tech remote-work community, and stunning natural beauty.", risk: "Housing costs have skyrocketed; very seasonal economy", neighborhood: "Old Mill or NW Crossing", gradient: "from-cyan-400 via-blue-500 to-indigo-500", emoji: "\u{1F3D4}\uFE0F" },
+    { name: "Eugene", score: 81, reason: "Progressive university town with outdoor access, organic food culture, and affordable creative living.", risk: "Limited job market; rainy winters", neighborhood: "Whiteaker or South Hills", gradient: "from-green-400 via-emerald-500 to-teal-500", emoji: "\u{1F3C3}" },
+    { name: "Ashland", score: 80, reason: "Home of the Oregon Shakespeare Festival with a charming downtown, arts culture, and southern Oregon beauty.", risk: "Wildfire smoke in summer; very small town with limited amenities", neighborhood: "Downtown or Railroad District", gradient: "from-amber-400 via-orange-500 to-red-500", emoji: "\u{1F3AD}" },
+    { name: "Salem", score: 77, reason: "State capital with affordable housing, wine country access, and a growing food scene.", risk: "Less exciting than Portland; still developing cultural identity", neighborhood: "Downtown or South Salem", gradient: "from-purple-400 via-violet-500 to-indigo-500", emoji: "\u{1F3DB}\uFE0F" },
+  ],
+  Washington: [
+    { name: "Seattle", score: 90, reason: "Tech giant HQ (Amazon, Microsoft), no state income tax, incredible food scene, and Pacific Northwest beauty.", risk: "Gray skies most of the year; cost of living climbing rapidly", neighborhood: "Capitol Hill or Ballard", gradient: "from-emerald-500 via-teal-600 to-cyan-700", emoji: "\u2615" },
+    { name: "Tacoma", score: 83, reason: "Seattle's cooler, cheaper neighbor with a growing arts scene, stunning views of Mt. Rainier, and waterfront revitalization.", risk: "Historical reputation issues; still developing cultural infrastructure", neighborhood: "Stadium District or 6th Ave", gradient: "from-blue-400 via-indigo-500 to-violet-500", emoji: "\u{1F30A}" },
+    { name: "Spokane", score: 79, reason: "Affordable inland city with four seasons, outdoor recreation, and a revitalizing downtown.", risk: "Isolated from major metros; harsh winters", neighborhood: "South Perry or Browne's Addition", gradient: "from-amber-400 via-orange-500 to-red-500", emoji: "\u{1F343}" },
+    { name: "Bellingham", score: 82, reason: "College town between Seattle and Vancouver with incredible hiking, kayaking, and a progressive community.", risk: "Rainy climate; limited job market", neighborhood: "Fairhaven or Downtown", gradient: "from-green-400 via-emerald-500 to-teal-500", emoji: "\u{1F3D4}\uFE0F" },
+    { name: "Olympia", score: 78, reason: "Quirky state capital with a strong indie music scene, waterfront farmers market, and affordable living.", risk: "Small city with limited career opportunities; very rainy", neighborhood: "Downtown or Eastside", gradient: "from-teal-400 via-cyan-500 to-blue-500", emoji: "\u{1F3DB}\uFE0F" },
+  ],
+  Tennessee: [
+    { name: "Nashville", score: 90, reason: "Music City with booming economy, no state income tax, and a culture of hospitality. Hot chicken and honky-tonks.", risk: "Rapid growth straining infrastructure; summer heat", neighborhood: "East Nashville or 12 South", gradient: "from-amber-400 via-yellow-500 to-orange-500", emoji: "\u{1F3B6}" },
+    { name: "Memphis", score: 82, reason: "Birthplace of rock and roll and blues with incredible BBQ, low cost of living, and authentic grit.", risk: "Higher crime rates in some areas; economic challenges persist", neighborhood: "Cooper-Young or Overton Square", gradient: "from-blue-400 via-indigo-500 to-violet-500", emoji: "\u{1F3B5}" },
+    { name: "Chattanooga", score: 84, reason: "Fastest internet in America (thanks to EPB), stunning outdoor access, and a revitalized downtown.", risk: "Small city with limited career options; still developing", neighborhood: "Northshore or Southside", gradient: "from-green-400 via-emerald-500 to-teal-500", emoji: "\u{1F3DE}\uFE0F" },
+    { name: "Knoxville", score: 81, reason: "UT Vols energy, Smoky Mountains access, and an affordable creative community that's quietly booming.", risk: "Limited public transit; smaller cultural scene", neighborhood: "Market Square or Old City", gradient: "from-orange-400 via-red-500 to-rose-500", emoji: "\u{1F3D4}\uFE0F" },
+    { name: "Franklin", score: 83, reason: "Historic charm with modern amenities just south of Nashville. Excellent schools and walkable downtown.", risk: "Suburban feel; high home prices for Tennessee", neighborhood: "Historic Downtown or Westhaven", gradient: "from-rose-400 via-pink-500 to-fuchsia-500", emoji: "\u{1F3E1}" },
+  ],
+  "North Carolina": [
+    { name: "Raleigh", score: 86, reason: "Research Triangle brings world-class education and career opportunities. Affordable with mild climate.", risk: "Suburban sprawl requires car; less walkable than coastal cities", neighborhood: "Downtown or North Hills", gradient: "from-green-400 via-emerald-500 to-teal-500", emoji: "\u{1F333}" },
+    { name: "Charlotte", score: 85, reason: "Banking capital of the South with a booming economy, growing food scene, and affordable housing.", risk: "Car-dependent; less cultural depth than older cities", neighborhood: "NoDa or Plaza Midwood", gradient: "from-blue-400 via-indigo-500 to-violet-500", emoji: "\u{1F3E6}" },
+    { name: "Asheville", score: 87, reason: "Mountain bohemia with incredible craft beer, farm-to-table dining, and a creative community nestled in Blue Ridge beauty.", risk: "Small-city job market; tourism crowds; housing prices rising", neighborhood: "West Asheville or River Arts", gradient: "from-violet-400 via-purple-500 to-indigo-600", emoji: "\u{1F3D4}\uFE0F" },
+    { name: "Durham", score: 84, reason: "Research Triangle gem with a revitalized downtown, Duke University energy, and a booming food and arts scene.", risk: "Gentrification tensions; some areas still developing", neighborhood: "Downtown or Brightleaf", gradient: "from-amber-400 via-orange-500 to-red-500", emoji: "\u{1F52C}" },
+    { name: "Wilmington", score: 81, reason: "Beach town with a growing film industry, historic riverfront, and that Carolina coastal charm.", risk: "Hurricane vulnerability; seasonal tourism economy", neighborhood: "Historic Downtown or Wrightsville Beach", gradient: "from-sky-400 via-cyan-500 to-blue-500", emoji: "\u{1F3D6}\uFE0F" },
+  ],
+};
 
 const CONTINENTS: Continent[] = ["Europe", "Asia", "South America", "Africa", "Oceania", "Middle East"];
 
@@ -254,6 +333,8 @@ export default function LocationsPage() {
   const [selectedStates, setSelectedStates] = useState<string[]>([]);
   const [selectedContinent, setSelectedContinent] = useState<Continent | null>(null);
   const [selectedCountries, setSelectedCountries] = useState<string[]>([]);
+  const [explored, setExplored] = useState(false);
+  const [stateSearchQuery, setStateSearchQuery] = useState("");
   const [profile, setProfile] = useState<UserProfile | null | undefined>(undefined);
 
   useEffect(() => {
@@ -274,6 +355,7 @@ export default function LocationsPage() {
   const activeCategoryConfig = CATEGORY_CONFIG.find((c) => c.key === category);
 
   const toggleState = (state: string) => {
+    setExplored(false);
     setSelectedStates((prev) => {
       if (prev.includes(state)) return prev.filter((s) => s !== state);
       if (prev.length >= MAX_SELECTED_STATES) return prev;
@@ -300,14 +382,54 @@ export default function LocationsPage() {
   };
 
   const filteredCities = useMemo(() => {
+    if (region === "usa") {
+      // Only show results after clicking Explore with states selected
+      if (!explored || selectedStates.length === 0) return [];
+
+      // Build city list from STATE_CITIES for selected states
+      let cities: CityInfo[] = [];
+      for (const state of selectedStates) {
+        const stateCities = STATE_CITIES[state];
+        if (stateCities) {
+          cities.push(...stateCities.map((c) => ({
+            ...c,
+            state,
+            country: "USA" as const,
+            category: category,
+          })));
+        } else {
+          // Fallback: check ALL_CITIES for this state
+          const fromAll = ALL_CITIES.filter((c) => c.state === state && c.category === category);
+          if (fromAll.length > 0) {
+            cities.push(...fromAll);
+          }
+        }
+      }
+
+      // If we built from STATE_CITIES (which are category-agnostic), limit to 5 per state
+      if (cities.length > 5 * selectedStates.length) {
+        cities = cities.slice(0, 5 * selectedStates.length);
+      }
+
+      // Apply element-based score adjustments
+      if (element) {
+        cities = cities.map((c) => ({
+          ...c,
+          score: Math.max(0, Math.min(100, c.score + getElementBonus(c.name, element))),
+        }));
+      }
+      cities.sort((a, b) => b.score - a.score);
+
+      // Return top 5 per state, max 15 total
+      return cities.slice(0, Math.min(15, 5 * selectedStates.length));
+    }
+
+    // International / World — keep original logic but require Explore
+    if (!explored) return [];
+
     let cities = ALL_CITIES.filter((c) => c.category === category);
 
-    if (region === "usa") {
-      cities = cities.filter((c) => c.country === "USA");
-      if (selectedStates.length > 0) {
-        cities = cities.filter((c) => c.state && selectedStates.includes(c.state));
-      }
-    } else if (region === "international") {
+    if (region === "international") {
       cities = cities.filter((c) => c.country !== "USA");
       if (selectedContinent) {
         cities = cities.filter((c) => c.continent === selectedContinent);
@@ -316,9 +438,7 @@ export default function LocationsPage() {
         }
       }
     }
-    // "world" shows all
 
-    // Apply element-based score adjustments when we have a sun sign
     if (element) {
       cities = cities.map((c) => ({
         ...c,
@@ -328,7 +448,19 @@ export default function LocationsPage() {
     }
 
     return cities;
-  }, [category, region, selectedStates, selectedContinent, selectedCountries, element]);
+  }, [category, region, selectedStates, selectedContinent, selectedCountries, element, explored]);
+
+  const handleExplore = () => {
+    if (region === "usa" && selectedStates.length === 0) return;
+    setExplored(true);
+  };
+
+  // Filter states by search query
+  const filteredStateOptions = useMemo(() => {
+    if (!stateSearchQuery.trim()) return US_STATES;
+    const q = stateSearchQuery.toLowerCase();
+    return US_STATES.filter((s) => s.toLowerCase().includes(q));
+  }, [stateSearchQuery]);
 
   const regionLabel = region === "usa" ? "United States" : region === "international" ? "International" : "Worldwide";
 
@@ -357,6 +489,22 @@ export default function LocationsPage() {
                 </span>
               )}
             </p>
+          )}
+          {(profile?.careerField || (profile?.goals && profile.goals.some((g) => g.toLowerCase().includes("move") || g.toLowerCase().includes("city") || g.toLowerCase().includes("relocat")))) && (
+            <div className="mt-4 flex flex-wrap gap-2">
+              {profile?.careerField && (
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-white/10 border border-white/10 px-3 py-1 text-xs font-medium text-cyan-300">
+                  <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M20.25 14.15v4.25c0 1.094-.787 2.036-1.872 2.18-2.087.277-4.216.42-6.378.42s-4.291-.143-6.378-.42c-1.085-.144-1.872-1.086-1.872-2.18v-4.25m16.5 0a2.18 2.18 0 0 0 .75-1.661V8.706c0-1.081-.768-2.015-1.837-2.175a48.114 48.114 0 0 0-3.413-.387m4.5 8.006c-.194.165-.42.295-.673.38A23.978 23.978 0 0 1 12 15.75c-2.648 0-5.195-.429-7.577-1.22a2.016 2.016 0 0 1-.673-.38m0 0A2.18 2.18 0 0 1 3 12.489V8.706c0-1.081.768-2.015 1.837-2.175a48.111 48.111 0 0 1 3.413-.387m7.5 0V5.25A2.25 2.25 0 0 0 13.5 3h-3a2.25 2.25 0 0 0-2.25 2.25v.894m7.5 0a48.667 48.667 0 0 0-7.5 0" /></svg>
+                  Career: {profile.careerField}
+                </span>
+              )}
+              {profile?.goals && profile.goals.some((g) => g.toLowerCase().includes("move") || g.toLowerCase().includes("city") || g.toLowerCase().includes("relocat")) && (
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/15 border border-emerald-500/20 px-3 py-1 text-xs font-bold text-emerald-300 animate-pulse">
+                  <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" /><path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0Z" /></svg>
+                  Relocation is one of your goals — these results are extra relevant
+                </span>
+              )}
+            </div>
           )}
         </div>
       </div>
@@ -388,6 +536,8 @@ export default function LocationsPage() {
               setSelectedStates([]);
               setSelectedContinent(null);
               setSelectedCountries([]);
+              setExplored(false);
+              setStateSearchQuery("");
             }}
             className={`flex items-center gap-2 rounded-2xl px-6 py-3 text-sm font-bold transition-all duration-300 ${
               region === r.key
@@ -401,40 +551,61 @@ export default function LocationsPage() {
         ))}
       </div>
 
-      {/* Tier 2 — State Filter (when USA selected) */}
+      {/* Tier 2 — State Selection (when USA selected) */}
       {region === "usa" && (
-        <div className="space-y-3">
+        <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <p className="text-xs font-semibold uppercase tracking-widest text-white/40">Filter by State</p>
+            <div>
+              <p className="text-sm font-semibold text-white/70">Pick 1-3 States to Explore</p>
+              <p className="text-xs text-white/30 mt-0.5">We'll recommend 5 cities in each state based on your profile</p>
+            </div>
             {selectedStates.length > 0 && (
               <span className="text-xs font-medium text-cyan-400">
-                {selectedStates.length} of {MAX_SELECTED_STATES} states selected
+                {selectedStates.length} of {MAX_SELECTED_STATES} selected
               </span>
             )}
           </div>
-          <div className="flex flex-wrap gap-2 max-h-28 overflow-y-auto pr-2 scrollbar-thin">
-            <button
-              onClick={() => setSelectedStates([])}
-              className={`rounded-full px-4 py-2 text-sm font-semibold transition-all duration-300 ${
-                selectedStates.length === 0
-                  ? "bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-lg"
-                  : "bg-white/5 border border-white/10 text-white/50 hover:border-white/20 hover:text-white/70"
-              }`}
-            >
-              All States
-            </button>
-            {US_STATES.map((state) => {
+
+          {/* Search box */}
+          <input
+            type="text"
+            value={stateSearchQuery}
+            onChange={(e) => setStateSearchQuery(e.target.value)}
+            placeholder="Search states..."
+            className="w-full rounded-xl border border-white/[0.08] bg-white/[0.04] px-4 py-2.5 text-sm text-white placeholder-white/30 outline-none focus:border-cyan-500/40 focus:bg-white/[0.06] transition-all"
+          />
+
+          {/* Selected states display */}
+          {selectedStates.length > 0 && (
+            <div className="flex flex-wrap gap-2">
+              {selectedStates.map((state) => (
+                <button
+                  key={state}
+                  onClick={() => toggleState(state)}
+                  className="flex items-center gap-1.5 rounded-full bg-gradient-to-r from-cyan-500 to-blue-500 px-4 py-2 text-sm font-semibold text-white shadow-lg"
+                >
+                  {state}
+                  <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              ))}
+            </div>
+          )}
+
+          {/* State grid */}
+          <div className="flex flex-wrap gap-2 max-h-40 overflow-y-auto pr-2 scrollbar-thin">
+            {filteredStateOptions.map((state) => {
               const isSelected = selectedStates.includes(state);
               const isDisabled = !isSelected && selectedStates.length >= MAX_SELECTED_STATES;
+              if (isSelected) return null; // Already shown above
               return (
                 <button
                   key={state}
                   onClick={() => toggleState(state)}
                   disabled={isDisabled}
                   className={`rounded-full px-4 py-2 text-sm font-semibold transition-all duration-300 ${
-                    isSelected
-                      ? "bg-gradient-to-r from-cyan-500 to-blue-500 text-white shadow-lg scale-105"
-                      : isDisabled
+                    isDisabled
                       ? "bg-white/5 border border-white/5 text-white/20 cursor-not-allowed"
                       : "bg-white/5 border border-white/10 text-white/50 hover:border-white/20 hover:text-white/70"
                   }`}
@@ -444,6 +615,23 @@ export default function LocationsPage() {
               );
             })}
           </div>
+
+          {/* EXPLORE BUTTON */}
+          <button
+            onClick={handleExplore}
+            disabled={selectedStates.length === 0}
+            className={`w-full rounded-xl py-4 text-base font-bold transition-all duration-300 ${
+              selectedStates.length > 0
+                ? "bg-gradient-to-r from-emerald-500 to-cyan-500 text-white shadow-lg shadow-emerald-500/25 hover:shadow-emerald-500/40 hover:scale-[1.02] active:scale-[0.98]"
+                : "bg-white/5 border border-white/10 text-white/20 cursor-not-allowed"
+            }`}
+          >
+            {selectedStates.length === 0
+              ? "Select at least 1 state to explore"
+              : explored
+              ? `\u2705 Showing cities in ${selectedStates.join(", ")}`
+              : `\u{1F50D} Explore ${selectedStates.length === 1 ? selectedStates[0] : `${selectedStates.length} States`}`}
+          </button>
         </div>
       )}
 
@@ -537,6 +725,37 @@ export default function LocationsPage() {
           )}
         </div>
       )}
+
+      {/* Explore button for international */}
+      {region === "international" && (
+        <button
+          onClick={handleExplore}
+          className={`w-full rounded-xl py-4 text-base font-bold transition-all duration-300 ${
+            explored
+              ? "bg-gradient-to-r from-emerald-500 to-cyan-500 text-white shadow-lg"
+              : "bg-gradient-to-r from-emerald-500 to-cyan-500 text-white shadow-lg shadow-emerald-500/25 hover:shadow-emerald-500/40 hover:scale-[1.02] active:scale-[0.98]"
+          }`}
+        >
+          {explored ? "\u2705 Showing international cities" : "\u{1F50D} Explore International Cities"}
+        </button>
+      )}
+
+      {/* World explore button */}
+      {region === "world" && (
+        <button
+          onClick={handleExplore}
+          className={`w-full rounded-xl py-4 text-base font-bold transition-all duration-300 ${
+            explored
+              ? "bg-gradient-to-r from-emerald-500 to-cyan-500 text-white shadow-lg"
+              : "bg-gradient-to-r from-emerald-500 to-cyan-500 text-white shadow-lg shadow-emerald-500/25 hover:shadow-emerald-500/40 hover:scale-[1.02] active:scale-[0.98]"
+          }`}
+        >
+          {explored ? "\u2705 Showing worldwide cities" : "\u{1F50D} Explore Worldwide Cities"}
+        </button>
+      )}
+
+      {/* Everything below only shows after Explore is clicked */}
+      {explored && (<>
 
       {/* Category Pills */}
       <div className="flex flex-wrap gap-2">
@@ -680,6 +899,8 @@ export default function LocationsPage() {
           ))
         )}
       </div>
+
+      </>)}
     </div>
   );
 }

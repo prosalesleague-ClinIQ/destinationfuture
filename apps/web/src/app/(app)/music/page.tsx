@@ -460,8 +460,18 @@ export default function MusicPage() {
     db.getProfile().then((p) => {
       setProfile(p);
       setProfileLoading(false);
-      // Pre-select element-aligned genres if profile has birthday
-      if (p?.birthday) {
+      // Pre-select intake music genres first, then fill with element-aligned genres
+      if (p?.musicGenres && p.musicGenres.length > 0) {
+        const intakeGenres = p.musicGenres.filter((g) => ALL_GENRES.some((ag) => ag.name === g));
+        if (p.birthday) {
+          const dob = new Date(p.birthday + "T00:00:00");
+          const sign = getSunSign(dob);
+          const elementGenres = (ELEMENT_GENRES[sign.element] || []).filter((g) => !intakeGenres.includes(g));
+          setSelectedGenres([...intakeGenres, ...elementGenres]);
+        } else {
+          setSelectedGenres(intakeGenres);
+        }
+      } else if (p?.birthday) {
         const dob = new Date(p.birthday + "T00:00:00");
         const sign = getSunSign(dob);
         const elementGenres = ELEMENT_GENRES[sign.element] || [];
@@ -477,7 +487,8 @@ export default function MusicPage() {
     const sunSign = getSunSign(dob);
     const lifePath = calculateLifePath(dob);
     const element = sunSign.element;
-    return { sunSign, lifePath, element, firstName: profile.firstName };
+    const musicGenres = profile.musicGenres?.filter((g) => ALL_GENRES.some((ag) => ag.name === g)) || [];
+    return { sunSign, lifePath, element, firstName: profile.firstName, musicGenres };
   }, [profile]);
 
   const toggleGenre = useCallback((genre: string) => {
@@ -507,13 +518,21 @@ export default function MusicPage() {
   const hasInput = artist1.trim() || artist2.trim() || artist3.trim() || selectedGenres.length > 0;
 
   const recommendedArtists = useMemo(() => {
-    return selectedGenres
+    const intakeGenreSet = new Set(profileData?.musicGenres || []);
+    // Sort so intake genres come first
+    const sorted = [...selectedGenres].sort((a, b) => {
+      const aIntake = intakeGenreSet.has(a) ? 0 : 1;
+      const bIntake = intakeGenreSet.has(b) ? 0 : 1;
+      return aIntake - bIntake;
+    });
+    return sorted
       .filter((g) => GENRE_ARTISTS[g])
       .map((genre) => ({
         genre,
         artists: GENRE_ARTISTS[genre],
+        isIntakeGenre: intakeGenreSet.has(genre),
       }));
-  }, [selectedGenres]);
+  }, [selectedGenres, profileData?.musicGenres]);
 
   const totalArtistCount = useMemo(() => {
     return recommendedArtists.reduce((sum, g) => sum + g.artists.length, 0);
@@ -595,7 +614,9 @@ export default function MusicPage() {
           </h1>
           <p className="text-lg text-white/60 max-w-xl mb-4">
             {profileData
-              ? "Personalized brainwave frequencies and music recommendations aligned to your cosmic profile."
+              ? profileData.musicGenres.length > 0
+                ? `Tuned to your love of ${profileData.musicGenres.slice(0, 3).join(", ")}${profileData.musicGenres.length > 3 ? ` and ${profileData.musicGenres.length - 3} more` : ""} -- with brainwave frequencies aligned to your ${profileData.element} energy.`
+                : "Personalized brainwave frequencies and music recommendations aligned to your cosmic profile."
               : "Educational guide to brainwave states and your personalized music recommendations."}
           </p>
           {profileData && (
@@ -609,10 +630,61 @@ export default function MusicPage() {
               <span className="inline-flex items-center gap-1.5 rounded-full border bg-purple-500/20 text-purple-300 border-purple-500/30 px-3 py-1.5 text-xs font-semibold">
                 Life Path {profileData.lifePath.value}{profileData.lifePath.isMaster ? " (Master)" : ""}
               </span>
+              {profileData.musicGenres.map((genre) => {
+                const genreData = ALL_GENRES.find((g) => g.name === genre);
+                return (
+                  <span
+                    key={genre}
+                    className={`inline-flex items-center gap-1.5 rounded-full border border-white/20 px-3 py-1.5 text-xs font-semibold text-white bg-gradient-to-r ${genreData?.color || "from-gray-500 to-gray-600"}`}
+                  >
+                    {genre}
+                  </span>
+                );
+              })}
             </div>
           )}
         </div>
       </div>
+
+      {/* Your Top Genres (from intake) */}
+      {profileData && profileData.musicGenres.length > 0 && (
+        <div className="relative overflow-hidden rounded-3xl border border-white/10 shadow-2xl">
+          <div className="absolute inset-0 bg-gradient-to-br from-gray-900 via-slate-900 to-gray-950" />
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_rgba(139,92,246,0.15),transparent_60%)]" />
+          <div className="relative z-10 p-8 md:p-10">
+            <div className="flex items-center gap-3 mb-1">
+              <span className="text-3xl">{"\u{1F3B6}"}</span>
+              <h2 className="text-2xl md:text-3xl font-extrabold text-white">Your Top Genres</h2>
+            </div>
+            <p className="text-white/40 text-sm mb-6 ml-12">
+              Based on what you told us during intake -- these are the sounds that define you.
+            </p>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+              {profileData.musicGenres.map((genre) => {
+                const genreData = ALL_GENRES.find((g) => g.name === genre);
+                const artistCount = GENRE_ARTISTS[genre]?.length || 0;
+                return (
+                  <div
+                    key={genre}
+                    className="group relative overflow-hidden rounded-2xl border border-white/10 hover:border-white/20 transition-all duration-300 hover:-translate-y-1"
+                  >
+                    <div className={`absolute inset-0 bg-gradient-to-br ${genreData?.color || "from-gray-500 to-gray-600"} opacity-20 group-hover:opacity-30 transition-opacity`} />
+                    <div className="relative p-5 text-center">
+                      <div className={`mx-auto h-14 w-14 rounded-full bg-gradient-to-br ${genreData?.color || "from-gray-500 to-gray-600"} mb-3 flex items-center justify-center`}>
+                        <span className="text-white text-lg font-extrabold">{genre.charAt(0)}</span>
+                      </div>
+                      <h4 className="text-sm font-bold text-white mb-1">{genre}</h4>
+                      {artistCount > 0 && (
+                        <p className="text-[10px] text-white/30">{artistCount} artists curated</p>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Preference Input Section */}
       <div className="relative overflow-hidden rounded-3xl border border-white/10 shadow-2xl">
@@ -704,13 +776,16 @@ export default function MusicPage() {
 
                 {/* Artist Grid by Genre */}
                 <div className="max-h-[420px] overflow-y-auto">
-                  {recommendedArtists.map(({ genre, artists }) => {
+                  {recommendedArtists.map(({ genre, artists, isIntakeGenre }) => {
                     const genreColor = GENRE_CIRCLE_COLORS[genre] || "from-gray-500 to-gray-700";
                     return (
                       <div key={genre} className="border-b border-white/5 last:border-b-0">
                         {/* Genre Header */}
-                        <div className="px-6 py-3 bg-white/[0.02]">
+                        <div className="px-6 py-3 bg-white/[0.02] flex items-center gap-2">
                           <span className="text-xs font-bold uppercase tracking-widest text-white/30">{genre}</span>
+                          {isIntakeGenre && (
+                            <span className="text-[10px] font-semibold uppercase tracking-wider rounded-full bg-fuchsia-500/20 text-fuchsia-300 border border-fuchsia-500/30 px-2 py-0.5">Your Pick</span>
+                          )}
                         </div>
                         {/* Artist Cards Grid */}
                         <div className="px-4 py-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">

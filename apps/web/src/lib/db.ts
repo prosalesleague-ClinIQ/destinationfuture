@@ -20,6 +20,23 @@ export interface UserProfile {
   birthCity?: string | null;
   birthState?: string | null;
   intakeComplete: boolean;
+  // Intake preferences
+  relationshipStatus?: string | null;
+  careerField?: string | null;
+  careerGoals?: string[];
+  budgetRange?: string | null;
+  stylePreferences?: string[];
+  styleBudget?: string | null;
+  favoriteStores?: string[];
+  musicGenres?: string[];
+  filmGenres?: string[];
+  tvGenres?: string[];
+  bookGenres?: string[];
+  goals?: string[];
+  hobbies?: string[];
+  valuesList?: string[];
+  gender?: string | null;
+  genderExpression?: string | null;
 }
 
 export interface UserProgress {
@@ -34,6 +51,7 @@ export interface UserProgress {
   reportsGenerated: number;
   badges: string[];
   reflections: { date: string; content: string }[];
+  questResponses: Record<string, Record<string, string>>;
 }
 
 // ─── Level system ───
@@ -100,6 +118,7 @@ function defaultProgress(userId: string): UserProgress {
     reportsGenerated: 0,
     badges: [],
     reflections: [],
+    questResponses: {},
   };
 }
 
@@ -116,6 +135,7 @@ function rowToProgress(row: Record<string, unknown>): UserProgress {
     reportsGenerated: row.reports_generated as number,
     badges: (row.badges as string[]) || [],
     reflections: (row.reflections as { date: string; content: string }[]) || [],
+    questResponses: (row.quest_responses as Record<string, Record<string, string>>) || {},
   };
 }
 
@@ -268,6 +288,22 @@ export const db = {
       birthCity: data.birth_city,
       birthState: data.birth_state,
       intakeComplete: data.intake_complete,
+      relationshipStatus: data.relationship_status,
+      careerField: data.career_field,
+      careerGoals: data.career_goals || [],
+      budgetRange: data.budget_range,
+      stylePreferences: data.style_preferences || [],
+      styleBudget: data.style_budget,
+      favoriteStores: data.favorite_stores || [],
+      musicGenres: data.music_genres || [],
+      filmGenres: data.film_genres || [],
+      tvGenres: data.tv_genres || [],
+      bookGenres: data.book_genres || [],
+      goals: data.goals || [],
+      hobbies: data.hobbies || [],
+      valuesList: data.values_list || [],
+      gender: data.gender,
+      genderExpression: data.gender_expression,
     };
   },
 
@@ -283,6 +319,22 @@ export const db = {
       birthTime: string | null;
       birthCity: string | null;
       birthState: string | null;
+      relationshipStatus: string | null;
+      careerField: string | null;
+      careerGoals: string[];
+      budgetRange: string | null;
+      stylePreferences: string[];
+      styleBudget: string | null;
+      favoriteStores: string[];
+      musicGenres: string[];
+      filmGenres: string[];
+      tvGenres: string[];
+      bookGenres: string[];
+      goals: string[];
+      hobbies: string[];
+      valuesList: string[];
+      gender: string | null;
+      genderExpression: string | null;
     }>
   ): Promise<{ success: true } | { success: false; error: string }> {
     const updateData: Record<string, unknown> = {};
@@ -294,6 +346,22 @@ export const db = {
     if (data.birthTime !== undefined) updateData.birth_time = data.birthTime;
     if (data.birthCity !== undefined) updateData.birth_city = data.birthCity;
     if (data.birthState !== undefined) updateData.birth_state = data.birthState;
+    if (data.relationshipStatus !== undefined) updateData.relationship_status = data.relationshipStatus;
+    if (data.careerField !== undefined) updateData.career_field = data.careerField;
+    if (data.careerGoals !== undefined) updateData.career_goals = data.careerGoals;
+    if (data.budgetRange !== undefined) updateData.budget_range = data.budgetRange;
+    if (data.stylePreferences !== undefined) updateData.style_preferences = data.stylePreferences;
+    if (data.styleBudget !== undefined) updateData.style_budget = data.styleBudget;
+    if (data.favoriteStores !== undefined) updateData.favorite_stores = data.favoriteStores;
+    if (data.musicGenres !== undefined) updateData.music_genres = data.musicGenres;
+    if (data.filmGenres !== undefined) updateData.film_genres = data.filmGenres;
+    if (data.tvGenres !== undefined) updateData.tv_genres = data.tvGenres;
+    if (data.bookGenres !== undefined) updateData.book_genres = data.bookGenres;
+    if (data.goals !== undefined) updateData.goals = data.goals;
+    if (data.hobbies !== undefined) updateData.hobbies = data.hobbies;
+    if (data.valuesList !== undefined) updateData.values_list = data.valuesList;
+    if (data.gender !== undefined) updateData.gender = data.gender;
+    if (data.genderExpression !== undefined) updateData.gender_expression = data.genderExpression;
 
     const { error } = await supabase
       .from("profiles")
@@ -306,7 +374,7 @@ export const db = {
 
   // ─── Intake ───
 
-  /** Complete intake with personal details. */
+  /** Complete intake with personal details + preferences. */
   async completeIntake(
     userId: string,
     data: {
@@ -318,6 +386,22 @@ export const db = {
       birthTime?: string;
       birthCity: string;
       birthState: string;
+      relationshipStatus?: string;
+      careerField?: string;
+      careerGoals?: string[];
+      budgetRange?: string;
+      stylePreferences?: string[];
+      styleBudget?: string;
+      favoriteStores?: string[];
+      musicGenres?: string[];
+      filmGenres?: string[];
+      tvGenres?: string[];
+      bookGenres?: string[];
+      goals?: string[];
+      hobbies?: string[];
+      valuesList?: string[];
+      gender?: string;
+      genderExpression?: string;
     }
   ): Promise<{ success: true } | { success: false; error: string }> {
     const { data: { session } } = await supabase.auth.getSession();
@@ -336,6 +420,22 @@ export const db = {
           birth_city: data.birthCity,
           birth_state: data.birthState,
           intake_complete: true,
+          relationship_status: data.relationshipStatus || null,
+          career_field: data.careerField || null,
+          career_goals: data.careerGoals || [],
+          budget_range: data.budgetRange || null,
+          style_preferences: data.stylePreferences || [],
+          style_budget: data.styleBudget || null,
+          favorite_stores: data.favoriteStores || [],
+          music_genres: data.musicGenres || [],
+          film_genres: data.filmGenres || [],
+          tv_genres: data.tvGenres || [],
+          book_genres: data.bookGenres || [],
+          goals: data.goals || [],
+          hobbies: data.hobbies || [],
+          values_list: data.valuesList || [],
+          gender: data.gender || null,
+          gender_expression: data.genderExpression || null,
         })
         .eq("user_id", userId);
 
@@ -491,6 +591,73 @@ export const db = {
     return progress;
   },
 
+  /** Save a quest step response to Supabase. */
+  async saveQuestResponse(userId: string, questId: string, stepIndex: number, responseText: string): Promise<void> {
+    await supabase
+      .from("quest_responses")
+      .upsert(
+        {
+          user_id: userId,
+          quest_id: questId,
+          step_index: stepIndex,
+          response_text: responseText,
+        },
+        { onConflict: "user_id,quest_id,step_index" }
+      );
+
+    // Also save to progress JSON for quick access
+    const progress = await db.getProgress(userId);
+    if (!progress.questResponses[questId]) {
+      progress.questResponses[questId] = {};
+    }
+    progress.questResponses[questId][String(stepIndex)] = responseText;
+    await db._saveProgress(userId, progress);
+  },
+
+  /** Get all quest responses for a user. */
+  async getQuestResponses(userId: string): Promise<Record<string, Record<string, string>>> {
+    const { data } = await supabase
+      .from("quest_responses")
+      .select("quest_id, step_index, response_text")
+      .eq("user_id", userId);
+
+    const responses: Record<string, Record<string, string>> = {};
+    if (data) {
+      for (const row of data) {
+        if (!responses[row.quest_id]) responses[row.quest_id] = {};
+        responses[row.quest_id][String(row.step_index)] = row.response_text || "";
+      }
+    }
+    return responses;
+  },
+
+  /** Save a section snapshot (personalized section data for the user). */
+  async saveSectionSnapshot(userId: string, sectionName: string, snapshotData: unknown): Promise<void> {
+    await supabase
+      .from("section_snapshots")
+      .upsert(
+        {
+          user_id: userId,
+          section_name: sectionName,
+          snapshot_data: snapshotData,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: "user_id,section_name" }
+      );
+  },
+
+  /** Get a section snapshot. */
+  async getSectionSnapshot(userId: string, sectionName: string): Promise<unknown | null> {
+    const { data } = await supabase
+      .from("section_snapshots")
+      .select("snapshot_data")
+      .eq("user_id", userId)
+      .eq("section_name", sectionName)
+      .single();
+
+    return data?.snapshot_data || null;
+  },
+
   // ─── Pure helpers (synchronous) ───
 
   getLevelInfo(xp: number) {
@@ -529,6 +696,22 @@ export const db = {
           birth_city: intake.birthCity || null,
           birth_state: intake.birthState || null,
           intake_complete: intake.complete ?? false,
+          relationship_status: intake.relationshipStatus || null,
+          career_field: intake.careerField || null,
+          career_goals: intake.careerGoals || [],
+          budget_range: intake.budgetRange || null,
+          style_preferences: intake.stylePreferences || [],
+          style_budget: intake.styleBudget || null,
+          favorite_stores: intake.favoriteStores || [],
+          music_genres: intake.musicGenres || [],
+          film_genres: intake.filmGenres || [],
+          tv_genres: intake.tvGenres || [],
+          book_genres: intake.bookGenres || [],
+          goals: intake.goals || [],
+          hobbies: intake.hobbies || [],
+          values_list: intake.valuesList || [],
+          gender: intake.gender || null,
+          gender_expression: intake.genderExpression || null,
         },
         { onConflict: "user_id" }
       );
@@ -559,6 +742,7 @@ export const db = {
         reports_generated: p.reportsGenerated,
         badges: p.badges,
         reflections: p.reflections,
+        quest_responses: p.questResponses,
       })
       .eq("user_id", userId);
   },

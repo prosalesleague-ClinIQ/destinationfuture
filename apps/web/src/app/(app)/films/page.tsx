@@ -542,10 +542,49 @@ export default function FilmsPage() {
 
   const element = astroInfo?.element ?? null;
 
-  // Element-aware Taste DNA
-  const tasteDna = element && ELEMENT_TASTE_DNA[element]
-    ? ELEMENT_TASTE_DNA[element]
-    : TASTE_DNA_DEFAULT;
+  // Genre mapping from intake genres to taste DNA genre names
+  const INTAKE_TO_TASTE_GENRE: Record<string, string> = {
+    "Action": "Action / Adventure",
+    "Adventure": "Action / Adventure",
+    "Comedy": "Dark Comedy",
+    "Drama": "Character-Driven Drama",
+    "Thriller": "Psychological Thriller",
+    "Sci-Fi": "Sci-Fi / Speculative",
+    "Horror": "Psychological Thriller",
+    "Romance": "Romantic Drama",
+    "Mystery": "Mystery / Puzzle Box",
+    "Documentary": "Visual / Art House",
+    "Animation": "Visual / Art House",
+    "Indie": "Visual / Art House",
+    "Fantasy": "Sci-Fi / Speculative",
+  };
+
+  // Element-aware Taste DNA, boosted by user's film genre selections
+  const tasteDna = useMemo(() => {
+    const base = element && ELEMENT_TASTE_DNA[element]
+      ? [...ELEMENT_TASTE_DNA[element]]
+      : [...TASTE_DNA_DEFAULT];
+
+    const userFilmGenres = profile?.filmGenres;
+    if (!userFilmGenres || userFilmGenres.length === 0) return base;
+
+    // Map user genres to taste DNA genre names
+    const boostedGenres = new Set(
+      userFilmGenres.map((g) => INTAKE_TO_TASTE_GENRE[g]).filter(Boolean)
+    );
+
+    // Boost matching genres by up to 15 points (capped at 98)
+    const boosted = base.map((item) => {
+      if (boostedGenres.has(item.genre)) {
+        return { ...item, pct: Math.min(98, item.pct + 15) };
+      }
+      return item;
+    });
+
+    // Re-sort by pct descending
+    boosted.sort((a, b) => b.pct - a.pct);
+    return boosted;
+  }, [element, profile?.filmGenres]);
 
   // Element-aware film category labels
   const filmCategories = useMemo(() => {
@@ -647,18 +686,64 @@ export default function FilmsPage() {
           <p className="text-lg text-white/50 max-w-xl">
             Your taste is a fingerprint. Here is what your personality reveals about the stories that move you.
           </p>
-          {/* Astro badges */}
-          {astroInfo && (
-            <div className="flex flex-wrap gap-3 mt-5">
+          {/* Profile badges */}
+          <div className="flex flex-wrap gap-3 mt-5">
+            {astroInfo && (
+              <>
+                <span className="inline-flex items-center gap-2 rounded-full bg-white/10 backdrop-blur-sm px-4 py-2 text-sm font-bold text-white border border-white/10">
+                  <span>{astroInfo.sunSign.symbol}</span>
+                  {astroInfo.sunSign.name}
+                  <span className="text-white/40">|</span>
+                  <span className="text-white/60">{astroInfo.element}</span>
+                </span>
+                <span className="inline-flex items-center gap-2 rounded-full bg-white/10 backdrop-blur-sm px-4 py-2 text-sm font-bold text-white border border-white/10">
+                  Life Path {astroInfo.lifePath.value}
+                </span>
+              </>
+            )}
+            {profile?.gender && (
               <span className="inline-flex items-center gap-2 rounded-full bg-white/10 backdrop-blur-sm px-4 py-2 text-sm font-bold text-white border border-white/10">
-                <span>{astroInfo.sunSign.symbol}</span>
-                {astroInfo.sunSign.name}
-                <span className="text-white/40">|</span>
-                <span className="text-white/60">{astroInfo.element}</span>
+                {profile.gender}{profile.genderExpression ? ` (${profile.genderExpression})` : ""}
               </span>
-              <span className="inline-flex items-center gap-2 rounded-full bg-white/10 backdrop-blur-sm px-4 py-2 text-sm font-bold text-white border border-white/10">
-                Life Path {astroInfo.lifePath.value}
-              </span>
+            )}
+          </div>
+          {/* User's selected film genres */}
+          {profile?.filmGenres && profile.filmGenres.length > 0 && (
+            <div className="mt-4">
+              <p className="text-xs font-medium uppercase tracking-widest text-white/30 mb-2">Your Film Genres</p>
+              <div className="flex flex-wrap gap-2">
+                {profile.filmGenres.map((genre) => (
+                  <span key={genre} className="rounded-full bg-gradient-to-r from-purple-500/20 to-fuchsia-500/20 border border-purple-400/30 px-3 py-1 text-xs font-bold text-purple-300">
+                    {genre}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+          {/* User's selected TV genres */}
+          {profile?.tvGenres && profile.tvGenres.length > 0 && (
+            <div className="mt-3">
+              <p className="text-xs font-medium uppercase tracking-widest text-white/30 mb-2">Your TV Genres</p>
+              <div className="flex flex-wrap gap-2">
+                {profile.tvGenres.map((genre) => (
+                  <span key={genre} className="rounded-full bg-gradient-to-r from-cyan-500/20 to-blue-500/20 border border-cyan-400/30 px-3 py-1 text-xs font-bold text-cyan-300">
+                    {genre}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+          {/* User's selected book genres */}
+          {profile?.bookGenres && profile.bookGenres.length > 0 && (
+            <div className="mt-3">
+              <p className="text-xs font-medium uppercase tracking-widest text-white/30 mb-2">Your Book Genres</p>
+              <div className="flex flex-wrap gap-2">
+                {profile.bookGenres.map((genre) => (
+                  <span key={genre} className="rounded-full bg-gradient-to-r from-emerald-500/20 to-teal-500/20 border border-emerald-400/30 px-3 py-1 text-xs font-bold text-emerald-300">
+                    {genre}
+                  </span>
+                ))}
+              </div>
             </div>
           )}
         </div>
@@ -799,6 +884,21 @@ export default function FilmsPage() {
       {/* TV TAB */}
       {activeTab === "tv" && (
         <div className={`space-y-10 transition-all duration-500 ${showRecommendations ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}>
+          {/* Personalized TV header */}
+          {profile?.tvGenres && profile.tvGenres.length > 0 && (
+            <div className="rounded-2xl bg-gradient-to-r from-cyan-950/50 to-blue-950/50 border border-cyan-500/10 p-5">
+              <p className="text-sm font-bold text-cyan-300 mb-1">
+                {titleName} TV Taste
+              </p>
+              <p className="text-xs text-white/50">
+                Based on your love of{" "}
+                {profile.tvGenres.length === 1
+                  ? profile.tvGenres[0]
+                  : profile.tvGenres.slice(0, -1).join(", ") + " and " + profile.tvGenres[profile.tvGenres.length - 1]}
+                , we have highlighted shows that match your preferences.
+              </p>
+            </div>
+          )}
           {TV_CATEGORIES.map((category) => (
             <div key={category.label}>
               <div className="flex items-center gap-3 mb-5">
@@ -854,6 +954,21 @@ export default function FilmsPage() {
       {/* BOOKS TAB */}
       {activeTab === "books" && (
         <div className="space-y-8">
+          {/* Personalized books header */}
+          {profile?.bookGenres && profile.bookGenres.length > 0 && (
+            <div className="rounded-2xl bg-gradient-to-r from-emerald-950/50 to-teal-950/50 border border-emerald-500/10 p-5">
+              <p className="text-sm font-bold text-emerald-300 mb-1">
+                {titleName} Reading Profile
+              </p>
+              <p className="text-xs text-white/50">
+                You told us you enjoy{" "}
+                {profile.bookGenres.length === 1
+                  ? profile.bookGenres[0]
+                  : profile.bookGenres.slice(0, -1).join(", ") + " and " + profile.bookGenres[profile.bookGenres.length - 1]}
+                . Our picks are tuned to your reading taste.
+              </p>
+            </div>
+          )}
           {/* Book Preference Input */}
           <div className="rounded-3xl bg-gradient-to-br from-gray-900 via-slate-800 to-gray-900 p-8 border border-white/5 shadow-xl">
             <div className="flex items-center gap-3 mb-2">

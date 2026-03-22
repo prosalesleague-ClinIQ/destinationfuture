@@ -195,7 +195,12 @@ export default function QuestsPage() {
       prev.map((q) => (q.id === questId ? { ...q, status: "active" as const } : q))
     );
     setExpandedQuestId(questId);
-  }, []);
+
+    // Save quest start to Supabase
+    if (profile?.userId) {
+      db.startQuest(profile.userId, questId).catch(() => {});
+    }
+  }, [profile?.userId]);
 
   const isStepComplete = useCallback((quest: Quest, stepIndex: number): boolean => {
     const step = quest.steps[stepIndex];
@@ -214,6 +219,27 @@ export default function QuestsPage() {
     return quest.steps.filter((_, i) => isStepComplete(quest, i)).length;
   }, [isStepComplete]);
 
+  // Load saved quest responses from Supabase on mount
+  useEffect(() => {
+    if (!profile?.userId) return;
+    db.getQuestResponses(profile.userId).then((saved) => {
+      if (!saved || Object.keys(saved).length === 0) return;
+      const loadedResponses: StepResponses = {};
+      const loadedSaved: StepSaved = {};
+      for (const [questId, steps] of Object.entries(saved)) {
+        loadedResponses[questId] = {};
+        loadedSaved[questId] = {};
+        for (const [stepIdx, text] of Object.entries(steps)) {
+          const idx = Number(stepIdx);
+          loadedResponses[questId][idx] = text;
+          loadedSaved[questId][idx] = true;
+        }
+      }
+      setResponses((prev) => ({ ...prev, ...loadedResponses }));
+      setSavedSteps((prev) => ({ ...prev, ...loadedSaved }));
+    }).catch(() => {});
+  }, [profile?.userId]);
+
   const handleComplete = useCallback((questId: string) => {
     const quest = quests.find((q) => q.id === questId);
     if (!quest) return;
@@ -225,7 +251,12 @@ export default function QuestsPage() {
     setXpPopup({ id: questId, amount: quest.xpReward });
     setExpandedQuestId(null);
     setTimeout(() => setXpPopup(null), 2500);
-  }, [quests]);
+
+    // Save quest completion to Supabase
+    if (profile?.userId) {
+      db.completeQuest(profile.userId, questId, quest.xpReward).catch(() => {});
+    }
+  }, [quests, profile?.userId]);
 
   const updateResponse = useCallback((questId: string, stepIndex: number, value: string) => {
     setResponses((prev) => ({
@@ -239,7 +270,13 @@ export default function QuestsPage() {
       ...prev,
       [questId]: { ...prev[questId], [stepIndex]: true },
     }));
-  }, []);
+
+    // Save quest step response to Supabase
+    const responseText = responses[questId]?.[stepIndex] || "";
+    if (profile?.userId && responseText.trim()) {
+      db.saveQuestResponse(profile.userId, questId, stepIndex, responseText).catch(() => {});
+    }
+  }, [profile?.userId, responses]);
 
   const markInstructionDone = useCallback((questId: string, stepIndex: number) => {
     setInstructionsDone((prev) => ({

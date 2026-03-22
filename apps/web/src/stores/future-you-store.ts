@@ -17,7 +17,7 @@ interface FutureYouState {
 
   toggleOpen: () => void;
   setOpen: (open: boolean) => void;
-  sendMessage: (content: string) => Promise<void>;
+  sendMessage: (content: string, userContext?: string) => Promise<void>;
   clearChat: () => void;
 }
 
@@ -30,7 +30,7 @@ export const useFutureYouStore = create<FutureYouState>((set, get) => ({
   toggleOpen: () => set((s) => ({ isOpen: !s.isOpen })),
   setOpen: (open) => set({ isOpen: open }),
 
-  sendMessage: async (content: string) => {
+  sendMessage: async (content: string, userContext?: string) => {
     const userMsg: ChatMessage = {
       id: crypto.randomUUID(),
       role: "user",
@@ -53,7 +53,7 @@ export const useFutureYouStore = create<FutureYouState>((set, get) => ({
       const res = await fetch("/api/future-you", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: content, history }),
+        body: JSON.stringify({ message: content, history, userContext }),
       });
 
       if (!res.ok) {

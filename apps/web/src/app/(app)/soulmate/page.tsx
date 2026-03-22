@@ -186,11 +186,69 @@ export default function SoulmatePage() {
   }, [profile]);
 
   const firstName = profile?.firstName || "Profile";
+  const relationshipStatus = profile?.relationshipStatus ?? null;
+  const gender = profile?.gender ?? null;
+  const genderExpression = profile?.genderExpression ?? null;
+  const valuesList = profile?.valuesList ?? [];
+  const userHobbies = profile?.hobbies ?? [];
+
+  /* Gender-aware language helper */
+  const partnerNoun = gender === "Male" ? "her" : gender === "Female" ? "him" : "them";
+  const partnerPossessive = gender === "Male" ? "her" : gender === "Female" ? "his" : "their";
+  const partnerLabel = gender === "Male" ? "she" : gender === "Female" ? "he" : "they";
+
   const sunLabel = astroData ? `${astroData.sunSign.name} Sun` : "Sun";
   const lpLabel = astroData ? `LP ${astroData.lifePath.value}` : "LP";
   const profileTag = `${sunLabel} | ${lpLabel}`;
+
+  /* Values-boosted archetype match percentages */
+  const personalizedArchetypes = useMemo(() => {
+    const valuesBoost = (archName: string): number => {
+      if (valuesList.length === 0) return 0;
+      const valuesLower = valuesList.map((v) => v.toLowerCase());
+      if (archName === "The Deep Connector") {
+        const deep = ["empathy", "authenticity", "family", "love", "connection", "spirituality", "faith"];
+        return deep.filter((d) => valuesLower.some((v) => v.includes(d))).length * 3;
+      }
+      if (archName === "The Creative Catalyst") {
+        const creative = ["creativity", "freedom", "adventure", "art", "travel", "growth", "passion"];
+        return creative.filter((c) => valuesLower.some((v) => v.includes(c))).length * 3;
+      }
+      if (archName === "The Grounded Partner") {
+        const grounded = ["stability", "family", "security", "loyalty", "honesty", "trust", "home"];
+        return grounded.filter((g) => valuesLower.some((v) => v.includes(g))).length * 3;
+      }
+      return 0;
+    };
+
+    const hobbySnippet = (archName: string): string => {
+      if (userHobbies.length === 0) return "";
+      if (archName === "The Deep Connector") {
+        return ` Shared interests like ${userHobbies.slice(0, 2).join(" and ")} become pathways to deeper intimacy.`;
+      }
+      if (archName === "The Creative Catalyst") {
+        return ` Your love of ${userHobbies[0]} fuels ${partnerPossessive} creative spark, building an electric dynamic.`;
+      }
+      if (archName === "The Grounded Partner") {
+        return ` Enjoying ${userHobbies.slice(0, 2).join(" or ")} together creates the steady rhythm this bond thrives on.`;
+      }
+      return "";
+    };
+
+    return archetypes.map((arch) => ({
+      ...arch,
+      match: Math.min(99, arch.match + valuesBoost(arch.name)),
+      description: arch.description + hobbySnippet(arch.name),
+    }));
+  }, [valuesList, userHobbies, partnerPossessive]);
+
   const styleRationale = astroData
-    ? buildStyleRationale(astroData.sunSign.name, astroData.lifePath.value)
+    ? [
+        ...buildStyleRationale(astroData.sunSign.name, astroData.lifePath.value),
+        ...(valuesList.length > 0
+          ? [`Your core values (${valuesList.slice(0, 3).join(", ")}) shaped the emotional warmth and sincerity in ${partnerPossessive} expression`]
+          : []),
+      ]
     : [
         "Complete your intake to see personalised style rationale",
         "Sun sign compatibility will drive visual features",
@@ -396,13 +454,30 @@ export default function SoulmatePage() {
               </h1>
               <p className="max-w-xl text-sm leading-relaxed text-white/40">
                 Based on your natal chart, numerology profile, and personality
-                data, we have identified your ideal partner archetype and visual
-                resonance pattern.
+                data, we have identified the archetype of a partner who truly resonates
+                with you{valuesList.length > 0 ? ` — someone who shares your commitment to ${valuesList.slice(0, 2).join(" and ")}` : ""}.
               </p>
             </div>
-            <div className="hidden md:flex flex-col items-end gap-1">
+            <div className="hidden md:flex flex-col items-end gap-2">
               <span className="text-xs text-white/20">Compatibility Engine v2</span>
               <span className="text-xs text-white/20">{firstName}: {profileTag}</span>
+              <div className="flex flex-wrap justify-end gap-1.5">
+                {relationshipStatus && (
+                  <span className="rounded-full bg-rose-500/15 border border-rose-500/20 px-2.5 py-0.5 text-[10px] font-medium text-rose-300/80">
+                    {relationshipStatus}
+                  </span>
+                )}
+                {gender && (
+                  <span className="rounded-full bg-purple-500/15 border border-purple-500/20 px-2.5 py-0.5 text-[10px] font-medium text-purple-300/80">
+                    {gender}
+                  </span>
+                )}
+                {genderExpression && (
+                  <span className="rounded-full bg-indigo-500/15 border border-indigo-500/20 px-2.5 py-0.5 text-[10px] font-medium text-indigo-300/80">
+                    {genderExpression}
+                  </span>
+                )}
+              </div>
             </div>
           </div>
 
@@ -433,17 +508,17 @@ export default function SoulmatePage() {
             </p>
             <p className="text-sm leading-relaxed text-white/50">
               Your profile radiates a blend of deep emotional intelligence and
-              creative sensitivity. You are drawn to partners who can hold space
-              for vulnerability while also inspiring you toward growth. The
-              emotional signature is one of warmth tempered by introspection — a
-              quiet intensity that values authenticity over surface-level
-              connection.
+              creative sensitivity. You are drawn to someone who can hold space
+              for vulnerability while also inspiring you toward growth.
+              {valuesList.length > 0
+                ? ` Your values of ${valuesList.slice(0, 3).join(", ")} shape the qualities you seek most — look for ${partnerLabel === "they" ? "someone" : partnerLabel === "he" ? "a man" : "a woman"} whose emotional signature mirrors that same authenticity.`
+                : " The emotional signature is one of warmth tempered by introspection — a quiet intensity that values authenticity over surface-level connection."}
             </p>
           </div>
 
           {/* Archetype Cards */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {archetypes.map((arch) => (
+            {personalizedArchetypes.map((arch) => (
               <GlassCard key={arch.name} className="p-5 hover:bg-white/[0.06] transition-all">
                 <div className="flex items-center justify-between mb-3">
                   <span className="text-2xl">{arch.emoji}</span>
@@ -787,9 +862,8 @@ export default function SoulmatePage() {
             <p className="text-sm leading-relaxed text-white/40">
               This portrait conveys openness, intelligence, and creative
               sensitivity. The expression suggests someone comfortable with
-              silence and depth — a person whose presence feels both calming and
-              intellectually stimulating. There is a quiet confidence that does
-              not demand attention but naturally receives it.
+              silence and depth — {partnerLabel === "they" ? "a person" : partnerLabel === "he" ? "a man" : "a woman"} whose presence feels both calming and
+              intellectually stimulating.{valuesList.length > 0 ? ` ${partnerPossessive.charAt(0).toUpperCase() + partnerPossessive.slice(1)} warmth reflects the ${valuesList[0].toLowerCase()} you hold dear.` : " There is a quiet confidence that does not demand attention but naturally receives it."}
             </p>
           </GlassCard>
 
@@ -800,10 +874,9 @@ export default function SoulmatePage() {
             </h3>
             <p className="text-sm leading-relaxed text-white/40">
               Calm strength with creative spark — someone who challenges you to
-              grow while providing safety. This energy pattern suggests a partner
-              who can match your emotional depth without being overwhelmed by it,
-              creating a dynamic where both individuals feel seen and supported
-              in their authentic expression.
+              grow while providing safety.{relationshipStatus === "Married" || relationshipStatus === "In a Relationship"
+                ? ` As someone currently ${relationshipStatus.toLowerCase()}, this energy reflects the deepening bond you seek — a partner who evolves alongside you.`
+                : ` This energy pattern suggests a partner who can match your emotional depth without being overwhelmed by it, creating a dynamic where both individuals feel seen and supported in ${partnerPossessive} authentic expression.`}
             </p>
           </GlassCard>
         </div>

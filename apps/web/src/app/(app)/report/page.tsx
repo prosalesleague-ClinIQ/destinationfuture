@@ -279,6 +279,23 @@ export default function ReportBuilderPage() {
           selectedSections: selectedArray,
           presetKey: selectedPreset || undefined,
           outputDepth,
+          intakeData: profile ? {
+            relationshipStatus: profile.relationshipStatus,
+            careerField: profile.careerField,
+            careerGoals: profile.careerGoals,
+            goals: profile.goals,
+            hobbies: profile.hobbies,
+            valuesList: profile.valuesList,
+            stylePreferences: profile.stylePreferences,
+            styleBudget: profile.styleBudget,
+            budgetRange: profile.budgetRange,
+            musicGenres: profile.musicGenres,
+            filmGenres: profile.filmGenres,
+            tvGenres: profile.tvGenres,
+            bookGenres: profile.bookGenres,
+            gender: profile.gender,
+            genderExpression: profile.genderExpression,
+          } : undefined,
         }),
       });
 
@@ -689,18 +706,55 @@ function generateSection(key: string, title: string, description: string, profil
 
   // ─── Generic fallback for all other sections ───
   const prettyTitle = title || key.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+
+  // Build intake context blocks based on available profile data
+  const intakeBlocks: any[] = [];
+  if (profile) {
+    const contextParts: string[] = [];
+    if (profile.careerField) contextParts.push(`Career: ${profile.careerField}`);
+    if (profile.relationshipStatus) contextParts.push(`Relationship: ${profile.relationshipStatus}`);
+    if (profile.goals?.length) contextParts.push(`Goals: ${profile.goals.join(", ")}`);
+    if (profile.valuesList?.length) contextParts.push(`Values: ${profile.valuesList.join(", ")}`);
+    if (profile.hobbies?.length) contextParts.push(`Hobbies: ${profile.hobbies.join(", ")}`);
+
+    // Add section-relevant intake data
+    if (key === "career_money" && profile.careerField) {
+      contextParts.push(`Career goals: ${(profile.careerGoals || []).join(", ") || "Not specified"}`);
+    }
+    if ((key === "fashion_system" || key === "shopping_links") && profile.stylePreferences?.length) {
+      contextParts.push(`Style: ${profile.stylePreferences.join(", ")}`);
+      if (profile.styleBudget) contextParts.push(`Style budget: ${profile.styleBudget}`);
+    }
+    if ((key === "music_frequency" || key === "spotify_pack") && profile.musicGenres?.length) {
+      contextParts.push(`Music: ${profile.musicGenres.join(", ")}`);
+    }
+    if (key === "film_tv_profile") {
+      if (profile.filmGenres?.length) contextParts.push(`Film genres: ${profile.filmGenres.join(", ")}`);
+      if (profile.tvGenres?.length) contextParts.push(`TV genres: ${profile.tvGenres.join(", ")}`);
+    }
+    if (key === "hobbies_lifestyle" && profile.hobbies?.length) {
+      contextParts.push(`Current hobbies: ${profile.hobbies.join(", ")}`);
+    }
+
+    if (contextParts.length > 0) {
+      intakeBlocks.push({ type: "heading", content: "Your Profile Snapshot", level: 3 });
+      intakeBlocks.push({ type: "list", items: contextParts });
+    }
+  }
+
   return {
     sectionKey: key,
     title: prettyTitle,
     ui_blocks: [
       { type: "heading", content: `${firstName}'s ${prettyTitle}`, level: 2 },
       { type: "paragraph", content: description || `${firstName}, here is your personalized ${prettyTitle.toLowerCase()} analysis based on your birth data, personality profile, and selected goals.` },
+      ...intakeBlocks,
       { type: "heading", content: "Key Insights", level: 3 },
       { type: "list", items: [
-        `${firstName}, your ${prettyTitle.toLowerCase()} profile shows strong alignment with creative and analytical pursuits`,
-        "There are growth opportunities in areas you haven't fully explored yet",
+        `${firstName}, your ${prettyTitle.toLowerCase()} profile shows strong alignment with ${profile?.careerField ? `your ${profile.careerField} career path` : "creative and analytical pursuits"}`,
+        profile?.goals?.length ? `Your stated goal of "${profile.goals[0]}" directly connects to this area of growth` : "There are growth opportunities in areas you haven't fully explored yet",
         "Your natural strengths in this area can be leveraged more intentionally",
-        "Consider how your environment supports or limits this dimension of your life",
+        profile?.valuesList?.length ? `Your core values (${profile.valuesList.slice(0, 3).join(", ")}) should guide decisions in this domain` : "Consider how your environment supports or limits this dimension of your life",
       ]},
       { type: "heading", content: "Scores", level: 3 },
       { type: "score_bar", label: "Current Alignment", value: 65 + Math.floor(Math.random() * 25), max: 100 },

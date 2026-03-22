@@ -240,6 +240,38 @@ export default function LoveLanguagesPage() {
         </div>
       </div>
 
+      {/* Relationship Status & Values */}
+      {(profile.relationshipStatus || (profile.valuesList && profile.valuesList.length > 0)) && (
+        <div className="rounded-3xl bg-white/80 backdrop-blur-xl border border-white/50 shadow-xl p-8">
+          <div className="flex flex-wrap items-center gap-3">
+            {profile.relationshipStatus && (
+              <span className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-rose-100 to-pink-100 border border-rose-200 px-4 py-2 text-sm font-bold text-rose-700">
+                {"\uD83D\uDC96"} {profile.relationshipStatus}
+              </span>
+            )}
+            {profile.valuesList && profile.valuesList.length > 0 && (
+              <>
+                <span className="text-gray-300">|</span>
+                {profile.valuesList.slice(0, 5).map((value) => (
+                  <span key={value} className="inline-flex items-center rounded-full bg-purple-50 border border-purple-200 px-3 py-1 text-xs font-semibold text-purple-700">
+                    {value}
+                  </span>
+                ))}
+              </>
+            )}
+          </div>
+          {profile.valuesList && profile.valuesList.length > 0 && (
+            <p className="mt-3 text-xs text-gray-500 leading-relaxed">
+              Your values shape how you experience love. {profile.valuesList.includes("Family") || profile.valuesList.includes("Loyalty")
+                ? "Your emphasis on loyalty and family deepens your need for stable, committed love languages like Quality Time and Acts of Service."
+                : profile.valuesList.includes("Freedom") || profile.valuesList.includes("Adventure")
+                ? "Your love of freedom and adventure means you thrive with partners who respect your independence while offering meaningful connection."
+                : "These values influence which love languages resonate most strongly with you."}
+            </p>
+          )}
+        </div>
+      )}
+
       {/* Element Influence */}
       {elementLoveStyle && (
         <div className="rounded-3xl bg-white/80 backdrop-blur-xl border border-white/50 shadow-xl p-8">

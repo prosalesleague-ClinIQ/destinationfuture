@@ -45,9 +45,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { message, history = [] } = (await request.json()) as {
+    const { message, history = [], userContext = "" } = (await request.json()) as {
       message: string;
       history: ChatMessage[];
+      userContext?: string;
     };
 
     if (!message?.trim()) {
@@ -59,8 +60,12 @@ export async function POST(request: NextRequest) {
 
     const openai = getOpenAI();
 
+    const systemPrompt = userContext
+      ? `${FUTURE_YOU_SYSTEM_PROMPT}\n\nIMPORTANT CONTEXT about the person you're speaking with (use this to personalize your responses — reference their actual goals, career, values, and interests naturally):\n${userContext}`
+      : FUTURE_YOU_SYSTEM_PROMPT;
+
     const messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = [
-      { role: "system", content: FUTURE_YOU_SYSTEM_PROMPT },
+      { role: "system", content: systemPrompt },
       ...history.slice(-20).map((m) => ({
         role: m.role as "user" | "assistant",
         content: m.content,

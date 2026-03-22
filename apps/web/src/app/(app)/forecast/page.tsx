@@ -283,6 +283,24 @@ export default function ForecastPage() {
         <p className="text-lg font-semibold">{data.theme}</p>
       </div>
 
+      {/* User Goals Context */}
+      {profile?.goals && profile.goals.length > 0 && (
+        <div className="rounded-xl border border-white/[0.06] bg-white/[0.04] p-5 mb-4">
+          <div className="text-xs font-medium text-indigo-400 mb-2 uppercase tracking-wide">Your Goals for This Cycle</div>
+          <div className="flex flex-wrap gap-2">
+            {profile.goals.map((goal) => (
+              <span key={goal} className="rounded-full bg-indigo-500/15 border border-indigo-500/20 px-3 py-1 text-sm font-medium text-indigo-300">{goal}</span>
+            ))}
+          </div>
+          {profile.careerField && (
+            <p className="mt-3 text-sm text-white/40">
+              Career focus: <span className="text-white/60 font-medium">{profile.careerField}</span>
+              {" \u2014 see how each month\u2019s career energy aligns with this path."}
+            </p>
+          )}
+        </div>
+      )}
+
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-8">
         <div className="rounded-xl border border-white/[0.06] bg-white/[0.04] p-4">
           <div className="text-xs font-medium text-amber-400 mb-1">Risk to Watch</div>
@@ -299,25 +317,47 @@ export default function ForecastPage() {
       </div>
 
       <div className="space-y-3">
-        {data.months.map((month) => (
-          <div key={month.month} className="rounded-xl border border-white/[0.06] bg-white/[0.04] p-5 transition-all hover:bg-white/[0.06]">
-            <div className="font-semibold text-white/90 mb-2">{month.month}</div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-              <div>
-                <div className="text-xs font-medium text-indigo-400 mb-1">Focus</div>
-                <p className="text-sm text-white/50">{month.focus}</p>
+        {data.months.map((month) => {
+          const goalAlignments = profile?.goals?.filter((goal) => {
+            const lower = `${month.focus} ${month.career}`.toLowerCase();
+            const goalWords = goal.toLowerCase().split(/\s+/);
+            return goalWords.some((w) => w.length > 3 && lower.includes(w));
+          }) || [];
+          return (
+            <div key={month.month} className="rounded-xl border border-white/[0.06] bg-white/[0.04] p-5 transition-all hover:bg-white/[0.06]">
+              <div className="flex items-center gap-2 mb-2">
+                <span className="font-semibold text-white/90">{month.month}</span>
+                {goalAlignments.length > 0 && (
+                  <span className="rounded-full bg-emerald-500/15 border border-emerald-500/20 px-2 py-0.5 text-[10px] font-bold text-emerald-400 uppercase tracking-wide">Goal Aligned</span>
+                )}
               </div>
-              <div>
-                <div className="text-xs font-medium text-pink-400 mb-1">Love</div>
-                <p className="text-sm text-white/50">{month.love}</p>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <div>
+                  <div className="text-xs font-medium text-indigo-400 mb-1">Focus</div>
+                  <p className="text-sm text-white/50">{month.focus}</p>
+                </div>
+                <div>
+                  <div className="text-xs font-medium text-pink-400 mb-1">Love</div>
+                  <p className="text-sm text-white/50">{month.love}</p>
+                </div>
+                <div>
+                  <div className="text-xs font-medium text-emerald-400 mb-1">Career</div>
+                  <p className="text-sm text-white/50">{month.career}</p>
+                </div>
               </div>
-              <div>
-                <div className="text-xs font-medium text-emerald-400 mb-1">Career</div>
-                <p className="text-sm text-white/50">{month.career}</p>
-              </div>
+              {goalAlignments.length > 0 && (
+                <div className="mt-3 pt-3 border-t border-white/[0.04]">
+                  <div className="text-[10px] font-medium text-white/30 uppercase tracking-wide mb-1">Aligns with your goals</div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {goalAlignments.map((g) => (
+                      <span key={g} className="rounded-full bg-indigo-500/10 border border-indigo-500/15 px-2 py-0.5 text-xs text-indigo-300">{g}</span>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

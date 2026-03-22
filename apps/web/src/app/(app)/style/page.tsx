@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { db, type UserProfile } from "@/lib/db";
 import { calculateLifePath } from "@destination-future/core";
 import { getSunSign } from "@destination-future/core";
@@ -34,6 +34,21 @@ const ARCHETYPE_STYLES: Record<string, ArchetypeEntry[]> = {
     { name: "Romantic", pct: 25, color: "from-pink-400 to-rose-600", ring: "stroke-pink-400" },
     { name: "Luxury", pct: 10, color: "from-yellow-500 to-amber-600", ring: "stroke-yellow-400" },
   ],
+};
+
+const ARCHETYPE_COLORS: Record<string, { color: string; ring: string }> = {
+  "Bold/Statement": { color: "from-red-600 to-orange-700", ring: "stroke-red-500" },
+  Streetwear: { color: "from-rose-500 to-pink-700", ring: "stroke-rose-400" },
+  Minimalist: { color: "from-slate-700 to-zinc-900", ring: "stroke-slate-600" },
+  Classic: { color: "from-amber-700 to-yellow-900", ring: "stroke-amber-500" },
+  "High-Fashion": { color: "from-violet-500 to-purple-700", ring: "stroke-violet-400" },
+  Luxury: { color: "from-yellow-500 to-amber-600", ring: "stroke-yellow-400" },
+  Romantic: { color: "from-pink-400 to-rose-600", ring: "stroke-pink-400" },
+  Bohemian: { color: "from-orange-400 to-amber-600", ring: "stroke-orange-400" },
+  Athleisure: { color: "from-emerald-500 to-teal-600", ring: "stroke-emerald-400" },
+  Vintage: { color: "from-amber-600 to-orange-800", ring: "stroke-amber-500" },
+  Preppy: { color: "from-blue-500 to-indigo-600", ring: "stroke-blue-400" },
+  Grunge: { color: "from-zinc-600 to-gray-800", ring: "stroke-zinc-500" },
 };
 
 const DEFAULT_ARCHETYPES: ArchetypeEntry[] = [
@@ -106,104 +121,183 @@ const ELEMENT_METAL: Record<string, string> = {
   Water: "Platinum",
 };
 
-const SAMPLE_CAPSULE = [
-  { category: "Tops", emoji: "\u{1F455}", gradient: "from-blue-500 to-cyan-400", items: ["White crew-neck tee", "Navy linen button-down", "Heather gray crewneck sweater", "Olive bomber jacket"] },
-  { category: "Bottoms", emoji: "\u{1F456}", gradient: "from-indigo-500 to-purple-400", items: ["Slim dark wash jeans", "Navy chinos", "Black joggers", "Tan shorts"] },
-  { category: "Outerwear", emoji: "\u{1F9E5}", gradient: "from-amber-500 to-orange-400", items: ["Camel overcoat", "Black leather jacket", "Navy rain jacket"] },
-  { category: "Shoes", emoji: "\u{1F45F}", gradient: "from-emerald-500 to-teal-400", items: ["White leather sneakers", "Brown Chelsea boots", "Navy loafers"] },
-  { category: "Accessories", emoji: "\u231A", gradient: "from-rose-500 to-pink-400", items: ["Silver watch", "Brown leather belt", "Navy weekender bag"] },
-];
+// ─── Gender-aware wardrobe data ───
 
-const OUTFIT_INSPIRATIONS = [
-  {
-    occasion: "Casual",
-    emoji: "\u2600\uFE0F",
-    gradient: "from-sky-400 to-blue-500",
-    bgGradient: "from-sky-200 via-blue-100 to-indigo-200",
-    description: "Effortless weekend vibes with clean lines",
-    pieces: ["White crew-neck tee", "Slim dark wash jeans", "White leather sneakers", "Silver watch"],
-  },
-  {
-    occasion: "Date Night",
-    emoji: "\u{1F319}",
-    gradient: "from-rose-500 to-purple-600",
-    bgGradient: "from-rose-300 via-purple-200 to-indigo-300",
-    description: "Refined yet relaxed — confident without trying too hard",
-    pieces: ["Navy linen button-down", "Black joggers (tapered)", "Brown Chelsea boots", "Brown leather belt"],
-  },
-  {
-    occasion: "Work",
-    emoji: "\u{1F4BC}",
-    gradient: "from-slate-500 to-zinc-700",
-    bgGradient: "from-slate-200 via-gray-100 to-zinc-200",
-    description: "Sharp, polished, and boardroom-ready",
-    pieces: ["Heather gray crewneck sweater", "Navy chinos", "Navy loafers", "Silver watch"],
-  },
-  {
-    occasion: "Event",
-    emoji: "\u2728",
-    gradient: "from-amber-400 to-orange-500",
-    bgGradient: "from-amber-200 via-orange-100 to-yellow-200",
-    description: "Turn heads without overdoing it",
-    pieces: ["Black leather jacket", "White crew-neck tee", "Slim dark wash jeans", "Brown Chelsea boots"],
-  },
-  {
-    occasion: "Weekend",
-    emoji: "\u2615",
-    gradient: "from-emerald-400 to-teal-500",
-    bgGradient: "from-emerald-200 via-teal-100 to-cyan-200",
-    description: "Coffee runs and farmer's market energy",
-    pieces: ["Olive bomber jacket", "White crew-neck tee", "Tan shorts", "White leather sneakers"],
-  },
-  {
-    occasion: "Travel",
-    emoji: "\u2708\uFE0F",
-    gradient: "from-violet-400 to-indigo-500",
-    bgGradient: "from-violet-200 via-indigo-100 to-blue-200",
-    description: "Comfort meets style at 30,000 feet",
-    pieces: ["Heather gray crewneck sweater", "Black joggers", "White leather sneakers", "Navy weekender bag"],
-  },
-];
+type GenderCategory = "masculine" | "feminine" | "neutral";
 
-const WARDROBE_STAPLES = [
-  { name: "White Crew-Neck Tee", why: "The ultimate layering base — goes with literally everything in your closet", price: "$" },
-  { name: "Slim Dark Wash Jeans", why: "Clean enough for dinner, casual enough for weekends. Your most versatile bottom", price: "$$" },
-  { name: "Navy Chinos", why: "Bridge the gap between casual and formal — your secret weapon for dress codes", price: "$$" },
-  { name: "Gray Crewneck Sweater", why: "Neutral, cozy, and pairs with every color in your palette", price: "$$" },
-  { name: "White Leather Sneakers", why: "Clean silhouette that elevates any casual outfit instantly", price: "$$" },
-  { name: "Brown Leather Belt", why: "Ties your shoes to your outfit. Simple hardware, maximum polish", price: "$" },
-];
+function getGenderCategory(profile: UserProfile): GenderCategory {
+  const expr = profile.genderExpression?.toLowerCase();
+  if (expr === "masculine") return "masculine";
+  if (expr === "feminine") return "feminine";
+  if (expr === "androgynous" || expr === "fluid") return "neutral";
+  const gender = profile.gender?.toLowerCase();
+  if (gender === "male") return "masculine";
+  if (gender === "female") return "feminine";
+  return "neutral";
+}
 
-const STATEMENT_PIECES = [
-  { name: "Black Leather Jacket", why: "Your minimalist edge piece — adds instant personality to basic outfits", price: "$$$" },
-  { name: "Camel Overcoat", why: "The power move. Nothing says 'I have my life together' like a structured coat", price: "$$$" },
-  { name: "Olive Bomber Jacket", why: "Streetwear influence meets your clean aesthetic — the perfect tension", price: "$$" },
-  { name: "Navy Linen Button-Down", why: "Texture is your statement — linen says relaxed sophistication", price: "$$" },
-  { name: "Chelsea Boots", why: "Sleek silhouette that says classic with a modern edge", price: "$$$" },
-  { name: "Silver Chronograph Watch", why: "Your signature accessory — minimalist face, maximum impact", price: "$$$" },
-];
+const CAPSULE_WARDROBES: Record<GenderCategory, { category: string; emoji: string; gradient: string; items: string[] }[]> = {
+  masculine: [
+    { category: "Tops", emoji: "\u{1F455}", gradient: "from-blue-500 to-cyan-400", items: ["White crew-neck tee", "Navy linen button-down", "Heather gray crewneck sweater", "Olive bomber jacket"] },
+    { category: "Bottoms", emoji: "\u{1F456}", gradient: "from-indigo-500 to-purple-400", items: ["Slim dark wash jeans", "Navy chinos", "Black joggers", "Tan shorts"] },
+    { category: "Outerwear", emoji: "\u{1F9E5}", gradient: "from-amber-500 to-orange-400", items: ["Camel overcoat", "Black leather jacket", "Navy rain jacket"] },
+    { category: "Shoes", emoji: "\u{1F45F}", gradient: "from-emerald-500 to-teal-400", items: ["White leather sneakers", "Brown Chelsea boots", "Navy loafers"] },
+    { category: "Accessories", emoji: "\u231A", gradient: "from-rose-500 to-pink-400", items: ["Silver watch", "Brown leather belt", "Navy weekender bag"] },
+  ],
+  feminine: [
+    { category: "Tops", emoji: "\u{1F455}", gradient: "from-pink-500 to-rose-400", items: ["White silk blouse", "Fitted black turtleneck", "Cream cashmere sweater", "Linen button-up"] },
+    { category: "Bottoms", emoji: "\u{1F456}", gradient: "from-purple-500 to-violet-400", items: ["High-waist straight jeans", "Tailored wide-leg trousers", "Black midi skirt", "Pleated culottes"] },
+    { category: "Dresses", emoji: "\u{1F457}", gradient: "from-rose-500 to-pink-400", items: ["Little black dress", "Wrap dress in solid color", "Slip midi dress", "Knit bodycon"] },
+    { category: "Outerwear", emoji: "\u{1F9E5}", gradient: "from-amber-500 to-orange-400", items: ["Tailored blazer", "Trench coat", "Leather moto jacket"] },
+    { category: "Shoes", emoji: "\u{1F460}", gradient: "from-emerald-500 to-teal-400", items: ["Pointed-toe flats", "White sneakers", "Ankle boots", "Block heels"] },
+    { category: "Accessories", emoji: "\u{1F48D}", gradient: "from-violet-500 to-purple-400", items: ["Structured handbag", "Gold hoop earrings", "Silk scarf", "Sunglasses"] },
+  ],
+  neutral: [
+    { category: "Tops", emoji: "\u{1F455}", gradient: "from-teal-500 to-cyan-400", items: ["Oversized white tee", "Linen button-down", "Cropped sweater", "Denim jacket"] },
+    { category: "Bottoms", emoji: "\u{1F456}", gradient: "from-indigo-500 to-blue-400", items: ["Relaxed-fit jeans", "Tailored cargo pants", "Wide-leg trousers", "Bermuda shorts"] },
+    { category: "Outerwear", emoji: "\u{1F9E5}", gradient: "from-amber-500 to-orange-400", items: ["Oversized blazer", "Puffer vest", "Long wool coat"] },
+    { category: "Shoes", emoji: "\u{1F45F}", gradient: "from-emerald-500 to-teal-400", items: ["Platform sneakers", "Chunky loafers", "Combat boots"] },
+    { category: "Accessories", emoji: "\u{1F48E}", gradient: "from-rose-500 to-pink-400", items: ["Canvas tote", "Minimal chain necklace", "Beanie or bucket hat", "Crossbody bag"] },
+  ],
+};
 
-const STORE_LINKS = [
-  { name: "Amazon", url: "https://www.amazon.com/s?k=minimalist+men+capsule+wardrobe", what: "Budget basics, everyday essentials, accessories", tier: "Value", gradient: "from-orange-400 to-amber-500", icon: "\u{1F4E6}" },
-  { name: "Nordstrom", url: "https://www.nordstrom.com/sr?keyword=classic+minimalist", what: "Premium staples, quality denim, outerwear", tier: "Premium", gradient: "from-slate-600 to-gray-800", icon: "\u{1F451}" },
-  { name: "H&M", url: "https://www2.hm.com/en_us/search-results.html?q=minimalist+basics", what: "Trend testing, seasonal pieces, affordable layers", tier: "Value", gradient: "from-red-400 to-rose-500", icon: "\u{1F6CD}\uFE0F" },
-  { name: "ASOS", url: "https://www.asos.com/us/search/?q=minimalist+capsule", what: "Wide selection, extended sizing, curated edits", tier: "Value", gradient: "from-blue-400 to-indigo-500", icon: "\u{1F30D}" },
-  { name: "Uniqlo", url: "https://www.uniqlo.com/us/en/search?q=essentials", what: "Perfect basics, innovative fabrics, core wardrobe", tier: "Value", gradient: "from-red-500 to-red-700", icon: "\u2B50" },
-  { name: "Zara", url: "https://www.zara.com/us/en/search?searchTerm=minimalist", what: "On-trend pieces, structured silhouettes, statement items", tier: "Premium", gradient: "from-gray-800 to-black", icon: "\u2666\uFE0F" },
-];
+const STAPLES: Record<GenderCategory, { name: string; why: string; price: string }[]> = {
+  masculine: [
+    { name: "White Crew-Neck Tee", why: "The ultimate layering base — goes with literally everything in your closet", price: "$" },
+    { name: "Slim Dark Wash Jeans", why: "Clean enough for dinner, casual enough for weekends. Your most versatile bottom", price: "$$" },
+    { name: "Navy Chinos", why: "Bridge the gap between casual and formal — your secret weapon for dress codes", price: "$$" },
+    { name: "Gray Crewneck Sweater", why: "Neutral, cozy, and pairs with every color in your palette", price: "$$" },
+    { name: "White Leather Sneakers", why: "Clean silhouette that elevates any casual outfit instantly", price: "$$" },
+    { name: "Brown Leather Belt", why: "Ties your shoes to your outfit. Simple hardware, maximum polish", price: "$" },
+  ],
+  feminine: [
+    { name: "White Silk Blouse", why: "Effortlessly elevated — works from office to dinner with a quick styling swap", price: "$$" },
+    { name: "High-Waist Straight Jeans", why: "The perfect balance of structure and ease. Flattering on every body", price: "$$" },
+    { name: "Little Black Dress", why: "The ultimate go-to. Dress it up with heels or down with sneakers", price: "$$" },
+    { name: "Tailored Blazer", why: "Instant polish over any outfit — jeans, dresses, even athleisure", price: "$$$" },
+    { name: "Pointed-Toe Flats", why: "Comfortable elegance. Walk miles and still look put-together", price: "$$" },
+    { name: "Structured Handbag", why: "A quality bag pulls every outfit together. Invest in one great one", price: "$$$" },
+  ],
+  neutral: [
+    { name: "Oversized White Tee", why: "The ultimate blank canvas — style it tucked, untucked, or layered", price: "$" },
+    { name: "Relaxed-Fit Jeans", why: "Comfortable, stylish, and works with everything from sneakers to boots", price: "$$" },
+    { name: "Oversized Blazer", why: "The power piece that bridges every dress code and expression", price: "$$" },
+    { name: "Chunky Loafers", why: "Platform soles add edge while staying walkable and versatile", price: "$$" },
+    { name: "Canvas Tote", why: "Functional, minimal, and goes with every aesthetic", price: "$" },
+    { name: "Minimal Chain Necklace", why: "Subtle accent that ties a look together without overpowering", price: "$" },
+  ],
+};
 
-const ACCESSORIES = [
-  { type: "Watch", emoji: "\u231A", gradient: "from-slate-600 to-zinc-800", recommendation: "Silver-tone minimalist with a clean dial and leather or mesh strap. 40mm or under for your wrist.", price: "$$-$$$" },
-  { type: "Sunglasses", emoji: "\u{1F576}\uFE0F", gradient: "from-amber-500 to-orange-600", recommendation: "Wayfarers or round frames in matte black or tortoiseshell. Timeless shapes that match your classic-minimalist blend.", price: "$$" },
-  { type: "Bag", emoji: "\u{1F45C}", gradient: "from-emerald-500 to-teal-600", recommendation: "Navy canvas weekender with leather handles. Doubles as a gym bag. Clean hardware, no logos.", price: "$$" },
-  { type: "Belt", emoji: "\u{1F9F3}", gradient: "from-rose-500 to-pink-600", recommendation: "Brown leather, brushed silver buckle. 1.25 inch width. Should match your Chelsea boots.", price: "$" },
-  { type: "Jewelry", emoji: "\u{1F48E}", gradient: "from-violet-500 to-purple-600", recommendation: "Thin silver chain or a single signet ring. Understated metallics that complement your watch. Less is more.", price: "$-$$" },
-];
+const STATEMENTS: Record<GenderCategory, { name: string; why: string; price: string }[]> = {
+  masculine: [
+    { name: "Black Leather Jacket", why: "Your minimalist edge piece — adds instant personality to basic outfits", price: "$$$" },
+    { name: "Camel Overcoat", why: "The power move. Nothing says 'I have my life together' like a structured coat", price: "$$$" },
+    { name: "Olive Bomber Jacket", why: "Streetwear influence meets your clean aesthetic — the perfect tension", price: "$$" },
+    { name: "Navy Linen Button-Down", why: "Texture is your statement — linen says relaxed sophistication", price: "$$" },
+    { name: "Chelsea Boots", why: "Sleek silhouette that says classic with a modern edge", price: "$$$" },
+    { name: "Silver Chronograph Watch", why: "Your signature accessory — minimalist face, maximum impact", price: "$$$" },
+  ],
+  feminine: [
+    { name: "Statement Earrings", why: "One pair transforms your entire vibe — bold, sculptural, conversation-starting", price: "$$" },
+    { name: "Leather Moto Jacket", why: "Edge meets elegance — the piece that makes basics feel intentional", price: "$$$" },
+    { name: "Silk Slip Dress", why: "Effortless glamour. Layer it with a sweater or wear solo for evenings", price: "$$" },
+    { name: "Trench Coat", why: "Timeless drama. Cinch the waist for structure or wear open for flow", price: "$$$" },
+    { name: "Block Heel Boots", why: "Walkable height with serious style impact — day to night versatile", price: "$$$" },
+    { name: "Designer Sunglasses", why: "The accessory you never take off. Your face deserves a great frame", price: "$$$" },
+  ],
+  neutral: [
+    { name: "Statement Outerwear", why: "An oversized coat or puffer in an unexpected color — your signature piece", price: "$$$" },
+    { name: "Platform Boots", why: "Height and attitude in one. The shoe that makes every outfit feel complete", price: "$$$" },
+    { name: "Printed Button-Down", why: "Pattern is your statement — abstract, botanical, or geometric", price: "$$" },
+    { name: "Crossbody Bag", why: "Hands-free utility with design-forward appeal", price: "$$" },
+    { name: "Layered Necklaces", why: "Stacking adds dimension and personal expression to any neckline", price: "$-$$" },
+    { name: "Wide-Brim Hat", why: "The finishing touch that says 'I think about my look'", price: "$$" },
+  ],
+};
 
-const SHOPPING = [
-  { tier: "Value", color: "from-emerald-400 to-teal-500", brands: ["Uniqlo", "COS", "H&M Premium", "Zara"], note: "Best for basics and trend testing" },
-  { tier: "Premium", color: "from-amber-400 to-yellow-500", brands: ["A.P.C.", "Norse Projects", "Reiss", "Theory"], note: "Investment pieces that define your look" },
-];
+const OUTFITS: Record<GenderCategory, { occasion: string; emoji: string; gradient: string; bgGradient: string; description: string; pieces: string[] }[]> = {
+  masculine: [
+    { occasion: "Casual", emoji: "\u2600\uFE0F", gradient: "from-sky-400 to-blue-500", bgGradient: "from-sky-200 via-blue-100 to-indigo-200", description: "Effortless weekend vibes with clean lines", pieces: ["White crew-neck tee", "Slim dark wash jeans", "White leather sneakers", "Silver watch"] },
+    { occasion: "Date Night", emoji: "\u{1F319}", gradient: "from-rose-500 to-purple-600", bgGradient: "from-rose-300 via-purple-200 to-indigo-300", description: "Refined yet relaxed — confident without trying too hard", pieces: ["Navy linen button-down", "Black joggers (tapered)", "Brown Chelsea boots", "Brown leather belt"] },
+    { occasion: "Work", emoji: "\u{1F4BC}", gradient: "from-slate-500 to-zinc-700", bgGradient: "from-slate-200 via-gray-100 to-zinc-200", description: "Sharp, polished, and boardroom-ready", pieces: ["Heather gray crewneck sweater", "Navy chinos", "Navy loafers", "Silver watch"] },
+    { occasion: "Event", emoji: "\u2728", gradient: "from-amber-400 to-orange-500", bgGradient: "from-amber-200 via-orange-100 to-yellow-200", description: "Turn heads without overdoing it", pieces: ["Black leather jacket", "White crew-neck tee", "Slim dark wash jeans", "Brown Chelsea boots"] },
+    { occasion: "Weekend", emoji: "\u2615", gradient: "from-emerald-400 to-teal-500", bgGradient: "from-emerald-200 via-teal-100 to-cyan-200", description: "Coffee runs and farmer's market energy", pieces: ["Olive bomber jacket", "White crew-neck tee", "Tan shorts", "White leather sneakers"] },
+    { occasion: "Travel", emoji: "\u2708\uFE0F", gradient: "from-violet-400 to-indigo-500", bgGradient: "from-violet-200 via-indigo-100 to-blue-200", description: "Comfort meets style at 30,000 feet", pieces: ["Heather gray crewneck sweater", "Black joggers", "White leather sneakers", "Navy weekender bag"] },
+  ],
+  feminine: [
+    { occasion: "Casual", emoji: "\u2600\uFE0F", gradient: "from-pink-400 to-rose-500", bgGradient: "from-pink-200 via-rose-100 to-red-100", description: "Chic and comfortable for everyday moments", pieces: ["Cream cashmere sweater", "High-waist straight jeans", "White sneakers", "Gold hoop earrings"] },
+    { occasion: "Date Night", emoji: "\u{1F319}", gradient: "from-rose-500 to-purple-600", bgGradient: "from-rose-300 via-purple-200 to-indigo-300", description: "Magnetic and effortlessly alluring", pieces: ["Slip midi dress", "Block heels", "Structured handbag", "Statement earrings"] },
+    { occasion: "Work", emoji: "\u{1F4BC}", gradient: "from-slate-500 to-zinc-700", bgGradient: "from-slate-200 via-gray-100 to-zinc-200", description: "Commanding respect while looking flawless", pieces: ["White silk blouse", "Tailored wide-leg trousers", "Pointed-toe flats", "Structured handbag"] },
+    { occasion: "Event", emoji: "\u2728", gradient: "from-amber-400 to-orange-500", bgGradient: "from-amber-200 via-orange-100 to-yellow-200", description: "All eyes on you — intentional and radiant", pieces: ["Little black dress", "Block heels", "Statement earrings", "Silk scarf"] },
+    { occasion: "Weekend", emoji: "\u2615", gradient: "from-emerald-400 to-teal-500", bgGradient: "from-emerald-200 via-teal-100 to-cyan-200", description: "Relaxed glamour for brunch and beyond", pieces: ["Linen button-up", "Black midi skirt", "Pointed-toe flats", "Sunglasses"] },
+    { occasion: "Travel", emoji: "\u2708\uFE0F", gradient: "from-violet-400 to-indigo-500", bgGradient: "from-violet-200 via-indigo-100 to-blue-200", description: "Airport chic that transitions anywhere", pieces: ["Fitted black turtleneck", "Tailored wide-leg trousers", "White sneakers", "Structured handbag"] },
+  ],
+  neutral: [
+    { occasion: "Casual", emoji: "\u2600\uFE0F", gradient: "from-teal-400 to-cyan-500", bgGradient: "from-teal-200 via-cyan-100 to-blue-100", description: "Effortless and fluid — your everyday uniform", pieces: ["Oversized white tee", "Relaxed-fit jeans", "Platform sneakers", "Canvas tote"] },
+    { occasion: "Date Night", emoji: "\u{1F319}", gradient: "from-rose-500 to-purple-600", bgGradient: "from-rose-300 via-purple-200 to-indigo-300", description: "Intentional cool — dressed up without conforming", pieces: ["Printed button-down", "Wide-leg trousers", "Chunky loafers", "Layered necklaces"] },
+    { occasion: "Work", emoji: "\u{1F4BC}", gradient: "from-slate-500 to-zinc-700", bgGradient: "from-slate-200 via-gray-100 to-zinc-200", description: "Professional on your terms", pieces: ["Oversized blazer", "Tailored cargo pants", "Chunky loafers", "Minimal chain necklace"] },
+    { occasion: "Event", emoji: "\u2728", gradient: "from-amber-400 to-orange-500", bgGradient: "from-amber-200 via-orange-100 to-yellow-200", description: "Stand out by standing apart", pieces: ["Denim jacket", "Wide-leg trousers", "Platform boots", "Wide-brim hat"] },
+    { occasion: "Weekend", emoji: "\u2615", gradient: "from-emerald-400 to-teal-500", bgGradient: "from-emerald-200 via-teal-100 to-cyan-200", description: "Low-effort, high-impact weekend energy", pieces: ["Cropped sweater", "Bermuda shorts", "Platform sneakers", "Crossbody bag"] },
+    { occasion: "Travel", emoji: "\u2708\uFE0F", gradient: "from-violet-400 to-indigo-500", bgGradient: "from-violet-200 via-indigo-100 to-blue-200", description: "Comfort-first style that still turns heads", pieces: ["Oversized white tee", "Relaxed-fit jeans", "Platform sneakers", "Canvas tote"] },
+  ],
+};
+
+const ACCESSORIES: Record<GenderCategory, { type: string; emoji: string; gradient: string; recommendation: string; price: string }[]> = {
+  masculine: [
+    { type: "Watch", emoji: "\u231A", gradient: "from-slate-600 to-zinc-800", recommendation: "Silver-tone minimalist with a clean dial and leather or mesh strap. 40mm or under for your wrist.", price: "$$-$$$" },
+    { type: "Sunglasses", emoji: "\u{1F576}\uFE0F", gradient: "from-amber-500 to-orange-600", recommendation: "Wayfarers or round frames in matte black or tortoiseshell. Timeless shapes that match your aesthetic.", price: "$$" },
+    { type: "Bag", emoji: "\u{1F45C}", gradient: "from-emerald-500 to-teal-600", recommendation: "Navy canvas weekender with leather handles. Doubles as a gym bag. Clean hardware, no logos.", price: "$$" },
+    { type: "Belt", emoji: "\u{1F9F3}", gradient: "from-rose-500 to-pink-600", recommendation: "Brown leather, brushed silver buckle. 1.25 inch width. Should match your Chelsea boots.", price: "$" },
+    { type: "Jewelry", emoji: "\u{1F48E}", gradient: "from-violet-500 to-purple-600", recommendation: "Thin silver chain or a single signet ring. Understated metallics that complement your watch.", price: "$-$$" },
+  ],
+  feminine: [
+    { type: "Earrings", emoji: "\u{1F48E}", gradient: "from-rose-500 to-pink-600", recommendation: "Gold hoops for everyday, statement drops for events. Have both — they change your entire face.", price: "$-$$$" },
+    { type: "Sunglasses", emoji: "\u{1F576}\uFE0F", gradient: "from-amber-500 to-orange-600", recommendation: "Cat-eye or oversized frames in tortoiseshell or black. Your most-worn accessory — invest well.", price: "$$-$$$" },
+    { type: "Handbag", emoji: "\u{1F45C}", gradient: "from-emerald-500 to-teal-600", recommendation: "One structured bag in a neutral tone — black, tan, or cream. It should carry your essentials and look intentional.", price: "$$$" },
+    { type: "Scarf", emoji: "\u{1F9E3}", gradient: "from-violet-500 to-purple-600", recommendation: "Silk scarf in a print that ties into your color palette. Wear it around your neck, in your hair, or on your bag.", price: "$$" },
+    { type: "Rings", emoji: "\u{1F48D}", gradient: "from-slate-600 to-zinc-800", recommendation: "Stackable gold bands and one statement ring. Mix metals intentionally — gold and silver can coexist.", price: "$-$$" },
+  ],
+  neutral: [
+    { type: "Necklace", emoji: "\u{1F48E}", gradient: "from-slate-600 to-zinc-800", recommendation: "A minimal chain you never take off — silver or gold depending on your palette. Layer two for dimension.", price: "$-$$" },
+    { type: "Sunglasses", emoji: "\u{1F576}\uFE0F", gradient: "from-amber-500 to-orange-600", recommendation: "Angular or geometric frames in matte black. Shape should contrast your face shape for maximum impact.", price: "$$" },
+    { type: "Bag", emoji: "\u{1F45C}", gradient: "from-emerald-500 to-teal-600", recommendation: "Crossbody or belt bag in canvas or nylon. Functional, gender-neutral, and hands-free.", price: "$$" },
+    { type: "Hat", emoji: "\u{1F9E2}", gradient: "from-rose-500 to-pink-600", recommendation: "Wide-brim felt hat or structured bucket hat. Headwear is the easiest way to define your look.", price: "$-$$" },
+    { type: "Rings", emoji: "\u{1F48D}", gradient: "from-violet-500 to-purple-600", recommendation: "Chunky signet ring or stacked bands. Jewelry that feels architectural and intentional.", price: "$-$$" },
+  ],
+};
+
+// ─── Budget-aware store recommendations ───
+
+type StoreEntry = { name: string; url: string; what: string; tier: string; gradient: string; icon: string };
+
+const ALL_STORES: Record<string, StoreEntry> = {
+  Amazon: { name: "Amazon", url: "https://www.amazon.com/s?k=capsule+wardrobe", what: "Budget basics, everyday essentials, accessories", tier: "Value", gradient: "from-orange-400 to-amber-500", icon: "\u{1F4E6}" },
+  Nordstrom: { name: "Nordstrom", url: "https://www.nordstrom.com/sr?keyword=capsule+wardrobe", what: "Premium staples, quality denim, outerwear", tier: "Premium", gradient: "from-slate-600 to-gray-800", icon: "\u{1F451}" },
+  "H&M": { name: "H&M", url: "https://www2.hm.com/en_us/search-results.html?q=essentials", what: "Trend testing, seasonal pieces, affordable layers", tier: "Value", gradient: "from-red-400 to-rose-500", icon: "\u{1F6CD}\uFE0F" },
+  ASOS: { name: "ASOS", url: "https://www.asos.com/us/search/?q=capsule+wardrobe", what: "Wide selection, extended sizing, curated edits", tier: "Value", gradient: "from-blue-400 to-indigo-500", icon: "\u{1F30D}" },
+  Uniqlo: { name: "Uniqlo", url: "https://www.uniqlo.com/us/en/search?q=essentials", what: "Perfect basics, innovative fabrics, core wardrobe", tier: "Value", gradient: "from-red-500 to-red-700", icon: "\u2B50" },
+  Zara: { name: "Zara", url: "https://www.zara.com/us/en/search?searchTerm=capsule", what: "On-trend pieces, structured silhouettes, statement items", tier: "Premium", gradient: "from-gray-800 to-black", icon: "\u2666\uFE0F" },
+  Nike: { name: "Nike", url: "https://www.nike.com/w/lifestyle-shoes-13jrmz3rauvz5e1x6", what: "Athletic-inspired lifestyle, sneakers, performance wear", tier: "Premium", gradient: "from-gray-700 to-gray-900", icon: "\u2714\uFE0F" },
+  Adidas: { name: "Adidas", url: "https://www.adidas.com/us/lifestyle", what: "Streetwear staples, classic sneakers, sport-luxe", tier: "Premium", gradient: "from-gray-600 to-black", icon: "\u{1F3C3}" },
+  Gucci: { name: "Gucci", url: "https://www.gucci.com/us/en/", what: "Iconic luxury, statement pieces, investment fashion", tier: "Luxury", gradient: "from-green-700 to-red-700", icon: "\u{1F451}" },
+  Target: { name: "Target", url: "https://www.target.com/c/clothing/-/N-5xtcm", what: "Affordable finds, designer collabs, everyday basics", tier: "Value", gradient: "from-red-500 to-red-600", icon: "\u{1F3AF}" },
+  Shein: { name: "Shein", url: "https://www.shein.com/", what: "Ultra-budget trend pieces, experimenting with new styles", tier: "Value", gradient: "from-orange-400 to-pink-500", icon: "\u{1F6CD}\uFE0F" },
+  Revolve: { name: "Revolve", url: "https://www.revolve.com/", what: "Contemporary designer, influencer-loved brands", tier: "Premium", gradient: "from-pink-500 to-rose-600", icon: "\u2728" },
+  Anthropologie: { name: "Anthropologie", url: "https://www.anthropologie.com/clothing", what: "Bohemian-chic, textured fabrics, unique prints", tier: "Premium", gradient: "from-amber-400 to-orange-500", icon: "\u{1F33F}" },
+  "Urban Outfitters": { name: "Urban Outfitters", url: "https://www.urbanoutfitters.com/clothing", what: "Vintage-inspired, streetwear, eclectic mix", tier: "Value", gradient: "from-yellow-500 to-orange-500", icon: "\u{1F3B5}" },
+  "Banana Republic": { name: "Banana Republic", url: "https://bananarepublic.gap.com/", what: "Polished office wear, quality basics, clean lines", tier: "Premium", gradient: "from-amber-600 to-yellow-800", icon: "\u{1F454}" },
+  "J.Crew": { name: "J.Crew", url: "https://www.jcrew.com/", what: "Preppy classics, colorful knits, timeless staples", tier: "Premium", gradient: "from-blue-500 to-blue-700", icon: "\u{1F3F7}\uFE0F" },
+  Lululemon: { name: "Lululemon", url: "https://shop.lululemon.com/", what: "Premium athleisure, performance fabric, lifestyle wear", tier: "Premium", gradient: "from-red-600 to-red-800", icon: "\u{1F9D8}" },
+  Patagonia: { name: "Patagonia", url: "https://www.patagonia.com/", what: "Sustainable outdoor wear, quality layers, adventure-ready", tier: "Premium", gradient: "from-blue-600 to-sky-700", icon: "\u{1F3D4}\uFE0F" },
+  "Thrift/Vintage Shops": { name: "Thrift/Vintage", url: "https://www.thredup.com/", what: "Unique finds, sustainable fashion, one-of-a-kind pieces", tier: "Value", gradient: "from-green-500 to-emerald-600", icon: "\u267B\uFE0F" },
+  Supreme: { name: "Supreme", url: "https://www.supremenewyork.com/", what: "Hype streetwear, limited drops, collector pieces", tier: "Premium", gradient: "from-red-600 to-red-700", icon: "\u{1F525}" },
+  "Off-White": { name: "Off-White", url: "https://www.off---white.com/", what: "High-fashion streetwear, deconstructed design, art-meets-fashion", tier: "Luxury", gradient: "from-gray-800 to-yellow-500", icon: "\u{1F3A8}" },
+  Balenciaga: { name: "Balenciaga", url: "https://www.balenciaga.com/", what: "Avant-garde luxury, oversized silhouettes, fashion-forward", tier: "Luxury", gradient: "from-black to-gray-800", icon: "\u{1F451}" },
+  Prada: { name: "Prada", url: "https://www.prada.com/", what: "Italian luxury, minimalist elegance, iconic nylon", tier: "Luxury", gradient: "from-gray-700 to-gray-900", icon: "\u{1F48E}" },
+  "Louis Vuitton": { name: "Louis Vuitton", url: "https://us.louisvuitton.com/", what: "Heritage luxury, iconic monogram, investment pieces", tier: "Luxury", gradient: "from-amber-700 to-yellow-900", icon: "\u{1F451}" },
+};
+
+const DEFAULT_STORES = ["Uniqlo", "Zara", "H&M", "ASOS", "Nordstrom", "Amazon"];
 
 function ArchetypeRing({ pct, color, size = 100 }: { pct: number; color: string; size?: number }) {
   const radius = (size - 10) / 2;
@@ -242,13 +336,60 @@ export default function StylePage() {
   const lifePath = birthday ? calculateLifePath(birthday) : null;
   const element = sunSign?.element || null;
 
-  const archetypes = element ? (ARCHETYPE_STYLES[element] || DEFAULT_ARCHETYPES) : DEFAULT_ARCHETYPES;
+  // Gender-aware personalization
+  const genderCat = profile ? getGenderCategory(profile) : "neutral";
+
+  // Build archetypes from user's intake style preferences + element
+  const archetypes = useMemo(() => {
+    const userStyles = profile?.stylePreferences || [];
+    if (userStyles.length > 0) {
+      // Weight archetypes based on user selections
+      const totalParts = userStyles.length;
+      const basePct = Math.floor(100 / totalParts);
+      let remainder = 100 - basePct * totalParts;
+      return userStyles.map((style, i) => {
+        const pct = basePct + (i === 0 ? remainder : 0);
+        const colors = ARCHETYPE_COLORS[style] || { color: "from-slate-700 to-zinc-900", ring: "stroke-slate-600" };
+        return { name: style, pct, color: colors.color, ring: colors.ring };
+      });
+    }
+    return element ? (ARCHETYPE_STYLES[element] || DEFAULT_ARCHETYPES) : DEFAULT_ARCHETYPES;
+  }, [profile?.stylePreferences, element]);
+
   const palette = element ? (ELEMENT_PALETTES[element] || DEFAULT_PALETTE) : DEFAULT_PALETTE;
-  const styleDescription = element
-    ? ELEMENT_STYLE_DESCRIPTIONS[element]
-    : "Your style leans heavily minimalist with clean lines and neutral tones, grounded by classic tailoring sensibilities. A touch of streetwear influence keeps things modern and approachable.";
+
+  // Style description based on user preferences
+  const styleDescription = useMemo(() => {
+    const userStyles = profile?.stylePreferences || [];
+    if (userStyles.length > 0) {
+      const styleStr = userStyles.join(", ");
+      const name = profile?.firstName || "Your";
+      return `${name}'s style DNA is a blend of ${styleStr}. ${element ? ELEMENT_STYLE_DESCRIPTIONS[element] || "" : "A curated mix of self-expression and intentional dressing."}`;
+    }
+    return element
+      ? ELEMENT_STYLE_DESCRIPTIONS[element]
+      : "Your style leans minimalist with clean lines and neutral tones, grounded by classic tailoring sensibilities.";
+  }, [profile?.stylePreferences, profile?.firstName, element]);
+
   const metalRec = element ? ELEMENT_METAL[element] : "Silver";
   const firstName = profile?.firstName || "";
+  const capsule = CAPSULE_WARDROBES[genderCat];
+  const wardrobeStaples = STAPLES[genderCat];
+  const statementPieces = STATEMENTS[genderCat];
+  const outfitInspirations = OUTFITS[genderCat];
+  const accessories = ACCESSORIES[genderCat];
+
+  // Build store list from user's favorite stores, or defaults
+  const storeLinks = useMemo(() => {
+    const userStores = profile?.favoriteStores || [];
+    const storeNames = userStores.length > 0 ? userStores : DEFAULT_STORES;
+    return storeNames
+      .map((name) => ALL_STORES[name])
+      .filter(Boolean);
+  }, [profile?.favoriteStores]);
+
+  // Budget label
+  const budgetLabel = profile?.styleBudget || "Mid-Range ($$)";
 
   if (loading) {
     return (
@@ -293,21 +434,27 @@ export default function StylePage() {
             {firstName ? `${firstName}\u2019s Fashion System` : "Fashion System"}
           </h1>
 
-          {/* Sun Sign + Life Path badges */}
-          {(sunSign || lifePath) && (
-            <div className="flex flex-wrap gap-3 mb-4">
-              {sunSign && (
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 px-4 py-1.5 text-sm font-semibold text-white">
-                  {sunSign.symbol} {sunSign.name} <span className="text-white/50">|</span> {sunSign.element}
-                </span>
-              )}
-              {lifePath && (
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 px-4 py-1.5 text-sm font-semibold text-white">
-                  {"\u{1F522}"} Life Path {lifePath.value}{lifePath.isMaster ? " (Master)" : ""}
-                </span>
-              )}
-            </div>
-          )}
+          {/* Sun Sign + Life Path + Budget badges */}
+          <div className="flex flex-wrap gap-3 mb-4">
+            {sunSign && (
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 px-4 py-1.5 text-sm font-semibold text-white">
+                {sunSign.symbol} {sunSign.name} <span className="text-white/50">|</span> {sunSign.element}
+              </span>
+            )}
+            {lifePath && (
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 px-4 py-1.5 text-sm font-semibold text-white">
+                {"\u{1F522}"} Life Path {lifePath.value}{lifePath.isMaster ? " (Master)" : ""}
+              </span>
+            )}
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 px-4 py-1.5 text-sm font-semibold text-white">
+              {"\u{1F4B0}"} Budget: {budgetLabel}
+            </span>
+            {profile.gender && (
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 px-4 py-1.5 text-sm font-semibold text-white">
+                {genderCat === "masculine" ? "\u{1F468}" : genderCat === "feminine" ? "\u{1F469}" : "\u{1F9D1}"} {profile.genderExpression || profile.gender}
+              </span>
+            )}
+          </div>
 
           <p className="text-lg text-white/60 max-w-xl mb-8">
             {styleDescription}
@@ -336,7 +483,7 @@ export default function StylePage() {
         <div className="flex items-center justify-between mb-6">
           <div>
             <h2 className="text-2xl font-bold text-gray-900">{"\u{1F3A8}"} Your Color Palette</h2>
-            <p className="text-sm text-gray-400 mt-1">Curated tones that complement your skin tone and energy</p>
+            <p className="text-sm text-gray-400 mt-1">Curated tones that complement your energy and style expression</p>
           </div>
           <div className="flex items-center gap-2 rounded-full bg-gray-100 px-4 py-2">
             <div className={`h-4 w-4 rounded-full ring-2 ring-white ${
@@ -378,9 +525,9 @@ export default function StylePage() {
       {/* Capsule Wardrobe */}
       <div>
         <h2 className="text-2xl font-bold text-gray-900 mb-2">{"\u{1F454}"} Capsule Wardrobe</h2>
-        <p className="text-sm text-gray-400 mb-6">Your 18-piece foundation. Mix and match for 50+ outfits.</p>
+        <p className="text-sm text-gray-400 mb-6">Your {capsule.reduce((sum, c) => sum + c.items.length, 0)}-piece foundation built for your style expression. Mix and match for 50+ outfits.</p>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-          {SAMPLE_CAPSULE.map((cat) => (
+          {capsule.map((cat) => (
             <div key={cat.category} className="group relative overflow-hidden rounded-2xl bg-white border border-gray-100 shadow-md hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
               <div className={`h-2 bg-gradient-to-r ${cat.gradient}`} />
               <div className="p-5">
@@ -405,14 +552,13 @@ export default function StylePage() {
         </div>
       </div>
 
-      {/* Outfit Inspiration with Images */}
+      {/* Outfit Inspiration */}
       <div>
         <h2 className="text-2xl font-bold text-gray-900 mb-2">{"\u{1F525}"} Outfit Inspiration</h2>
-        <p className="text-sm text-gray-400 mb-6">Complete looks styled for every occasion. Tap to explore.</p>
+        <p className="text-sm text-gray-400 mb-6">Complete looks styled for every occasion, tailored to your expression.</p>
 
-        {/* Occasion pills */}
         <div className="flex flex-wrap gap-2 mb-6">
-          {OUTFIT_INSPIRATIONS.map((o, i) => (
+          {outfitInspirations.map((o, i) => (
             <button
               key={o.occasion}
               onClick={() => setActiveOutfit(i)}
@@ -428,35 +574,30 @@ export default function StylePage() {
           ))}
         </div>
 
-        {/* Active outfit card */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Large visual placeholder */}
-          <div className={`relative h-80 md:h-[420px] rounded-2xl bg-gradient-to-br ${OUTFIT_INSPIRATIONS[activeOutfit].bgGradient} overflow-hidden shadow-xl group transition-all duration-500`}>
+          <div className={`relative h-80 md:h-[420px] rounded-2xl bg-gradient-to-br ${outfitInspirations[activeOutfit].bgGradient} overflow-hidden shadow-xl group transition-all duration-500`}>
             <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_rgba(255,255,255,0.1),transparent_70%)]" />
-            {/* Decorative elements */}
             <div className="absolute top-6 left-6 w-20 h-28 rounded-lg bg-white/10 backdrop-blur-sm border border-white/20" />
             <div className="absolute top-10 left-12 w-20 h-28 rounded-lg bg-white/15 backdrop-blur-sm border border-white/20" />
             <div className="absolute top-20 right-8 w-16 h-16 rounded-full bg-white/10 backdrop-blur-sm border border-white/20" />
-
             <div className="absolute bottom-0 left-0 right-0 p-6">
-              <div className={`inline-flex items-center gap-2 rounded-full bg-gradient-to-r ${OUTFIT_INSPIRATIONS[activeOutfit].gradient} px-4 py-1.5 text-white text-sm font-bold shadow-lg mb-3`}>
-                <span>{OUTFIT_INSPIRATIONS[activeOutfit].emoji}</span>
-                {OUTFIT_INSPIRATIONS[activeOutfit].occasion}
+              <div className={`inline-flex items-center gap-2 rounded-full bg-gradient-to-r ${outfitInspirations[activeOutfit].gradient} px-4 py-1.5 text-white text-sm font-bold shadow-lg mb-3`}>
+                <span>{outfitInspirations[activeOutfit].emoji}</span>
+                {outfitInspirations[activeOutfit].occasion}
               </div>
-              <p className="text-white text-lg font-bold mb-1">{OUTFIT_INSPIRATIONS[activeOutfit].description}</p>
+              <p className="text-white text-lg font-bold mb-1">{outfitInspirations[activeOutfit].description}</p>
               <p className="text-white/60 text-sm">Styled from your capsule wardrobe</p>
             </div>
           </div>
 
-          {/* Outfit details */}
           <div className="flex flex-col justify-between">
             <div>
               <h3 className="text-xl font-bold text-gray-900 mb-4">The Breakdown</h3>
               <ul className="space-y-3">
-                {OUTFIT_INSPIRATIONS[activeOutfit].pieces.map((piece, i) => (
+                {outfitInspirations[activeOutfit].pieces.map((piece, i) => (
                   <li key={piece} className="flex items-center gap-4 p-3 rounded-xl bg-gray-50 border border-gray-100 hover:bg-gray-100 hover:border-gray-200 transition-all duration-200">
-                    <div className={`flex-shrink-0 w-10 h-10 rounded-lg bg-gradient-to-br ${OUTFIT_INSPIRATIONS[activeOutfit].gradient} flex items-center justify-center text-white font-bold text-sm shadow-md`}>
+                    <div className={`flex-shrink-0 w-10 h-10 rounded-lg bg-gradient-to-br ${outfitInspirations[activeOutfit].gradient} flex items-center justify-center text-white font-bold text-sm shadow-md`}>
                       {i + 1}
                     </div>
                     <span className="text-sm font-semibold text-gray-800">{piece}</span>
@@ -464,15 +605,14 @@ export default function StylePage() {
                 ))}
               </ul>
             </div>
-            <button className={`mt-6 w-full rounded-xl bg-gradient-to-r ${OUTFIT_INSPIRATIONS[activeOutfit].gradient} py-3.5 text-white font-bold text-sm shadow-lg hover:shadow-xl hover:scale-[1.02] active:scale-[0.98] transition-all duration-200`}>
+            <button className={`mt-6 w-full rounded-xl bg-gradient-to-r ${outfitInspirations[activeOutfit].gradient} py-3.5 text-white font-bold text-sm shadow-lg hover:shadow-xl hover:scale-[1.02] active:scale-[0.98] transition-all duration-200`}>
               {"\u{1F6D2}"} Shop This Look
             </button>
           </div>
         </div>
 
-        {/* Outfit grid thumbnails */}
         <div className="grid grid-cols-3 md:grid-cols-6 gap-3 mt-6">
-          {OUTFIT_INSPIRATIONS.map((o, i) => (
+          {outfitInspirations.map((o, i) => (
             <button
               key={o.occasion}
               onClick={() => setActiveOutfit(i)}
@@ -495,16 +635,15 @@ export default function StylePage() {
         <p className="text-sm text-gray-400 mb-6">Build your wardrobe with reliable basics, then inject personality with standout pieces.</p>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Wardrobe Staples */}
           <div className="rounded-2xl border border-gray-200 bg-white shadow-md overflow-hidden">
             <div className="bg-gradient-to-r from-slate-700 to-zinc-800 p-5">
               <h3 className="text-lg font-bold text-white flex items-center gap-2">
                 <span>{"\u{1F9F1}"}</span> Wardrobe Staples
               </h3>
-              <p className="text-sm text-white/60 mt-1">Essential basics everyone needs</p>
+              <p className="text-sm text-white/60 mt-1">Essential basics for your style expression</p>
             </div>
             <div className="p-4 space-y-3">
-              {WARDROBE_STAPLES.map((item) => (
+              {wardrobeStaples.map((item) => (
                 <div key={item.name} className="group p-3 rounded-xl hover:bg-gray-50 transition-colors border border-transparent hover:border-gray-100">
                   <div className="flex items-center justify-between mb-1">
                     <h4 className="text-sm font-bold text-gray-900">{item.name}</h4>
@@ -516,7 +655,6 @@ export default function StylePage() {
             </div>
           </div>
 
-          {/* Statement Pieces */}
           <div className="rounded-2xl border border-gray-200 bg-white shadow-md overflow-hidden">
             <div className="bg-gradient-to-r from-amber-500 to-orange-600 p-5">
               <h3 className="text-lg font-bold text-white flex items-center gap-2">
@@ -525,7 +663,7 @@ export default function StylePage() {
               <p className="text-sm text-white/80 mt-1">Personality-driven items that express your archetype</p>
             </div>
             <div className="p-4 space-y-3">
-              {STATEMENT_PIECES.map((item) => (
+              {statementPieces.map((item) => (
                 <div key={item.name} className="group p-3 rounded-xl hover:bg-amber-50/50 transition-colors border border-transparent hover:border-amber-100">
                   <div className="flex items-center justify-between mb-1">
                     <h4 className="text-sm font-bold text-gray-900">{item.name}</h4>
@@ -544,9 +682,8 @@ export default function StylePage() {
         <h2 className="text-2xl font-bold text-gray-900 mb-2">{"\u{1F48E}"} Accessories</h2>
         <p className="text-sm text-gray-400 mb-6">The finishing touches that complete every look.</p>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-          {ACCESSORIES.map((acc) => (
+          {accessories.map((acc) => (
             <div key={acc.type} className="group relative overflow-hidden rounded-2xl bg-white border border-gray-100 shadow-md hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
-              {/* Gradient header */}
               <div className={`h-20 bg-gradient-to-br ${acc.gradient} relative overflow-hidden`}>
                 <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,_rgba(255,255,255,0.2),transparent_60%)]" />
                 <div className="absolute inset-0 flex items-center justify-center">
@@ -569,9 +706,13 @@ export default function StylePage() {
       {/* Store Links & Shopping */}
       <div>
         <h2 className="text-2xl font-bold text-gray-900 mb-2">{"\u{1F6CD}\uFE0F"} Shop Your Style</h2>
-        <p className="text-sm text-gray-400 mb-6">Curated retailer links with search queries matched to your aesthetic.</p>
+        <p className="text-sm text-gray-400 mb-6">
+          {profile?.favoriteStores && profile.favoriteStores.length > 0
+            ? "Your favorite stores, curated to match your style DNA."
+            : "Curated retailer links matched to your aesthetic."}
+        </p>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-          {STORE_LINKS.map((store) => (
+          {storeLinks.map((store) => (
             <a
               key={store.name}
               href={store.url}
@@ -584,11 +725,13 @@ export default function StylePage() {
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-3">
                     <span className="text-2xl">{store.icon}</span>
-                    <h3 className="text-lg font-bold text-gray-900 group-hover:text-transparent group-hover:bg-gradient-to-r group-hover:bg-clip-text group-hover:${store.gradient} transition-all">{store.name}</h3>
+                    <h3 className="text-lg font-bold text-gray-900">{store.name}</h3>
                   </div>
                   <span className={`text-[10px] font-bold uppercase tracking-wider px-3 py-1 rounded-full ${
                     store.tier === "Value"
                       ? "bg-emerald-50 text-emerald-600 border border-emerald-200"
+                      : store.tier === "Luxury"
+                      ? "bg-purple-50 text-purple-700 border border-purple-200"
                       : "bg-amber-50 text-amber-700 border border-amber-200"
                   }`}>
                     {store.tier === "Value" ? "\u{1F48E}" : "\u{1F451}"} {store.tier}
@@ -601,34 +744,6 @@ export default function StylePage() {
                 </div>
               </div>
             </a>
-          ))}
-        </div>
-      </div>
-
-      {/* Shopping Suggestions (original) */}
-      <div>
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">{"\u{1F6D2}"} Shopping Guide</h2>
-        <p className="text-sm text-gray-400 mb-6">Smart spending at every price point.</p>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {SHOPPING.map((tier) => (
-            <div key={tier.tier} className="relative overflow-hidden rounded-2xl bg-white border border-gray-100 shadow-md hover:shadow-xl transition-all duration-300">
-              <div className={`absolute top-0 left-0 right-0 h-24 bg-gradient-to-br ${tier.color} opacity-10`} />
-              <div className="relative p-6">
-                <div className="flex items-center gap-3 mb-4">
-                  <span className={`inline-flex items-center gap-1 rounded-full bg-gradient-to-r ${tier.color} px-4 py-1.5 text-white text-sm font-bold shadow-lg`}>
-                    {tier.tier === "Value" ? "\u{1F48E}" : "\u{1F451}"} {tier.tier}
-                  </span>
-                </div>
-                <p className="text-sm text-gray-500 mb-4">{tier.note}</p>
-                <div className="flex flex-wrap gap-2">
-                  {tier.brands.map((brand) => (
-                    <span key={brand} className="rounded-xl bg-gray-50 border border-gray-200 px-4 py-2 text-sm font-semibold text-gray-800 hover:bg-gray-100 transition-colors cursor-pointer">
-                      {brand}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            </div>
           ))}
         </div>
       </div>

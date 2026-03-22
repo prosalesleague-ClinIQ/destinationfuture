@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import FutureYouChat from "@/components/future-you/future-you-chat";
+import { db, type UserProfile } from "@/lib/db";
 
 const FUTURE_YOU_TRAITS = [
   {
@@ -81,6 +82,20 @@ function TraitIcon({ icon }: { icon: string }) {
 
 export default function FutureYouPage() {
   const [activeTab, setActiveTab] = useState<"about" | "chat">("about");
+  const [profile, setProfile] = useState<UserProfile | null>(null);
+
+  useEffect(() => {
+    db.getProfile().then((p) => setProfile(p));
+  }, []);
+
+  // Build user context string for the AI chat
+  const userContext = profile ? [
+    profile.goals?.length ? `Goals: ${profile.goals.join(", ")}` : "",
+    profile.careerField ? `Career field: ${profile.careerField}` : "",
+    profile.valuesList?.length ? `Core values: ${profile.valuesList.join(", ")}` : "",
+    profile.hobbies?.length ? `Hobbies: ${profile.hobbies.join(", ")}` : "",
+    profile.relationshipStatus ? `Relationship status: ${profile.relationshipStatus}` : "",
+  ].filter(Boolean).join(". ") : "";
 
   return (
     <div className="space-y-8">
@@ -252,7 +267,7 @@ export default function FutureYouPage() {
             </div>
           </div>
           <div className="h-[600px]">
-            <FutureYouChat variant="full" />
+            <FutureYouChat variant="full" userContext={userContext} />
           </div>
         </div>
       )}

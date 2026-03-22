@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import XpProgress from "@/components/dashboard/xp-progress";
 import QuestCard from "@/components/dashboard/quest-card";
-import { db, type UserProgress } from "@/lib/db";
+import { db, type UserProgress, type UserProfile } from "@/lib/db";
 
 /* ─── Quest Definitions ─── */
 const ALL_QUESTS = [
@@ -58,6 +58,7 @@ export default function DashboardPage() {
   const [userName, setUserName] = useState("");
   const [userId, setUserId] = useState<string | null>(null);
   const [progress, setProgress] = useState<UserProgress | null>(null);
+  const [profile, setProfile] = useState<UserProfile | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -67,6 +68,8 @@ export default function DashboardPage() {
         setUserId(user.id);
         setProgress(await db.getProgress(user.id));
       }
+      const p = await db.getProfile();
+      if (p) setProfile(p);
     })();
   }, []);
 
@@ -117,7 +120,14 @@ export default function DashboardPage() {
         <h1 className="text-3xl font-bold text-white/90">
           Welcome back, <span className="bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent">{userName}</span>
         </h1>
-        <p className="mt-1 text-white/50">Here&apos;s your growth snapshot for today.</p>
+        <p className="mt-1 text-white/50">
+          {profile?.careerField
+            ? `Focused on ${profile.careerField}. `
+            : ""}
+          {profile?.goals && profile.goals.length > 0
+            ? `Your journey: ${profile.goals.slice(0, 2).join(", ")}.`
+            : "Here\u2019s your growth snapshot for today."}
+        </p>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-3">
@@ -168,6 +178,47 @@ export default function DashboardPage() {
         </div>
 
         <div className="space-y-6">
+          {/* Your Profile Summary */}
+          {profile && (profile.relationshipStatus || profile.careerField || (profile.valuesList && profile.valuesList.length > 0) || (profile.stylePreferences && profile.stylePreferences.length > 0)) && (
+            <div className="rounded-2xl border border-white/[0.06] bg-white/[0.04] p-6 shadow-lg shadow-black/20">
+              <h2 className="mb-4 text-lg font-semibold text-white/90">Your Profile</h2>
+              <div className="space-y-3">
+                {profile.relationshipStatus && (
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-medium text-white/40 uppercase tracking-wide w-20 shrink-0">Status</span>
+                    <span className="rounded-full bg-pink-500/15 border border-pink-500/20 px-3 py-0.5 text-xs font-medium text-pink-300">{profile.relationshipStatus}</span>
+                  </div>
+                )}
+                {profile.careerField && (
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-medium text-white/40 uppercase tracking-wide w-20 shrink-0">Career</span>
+                    <span className="rounded-full bg-cyan-500/15 border border-cyan-500/20 px-3 py-0.5 text-xs font-medium text-cyan-300">{profile.careerField}</span>
+                  </div>
+                )}
+                {profile.valuesList && profile.valuesList.length > 0 && (
+                  <div>
+                    <span className="text-xs font-medium text-white/40 uppercase tracking-wide">Values</span>
+                    <div className="mt-1.5 flex flex-wrap gap-1.5">
+                      {profile.valuesList.slice(0, 5).map((v) => (
+                        <span key={v} className="rounded-full bg-emerald-500/15 border border-emerald-500/20 px-2.5 py-0.5 text-xs font-medium text-emerald-300">{v}</span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {profile.stylePreferences && profile.stylePreferences.length > 0 && (
+                  <div>
+                    <span className="text-xs font-medium text-white/40 uppercase tracking-wide">Style</span>
+                    <div className="mt-1.5 flex flex-wrap gap-1.5">
+                      {profile.stylePreferences.slice(0, 3).map((s) => (
+                        <span key={s} className="rounded-full bg-violet-500/15 border border-violet-500/20 px-2.5 py-0.5 text-xs font-medium text-violet-300">{s}</span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
           <div className="rounded-2xl border border-white/[0.06] bg-white/[0.04] p-6 shadow-lg shadow-black/20">
             <h2 className="mb-4 text-lg font-semibold text-white/90">Quick Actions</h2>
             <div className="space-y-3">
