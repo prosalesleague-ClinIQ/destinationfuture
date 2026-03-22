@@ -288,22 +288,22 @@ export const db = {
       birthCity: data.birth_city,
       birthState: data.birth_state,
       intakeComplete: data.intake_complete,
-      relationshipStatus: data.relationship_status,
-      careerField: data.career_field,
-      careerGoals: data.career_goals || [],
-      budgetRange: data.budget_range,
-      stylePreferences: data.style_preferences || [],
-      styleBudget: data.style_budget,
-      favoriteStores: data.favorite_stores || [],
-      musicGenres: data.music_genres || [],
-      filmGenres: data.film_genres || [],
-      tvGenres: data.tv_genres || [],
-      bookGenres: data.book_genres || [],
-      goals: data.goals || [],
-      hobbies: data.hobbies || [],
-      valuesList: data.values_list || [],
-      gender: data.gender,
-      genderExpression: data.gender_expression,
+      relationshipStatus: data.relationship_status ?? null,
+      careerField: data.career_field ?? null,
+      careerGoals: data.career_goals ?? [],
+      budgetRange: data.budget_range ?? null,
+      stylePreferences: data.style_preferences ?? [],
+      styleBudget: data.style_budget ?? null,
+      favoriteStores: data.favorite_stores ?? [],
+      musicGenres: data.music_genres ?? [],
+      filmGenres: data.film_genres ?? [],
+      tvGenres: data.tv_genres ?? [],
+      bookGenres: data.book_genres ?? [],
+      goals: data.goals ?? [],
+      hobbies: data.hobbies ?? [],
+      valuesList: data.values_list ?? [],
+      gender: data.gender ?? null,
+      genderExpression: data.gender_expression ?? null,
     };
   },
 
@@ -407,7 +407,7 @@ export const db = {
     const { data: { session } } = await supabase.auth.getSession();
 
     if (session?.user) {
-      // Real session — write directly to Supabase
+      // Real session — try full update with all preference fields first
       const { error } = await supabase
         .from("profiles")
         .update({
@@ -439,7 +439,25 @@ export const db = {
         })
         .eq("user_id", userId);
 
-      if (error) return { success: false, error: error.message };
+      if (error) {
+        // Preference columns may not exist yet — fall back to core fields only
+        const { error: fallbackError } = await supabase
+          .from("profiles")
+          .update({
+            first_name: data.firstName,
+            middle_name: data.middleName || null,
+            last_name: data.lastName || null,
+            nickname: data.nickname || null,
+            birthday: data.birthday,
+            birth_time: data.birthTime || null,
+            birth_city: data.birthCity,
+            birth_state: data.birthState,
+            intake_complete: true,
+          })
+          .eq("user_id", userId);
+
+        if (fallbackError) return { success: false, error: fallbackError.message };
+      }
       return { success: true };
     }
 
@@ -683,38 +701,56 @@ export const db = {
 
       const intake = JSON.parse(raw);
 
-      // Ensure profile row exists (may not have been created during signup)
-      await supabase.from("profiles").upsert(
-        {
-          user_id: userId,
-          first_name: intake.firstName || "",
-          middle_name: intake.middleName || null,
-          last_name: intake.lastName || null,
-          nickname: intake.nickname || null,
-          birthday: intake.birthday || null,
-          birth_time: intake.birthTime || null,
-          birth_city: intake.birthCity || null,
-          birth_state: intake.birthState || null,
-          intake_complete: intake.complete ?? false,
-          relationship_status: intake.relationshipStatus || null,
-          career_field: intake.careerField || null,
-          career_goals: intake.careerGoals || [],
-          budget_range: intake.budgetRange || null,
-          style_preferences: intake.stylePreferences || [],
-          style_budget: intake.styleBudget || null,
-          favorite_stores: intake.favoriteStores || [],
-          music_genres: intake.musicGenres || [],
-          film_genres: intake.filmGenres || [],
-          tv_genres: intake.tvGenres || [],
-          book_genres: intake.bookGenres || [],
-          goals: intake.goals || [],
-          hobbies: intake.hobbies || [],
-          values_list: intake.valuesList || [],
-          gender: intake.gender || null,
-          gender_expression: intake.genderExpression || null,
-        },
-        { onConflict: "user_id" }
-      );
+      // Ensure profile row exists — try with all fields, fall back to core
+      const fullData = {
+        user_id: userId,
+        first_name: intake.firstName || "",
+        middle_name: intake.middleName || null,
+        last_name: intake.lastName || null,
+        nickname: intake.nickname || null,
+        birthday: intake.birthday || null,
+        birth_time: intake.birthTime || null,
+        birth_city: intake.birthCity || null,
+        birth_state: intake.birthState || null,
+        intake_complete: intake.complete ?? false,
+        relationship_status: intake.relationshipStatus || null,
+        career_field: intake.careerField || null,
+        career_goals: intake.careerGoals || [],
+        budget_range: intake.budgetRange || null,
+        style_preferences: intake.stylePreferences || [],
+        style_budget: intake.styleBudget || null,
+        favorite_stores: intake.favoriteStores || [],
+        music_genres: intake.musicGenres || [],
+        film_genres: intake.filmGenres || [],
+        tv_genres: intake.tvGenres || [],
+        book_genres: intake.bookGenres || [],
+        goals: intake.goals || [],
+        hobbies: intake.hobbies || [],
+        values_list: intake.valuesList || [],
+        gender: intake.gender || null,
+        gender_expression: intake.genderExpression || null,
+      };
+
+      const { error: fullError } = await supabase.from("profiles").upsert(fullData, { onConflict: "user_id" });
+
+      if (fullError) {
+        // Preference columns may not exist — fall back to core fields
+        await supabase.from("profiles").upsert(
+          {
+            user_id: userId,
+            first_name: intake.firstName || "",
+            middle_name: intake.middleName || null,
+            last_name: intake.lastName || null,
+            nickname: intake.nickname || null,
+            birthday: intake.birthday || null,
+            birth_time: intake.birthTime || null,
+            birth_city: intake.birthCity || null,
+            birth_state: intake.birthState || null,
+            intake_complete: intake.complete ?? false,
+          },
+          { onConflict: "user_id" }
+        );
+      }
 
       // Ensure progress row exists
       await supabase.from("user_progress").upsert(
