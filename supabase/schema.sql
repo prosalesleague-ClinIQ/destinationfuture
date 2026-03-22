@@ -74,16 +74,25 @@ ALTER TABLE quest_responses ENABLE ROW LEVEL SECURITY;
 ALTER TABLE section_snapshots ENABLE ROW LEVEL SECURITY;
 
 -- user_progress
-CREATE POLICY IF NOT EXISTS "Users can read own progress" ON user_progress FOR SELECT USING (auth.uid() = user_id);
-CREATE POLICY IF NOT EXISTS "Users can insert own progress" ON user_progress FOR INSERT WITH CHECK (auth.uid() = user_id);
-CREATE POLICY IF NOT EXISTS "Users can update own progress" ON user_progress FOR UPDATE USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Users can read own progress" ON user_progress;
+CREATE POLICY "Users can read own progress" ON user_progress FOR SELECT USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Users can insert own progress" ON user_progress;
+CREATE POLICY "Users can insert own progress" ON user_progress FOR INSERT WITH CHECK (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Users can update own progress" ON user_progress;
+CREATE POLICY "Users can update own progress" ON user_progress FOR UPDATE USING (auth.uid() = user_id);
 
 -- quest_responses
-CREATE POLICY IF NOT EXISTS "Users can read own quest responses" ON quest_responses FOR SELECT USING (auth.uid() = user_id);
-CREATE POLICY IF NOT EXISTS "Users can insert own quest responses" ON quest_responses FOR INSERT WITH CHECK (auth.uid() = user_id);
-CREATE POLICY IF NOT EXISTS "Users can update own quest responses" ON quest_responses FOR UPDATE USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Users can read own quest responses" ON quest_responses;
+CREATE POLICY "Users can read own quest responses" ON quest_responses FOR SELECT USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Users can insert own quest responses" ON quest_responses;
+CREATE POLICY "Users can insert own quest responses" ON quest_responses FOR INSERT WITH CHECK (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Users can update own quest responses" ON quest_responses;
+CREATE POLICY "Users can update own quest responses" ON quest_responses FOR UPDATE USING (auth.uid() = user_id);
 
 -- section_snapshots
-CREATE POLICY IF NOT EXISTS "Users can read own snapshots" ON section_snapshots FOR SELECT USING (auth.uid() = user_id);
-CREATE POLICY IF NOT EXISTS "Users can insert own snapshots" ON section_snapshots FOR INSERT WITH CHECK (auth.uid() = user_id);
-CREATE POLICY IF NOT EXISTS "Users can update own snapshots" ON section_snapshots FOR UPDATE USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Users can read own snapshots" ON section_snapshots;
+CREATE POLICY "Users can read own snapshots" ON section_snapshots FOR SELECT USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Users can insert own snapshots" ON section_snapshots;
+CREATE POLICY "Users can insert own snapshots" ON section_snapshots FOR INSERT WITH CHECK (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Users can update own snapshots" ON section_snapshots;
+CREATE POLICY "Users can update own snapshots" ON section_snapshots FOR UPDATE USING (auth.uid() = user_id);
